@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { 
   User, Mail, Phone, MapPin, Edit2, Save, LogOut,
   Package, TrendingUp, Leaf, Award, ChevronRight,
-  Store, Settings, HelpCircle
+  Store, Settings, HelpCircle, Users, ChefHat, Trophy
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from 'sonner';
 import SavingsCounter from '@/components/ui/SavingsCounter';
+import BadgeDisplay from '@/components/gamification/BadgeDisplay';
 
 const ecoLevels = {
   debutant: { name: 'Débutant', icon: '🌱', color: 'from-gray-400 to-gray-500' },
@@ -178,6 +179,20 @@ export default function Profile() {
           </div>
         </Card>
 
+        {/* Badges */}
+        <Card className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-amber-500" />
+              Mes badges
+            </h2>
+            <Link to={createPageUrl('Community')} className="text-sm text-emerald-600">
+              Voir tout
+            </Link>
+          </div>
+          <BadgeDisplay userBadges={user.badges || []} compact />
+        </Card>
+
         {/* Actions */}
         <Card className="divide-y">
           {user.is_partner && (
@@ -196,6 +211,22 @@ export default function Profile() {
           >
             <Package className="w-5 h-5 text-gray-500" />
             <span className="flex-1 font-medium">Mes commandes</span>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </Link>
+          <Link 
+            to={createPageUrl('Community')}
+            className="flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors"
+          >
+            <Users className="w-5 h-5 text-gray-500" />
+            <span className="flex-1 font-medium">Communauté</span>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </Link>
+          <Link 
+            to={createPageUrl('FoodCoach')}
+            className="flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors"
+          >
+            <ChefHat className="w-5 h-5 text-gray-500" />
+            <span className="flex-1 font-medium">FoodCoach IA</span>
             <ChevronRight className="w-5 h-5 text-gray-400" />
           </Link>
           <button className="flex items-center gap-4 p-4 w-full hover:bg-gray-50 transition-colors">

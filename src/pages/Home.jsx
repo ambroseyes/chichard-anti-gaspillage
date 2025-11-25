@@ -4,10 +4,11 @@ import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Search, MapPin, ChevronRight, Clock, Zap, Sparkles } from 'lucide-react';
+import { Search, MapPin, ChevronRight, Clock, Zap, Sparkles, Users, ChefHat, Trophy, Flame } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
 import ProductCard from '@/components/ui/ProductCard';
 import CategoryPill, { categories } from '@/components/ui/CategoryPill';
 import UrgencyBanner from '@/components/ui/UrgencyBanner';
@@ -195,6 +196,38 @@ export default function Home() {
               ))}
             </div>
           )}
+        </section>
+
+        {/* Quick Access Cards */}
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Link to={createPageUrl('Community')}>
+            <Card className="p-4 hover:shadow-md transition-shadow bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-100">
+              <Users className="w-8 h-8 text-purple-500 mb-2" />
+              <h3 className="font-semibold text-gray-900">Communauté</h3>
+              <p className="text-xs text-gray-500">Partagez vos économies</p>
+            </Card>
+          </Link>
+          <Link to={createPageUrl('FoodCoach')}>
+            <Card className="p-4 hover:shadow-md transition-shadow bg-gradient-to-br from-orange-50 to-red-50 border-orange-100">
+              <ChefHat className="w-8 h-8 text-orange-500 mb-2" />
+              <h3 className="font-semibold text-gray-900">FoodCoach IA</h3>
+              <p className="text-xs text-gray-500">Recettes anti-gaspi</p>
+            </Card>
+          </Link>
+          <Link to={createPageUrl('Community')}>
+            <Card className="p-4 hover:shadow-md transition-shadow bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-100">
+              <Trophy className="w-8 h-8 text-amber-500 mb-2" />
+              <h3 className="font-semibold text-gray-900">Classement</h3>
+              <p className="text-xs text-gray-500">Top éco-héros</p>
+            </Card>
+          </Link>
+          <Link to={createPageUrl('Community')}>
+            <Card className="p-4 hover:shadow-md transition-shadow bg-gradient-to-br from-red-50 to-pink-50 border-red-100">
+              <Flame className="w-8 h-8 text-red-500 mb-2" />
+              <h3 className="font-semibold text-gray-900">Défis</h3>
+              <p className="text-xs text-gray-500">Gagnez des badges</p>
+            </Card>
+          </Link>
         </section>
 
         {/* Partner CTA */}
