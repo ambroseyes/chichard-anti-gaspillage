@@ -2,15 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, Clock, MapPin, ShoppingCart, Plus, Minus, 
-  CheckCircle, Shield, Truck, Store, Share2, Heart
+  CheckCircle, Shield, Truck, Store, Share2, Heart, Star,
+  Leaf, AlertTriangle
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
 import { toast } from 'sonner';
 
 export default function ProductDetail() {
@@ -267,6 +271,44 @@ export default function ProductDetail() {
                 {product.quantity_available || 10} disponibles
               </span>
             </div>
+
+            {/* Freshness score */}
+            {product.freshness_score && (
+              <div className="bg-emerald-50 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Leaf className="w-4 h-4 text-emerald-500" />
+                    Score de fraîcheur
+                  </span>
+                  <span className="font-bold text-emerald-600">{product.freshness_score}/100</span>
+                </div>
+                <Progress value={product.freshness_score} className="h-2" />
+              </div>
+            )}
+
+            {/* CO2 impact */}
+            {product.co2_saved && (
+              <div className="flex items-center gap-3 p-3 bg-teal-50 rounded-xl">
+                <div className="p-2 bg-teal-100 rounded-lg">
+                  <Leaf className="w-5 h-5 text-teal-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-teal-800">Impact écologique</p>
+                  <p className="text-xs text-teal-600">En achetant ce produit, vous évitez {product.co2_saved}kg de CO2</p>
+                </div>
+              </div>
+            )}
+
+            {/* Allergens warning */}
+            {product.allergens?.length > 0 && (
+              <div className="flex items-center gap-3 p-3 bg-amber-50 rounded-xl border border-amber-200">
+                <AlertTriangle className="w-5 h-5 text-amber-600" />
+                <div>
+                  <p className="text-sm font-medium text-amber-800">Allergènes</p>
+                  <p className="text-xs text-amber-600">{product.allergens.join(', ')}</p>
+                </div>
+              </div>
+            )}
           </motion.div>
         </div>
       </div>
