@@ -8,14 +8,17 @@ import { format, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
   Package, TrendingUp, Leaf, AlertTriangle, Plus,
-  BarChart3, Clock, CheckCircle, ArrowUpRight, Sparkles
+  BarChart3, Clock, CheckCircle, ArrowUpRight, Sparkles,
+  DollarSign, Zap, Target, RefreshCw
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell
 } from 'recharts';
 
 export default function PartnerDashboard() {
@@ -125,46 +128,112 @@ export default function PartnerDashboard() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="p-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-emerald-100 rounded-xl">
-                <Package className="w-5 h-5 text-emerald-600" />
+          <Card className="p-4 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-100 rounded-full -translate-y-1/2 translate-x-1/2 opacity-50" />
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-emerald-100 rounded-xl">
+                  <Package className="w-5 h-5 text-emerald-600" />
+                </div>
               </div>
+              <p className="text-2xl font-bold text-gray-900">{activeProducts}</p>
+              <p className="text-sm text-gray-500">Produits actifs</p>
             </div>
-            <p className="text-2xl font-bold text-gray-900">{activeProducts}</p>
-            <p className="text-sm text-gray-500">Produits actifs</p>
           </Card>
 
-          <Card className="p-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-orange-100 rounded-xl">
-                <Clock className="w-5 h-5 text-orange-600" />
+          <Card className="p-4 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-orange-100 rounded-full -translate-y-1/2 translate-x-1/2 opacity-50" />
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-orange-100 rounded-xl">
+                  <Clock className="w-5 h-5 text-orange-600" />
+                </div>
               </div>
+              <p className="text-2xl font-bold text-gray-900">{urgentProducts.length}</p>
+              <p className="text-sm text-gray-500">Urgents (-3j)</p>
+              {urgentProducts.length > 0 && (
+                <Badge className="mt-2 bg-orange-100 text-orange-700 text-xs">Action requise</Badge>
+              )}
             </div>
-            <p className="text-2xl font-bold text-gray-900">{urgentProducts.length}</p>
-            <p className="text-sm text-gray-500">Urgents (-3j)</p>
           </Card>
 
-          <Card className="p-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-blue-100 rounded-xl">
-                <TrendingUp className="w-5 h-5 text-blue-600" />
+          <Card className="p-4 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-blue-100 rounded-full -translate-y-1/2 translate-x-1/2 opacity-50" />
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-blue-100 rounded-xl">
+                  <TrendingUp className="w-5 h-5 text-blue-600" />
+                </div>
               </div>
+              <p className="text-2xl font-bold text-gray-900">{totalRevenue.toLocaleString()}</p>
+              <p className="text-sm text-gray-500">FCFA récupérés</p>
             </div>
-            <p className="text-2xl font-bold text-gray-900">{totalRevenue.toLocaleString()}</p>
-            <p className="text-sm text-gray-500">FCFA récupérés</p>
           </Card>
 
-          <Card className="p-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-teal-100 rounded-xl">
-                <Leaf className="w-5 h-5 text-teal-600" />
+          <Card className="p-4 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-teal-100 rounded-full -translate-y-1/2 translate-x-1/2 opacity-50" />
+            <div className="relative">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-teal-100 rounded-xl">
+                  <Leaf className="w-5 h-5 text-teal-600" />
+                </div>
               </div>
+              <p className="text-2xl font-bold text-gray-900">{totalSaved}</p>
+              <p className="text-sm text-gray-500">Produits sauvés</p>
             </div>
-            <p className="text-2xl font-bold text-gray-900">{totalSaved}</p>
-            <p className="text-sm text-gray-500">Produits sauvés</p>
           </Card>
         </div>
+
+        {/* StockGuardian Quick Insights */}
+        <Card className="p-6 bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-200">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Insights StockGuardian</h3>
+                <p className="text-xs text-gray-500">Recommandations IA en temps réel</p>
+              </div>
+            </div>
+            <Link to={createPageUrl('StockGuardian')}>
+              <Button size="sm" variant="outline" className="border-indigo-300">
+                Voir plus <ArrowUpRight className="w-4 h-4 ml-1" />
+              </Button>
+            </Link>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="bg-white rounded-xl p-4">
+              <div className="flex items-center gap-2 text-orange-600 mb-2">
+                <AlertTriangle className="w-4 h-4" />
+                <span className="text-sm font-medium">Risque de pertes</span>
+              </div>
+              <p className="text-xl font-bold text-gray-900">
+                {(urgentProducts.reduce((sum, p) => sum + (p.discounted_price * p.quantity_available), 0)).toLocaleString()} FCFA
+              </p>
+              <p className="text-xs text-gray-500 mt-1">si aucune action dans 72h</p>
+            </div>
+
+            <div className="bg-white rounded-xl p-4">
+              <div className="flex items-center gap-2 text-emerald-600 mb-2">
+                <Target className="w-4 h-4" />
+                <span className="text-sm font-medium">Taux de conversion</span>
+              </div>
+              <p className="text-xl font-bold text-gray-900">73%</p>
+              <Progress value={73} className="h-2 mt-2" />
+            </div>
+
+            <div className="bg-white rounded-xl p-4">
+              <div className="flex items-center gap-2 text-blue-600 mb-2">
+                <Zap className="w-4 h-4" />
+                <span className="text-sm font-medium">Actions suggérées</span>
+              </div>
+              <p className="text-xl font-bold text-gray-900">{urgentProducts.length + 2}</p>
+              <p className="text-xs text-gray-500 mt-1">optimisations disponibles</p>
+            </div>
+          </div>
+        </Card>
 
         {/* Chart */}
         <Card className="p-6">
