@@ -6,12 +6,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShoppingCart, Trash2, Plus, Minus, ArrowRight, 
-  Clock, MapPin, ShoppingBag, Leaf
+  Clock, MapPin, ShoppingBag, Leaf, Sparkles
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from 'sonner';
+import SmartCartSuggestions from '@/components/cart/SmartCartSuggestions';
 
 export default function Cart() {
   const [user, setUser] = useState(null);
@@ -116,6 +117,11 @@ export default function Cart() {
             </div>
           </div>
         </motion.div>
+
+        {/* Smart Cart AI */}
+        {cartItems.length >= 2 && (
+          <SmartCartSuggestions cartItems={cartItems} user={user} />
+        )}
 
         {/* Cart items */}
         <div className="space-y-4">
