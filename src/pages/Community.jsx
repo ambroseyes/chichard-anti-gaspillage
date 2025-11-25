@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { 
   Plus, Trophy, Users, Flame, TrendingUp, Filter,
-  Sparkles, MessageCircle
+  Sparkles, MessageCircle, Lightbulb, Mail
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +12,8 @@ import SocialFeed from '@/components/community/SocialFeed';
 import CreatePostModal from '@/components/community/CreatePostModal';
 import LeaderboardCard from '@/components/gamification/LeaderboardCard';
 import ChallengeCard from '@/components/gamification/ChallengeCard';
+import ZeroWasteTips from '@/components/community/ZeroWasteTips';
+import DirectMessages from '@/components/community/DirectMessages';
 import { toast } from 'sonner';
 
 export default function Community() {
@@ -107,10 +109,18 @@ export default function Community() {
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full md:w-auto mb-6">
+          <TabsList className="w-full md:w-auto mb-6 flex-wrap">
             <TabsTrigger value="feed" className="flex-1 md:flex-none">
               <MessageCircle className="w-4 h-4 mr-2" />
               Fil
+            </TabsTrigger>
+            <TabsTrigger value="tips" className="flex-1 md:flex-none">
+              <Lightbulb className="w-4 h-4 mr-2" />
+              Astuces
+            </TabsTrigger>
+            <TabsTrigger value="messages" className="flex-1 md:flex-none">
+              <Mail className="w-4 h-4 mr-2" />
+              Messages
             </TabsTrigger>
             <TabsTrigger value="challenges" className="flex-1 md:flex-none">
               <Flame className="w-4 h-4 mr-2" />
@@ -121,6 +131,20 @@ export default function Community() {
               Classement
             </TabsTrigger>
           </TabsList>
+
+          {/* Tips Tab */}
+          <TabsContent value="tips">
+            <div className="max-w-2xl mx-auto">
+              <ZeroWasteTips user={user} />
+            </div>
+          </TabsContent>
+
+          {/* Messages Tab */}
+          <TabsContent value="messages">
+            <div className="max-w-4xl mx-auto">
+              <DirectMessages user={user} />
+            </div>
+          </TabsContent>
 
           {/* Feed Tab */}
           <TabsContent value="feed">

@@ -110,9 +110,11 @@ export default function StockGuardian() {
 
   const quickPrompts = [
     { icon: AlertTriangle, text: 'Analyser mes produits urgents', color: 'text-orange-500' },
-    { icon: TrendingDown, text: 'Optimiser mes prix', color: 'text-blue-500' },
-    { icon: Package, text: 'Proposer des bundles', color: 'text-purple-500' },
+    { icon: TrendingDown, text: 'Optimiser mes prix dynamiquement', color: 'text-blue-500' },
+    { icon: Package, text: 'Bundles basés sur patterns d\'achat', color: 'text-purple-500' },
     { icon: Zap, text: 'Stratégie anti-gaspillage', color: 'text-emerald-500' },
+    { icon: RefreshCw, text: 'Prévoir réapprovisionnement optimal', color: 'text-teal-500' },
+    { icon: Clock, text: 'Promotions auto selon stock', color: 'text-indigo-500' },
   ];
 
   if (!user) {
