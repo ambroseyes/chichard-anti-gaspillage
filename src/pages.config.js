@@ -16,6 +16,7 @@ import DeliveryOptimization from './pages/DeliveryOptimization';
 import AdminPartners from './pages/AdminPartners';
 import ChichardPlus from './pages/ChichardPlus';
 import DeliveryTracking from './pages/DeliveryTracking';
+import LoyaltyProgram from './pages/LoyaltyProgram';
 import __Layout from './Layout.jsx';
 
 
@@ -38,6 +39,7 @@ export const PAGES = {
     "AdminPartners": AdminPartners,
     "ChichardPlus": ChichardPlus,
     "DeliveryTracking": DeliveryTracking,
+    "LoyaltyProgram": LoyaltyProgram,
 }
 
 export const pagesConfig = {
