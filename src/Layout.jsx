@@ -14,7 +14,9 @@ import {
   Store,
   BarChart3,
   LogOut,
-  Leaf
+  Leaf,
+  Users,
+  ChefHat
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,8 +53,8 @@ export default function Layout({ children, currentPageName }) {
   const mainNavItems = [
     { name: 'Home', icon: Home, label: 'Accueil' },
     { name: 'Catalog', icon: Search, label: 'Catalogue' },
+    { name: 'Community', icon: Users, label: 'Communauté' },
     { name: 'Cart', icon: ShoppingCart, label: 'Panier', badge: cartCount },
-    { name: 'Orders', icon: Package, label: 'Commandes' },
     { name: 'Profile', icon: User, label: 'Profil' },
   ];
 

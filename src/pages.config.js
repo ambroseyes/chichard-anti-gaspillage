@@ -8,6 +8,8 @@ import Profile from './pages/Profile';
 import PartnerDashboard from './pages/PartnerDashboard';
 import PartnerProducts from './pages/PartnerProducts';
 import StockGuardian from './pages/StockGuardian';
+import Community from './pages/Community';
+import FoodCoach from './pages/FoodCoach';
 import __Layout from './Layout.jsx';
 
 
@@ -22,6 +24,8 @@ export const PAGES = {
     "PartnerDashboard": PartnerDashboard,
     "PartnerProducts": PartnerProducts,
     "StockGuardian": StockGuardian,
+    "Community": Community,
+    "FoodCoach": FoodCoach,
 }
 
 export const pagesConfig = {
