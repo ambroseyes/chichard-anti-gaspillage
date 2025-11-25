@@ -1,16 +1,16 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, Leaf, Award } from 'lucide-react';
+import { TrendingUp, Leaf, Award, Zap } from 'lucide-react';
 
 const ecoLevels = {
-  debutant: { name: 'Débutant', color: 'text-gray-500', next: 5000 },
-  eco_citoyen: { name: 'Éco-Citoyen', color: 'text-emerald-500', next: 15000 },
-  eco_hero: { name: 'Éco-Héros', color: 'text-blue-500', next: 35000 },
-  eco_champion: { name: 'Éco-Champion', color: 'text-purple-500', next: 75000 },
-  eco_legend: { name: 'Éco-Légende', color: 'text-orange-500', next: null },
+  debutant: { name: 'Débutant', color: 'text-gray-500', next: 5000, icon: '🌱' },
+  eco_citoyen: { name: 'Éco-Citoyen', color: 'text-emerald-500', next: 15000, icon: '🌿' },
+  eco_hero: { name: 'Éco-Héros', color: 'text-blue-500', next: 35000, icon: '🌳' },
+  eco_champion: { name: 'Éco-Champion', color: 'text-purple-500', next: 75000, icon: '🌲' },
+  eco_legend: { name: 'Éco-Légende', color: 'text-orange-500', next: null, icon: '🌍' },
 };
 
-export default function SavingsCounter({ totalSavings = 0, wasteAvoided = 0, ecoLevel = 'debutant' }) {
+export default function SavingsCounter({ totalSavings = 0, wasteAvoided = 0, ecoLevel = 'debutant', co2Saved = 0 }) {
   const level = ecoLevels[ecoLevel] || ecoLevels.debutant;
   const progress = level.next ? (totalSavings / level.next) * 100 : 100;
 
@@ -18,7 +18,7 @@ export default function SavingsCounter({ totalSavings = 0, wasteAvoided = 0, eco
     <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-5 border border-emerald-100">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Award className={`w-5 h-5 ${level.color}`} />
+          <span className="text-xl">{level.icon}</span>
           <span className={`font-semibold ${level.color}`}>{level.name}</span>
         </div>
         {level.next && (
@@ -28,34 +28,52 @@ export default function SavingsCounter({ totalSavings = 0, wasteAvoided = 0, eco
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-3">
         <motion.div 
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="bg-white rounded-xl p-4 shadow-sm"
+          className="bg-white rounded-xl p-3 shadow-sm"
         >
           <div className="flex items-center gap-2 text-emerald-600 mb-1">
             <TrendingUp className="w-4 h-4" />
             <span className="text-xs font-medium">Économies</span>
           </div>
-          <div className="text-xl font-bold text-gray-900">
-            {totalSavings?.toLocaleString()} <span className="text-sm font-normal text-gray-500">FCFA</span>
+          <div className="text-lg font-bold text-gray-900">
+            {totalSavings?.toLocaleString()}
           </div>
+          <div className="text-xs text-gray-500">FCFA</div>
         </motion.div>
 
         <motion.div 
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.1 }}
-          className="bg-white rounded-xl p-4 shadow-sm"
+          className="bg-white rounded-xl p-3 shadow-sm"
         >
           <div className="flex items-center gap-2 text-teal-600 mb-1">
             <Leaf className="w-4 h-4" />
-            <span className="text-xs font-medium">Gaspillage évité</span>
+            <span className="text-xs font-medium">Sauvé</span>
           </div>
-          <div className="text-xl font-bold text-gray-900">
-            {wasteAvoided?.toFixed(1)} <span className="text-sm font-normal text-gray-500">kg</span>
+          <div className="text-lg font-bold text-gray-900">
+            {wasteAvoided?.toFixed(1)}
           </div>
+          <div className="text-xs text-gray-500">kg</div>
+        </motion.div>
+
+        <motion.div 
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="bg-white rounded-xl p-3 shadow-sm"
+        >
+          <div className="flex items-center gap-2 text-blue-600 mb-1">
+            <Zap className="w-4 h-4" />
+            <span className="text-xs font-medium">CO₂</span>
+          </div>
+          <div className="text-lg font-bold text-gray-900">
+            {(co2Saved || wasteAvoided * 2.5)?.toFixed(1)}
+          </div>
+          <div className="text-xs text-gray-500">kg évités</div>
         </motion.div>
       </div>
 
