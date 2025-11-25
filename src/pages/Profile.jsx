@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { 
   User, Mail, Phone, MapPin, Edit2, Save, LogOut,
   Package, TrendingUp, Leaf, Award, ChevronRight,
-  Store, Settings, HelpCircle, Users, ChefHat, Trophy
+  Store, Settings, HelpCircle, Users, ChefHat, Trophy, Flame, Crown
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -227,6 +227,23 @@ export default function Profile() {
           >
             <ChefHat className="w-5 h-5 text-gray-500" />
             <span className="flex-1 font-medium">FoodCoach IA</span>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </Link>
+          <Link 
+            to={createPageUrl('WeeklyChallenges')}
+            className="flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors"
+          >
+            <Flame className="w-5 h-5 text-orange-500" />
+            <span className="flex-1 font-medium">Défis hebdomadaires</span>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </Link>
+          <Link 
+            to={createPageUrl('ChichardPlus')}
+            className="flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors"
+          >
+            <Crown className="w-5 h-5 text-amber-500" />
+            <span className="flex-1 font-medium">CHICHARD+</span>
+            {!user.is_premium && <Badge className="bg-amber-100 text-amber-700 text-xs">Premium</Badge>}
             <ChevronRight className="w-5 h-5 text-gray-400" />
           </Link>
           <button className="flex items-center gap-4 p-4 w-full hover:bg-gray-50 transition-colors">

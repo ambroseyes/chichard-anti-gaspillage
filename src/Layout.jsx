@@ -16,7 +16,10 @@ import {
   LogOut,
   Leaf,
   Users,
-  ChefHat
+  ChefHat,
+  TrendingUp,
+  Crown,
+  Flame
 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -61,8 +64,9 @@ export default function Layout({ children, currentPageName }) {
   const partnerNavItems = [
     { name: 'PartnerDashboard', icon: BarChart3, label: 'Tableau de bord' },
     { name: 'PartnerProducts', icon: Package, label: 'Produits' },
+    { name: 'PartnerStats', icon: TrendingUp, label: 'Statistiques' },
     { name: 'StockGuardian', icon: Leaf, label: 'StockGuardian' },
-    { name: 'Home', icon: Store, label: 'Boutique client' },
+    { name: 'Home', icon: Store, label: 'Boutique' },
   ];
 
   const navItems = isPartnerPage ? partnerNavItems : mainNavItems;
