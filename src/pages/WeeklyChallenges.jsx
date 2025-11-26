@@ -5,8 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { differenceInDays, differenceInHours } from 'date-fns';
 import {
   Trophy, Flame, Clock, Target, Zap, ShoppingCart, Leaf,
-  Award, Star, ChevronRight, Check, Lock, Sparkles
+  Award, Star, ChevronRight, Check, Lock, Sparkles, Users, Store
 } from 'lucide-react';
+import TeamChallenges from '@/components/challenges/TeamChallenges';
+import PersonalGoals from '@/components/challenges/PersonalGoals';
+import PartnerChallenges from '@/components/challenges/PartnerChallenges';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -215,14 +218,22 @@ export default function WeeklyChallenges() {
         )}
 
         <Tabs defaultValue="weekly">
-          <TabsList className="mb-6">
+          <TabsList className="mb-6 flex-wrap">
             <TabsTrigger value="weekly">
               <Flame className="w-4 h-4 mr-2" />
-              Cette semaine
+              Hebdo
             </TabsTrigger>
-            <TabsTrigger value="all">
+            <TabsTrigger value="personal">
               <Target className="w-4 h-4 mr-2" />
-              Tous les défis
+              Mes objectifs
+            </TabsTrigger>
+            <TabsTrigger value="team">
+              <Users className="w-4 h-4 mr-2" />
+              Équipe
+            </TabsTrigger>
+            <TabsTrigger value="partner">
+              <Store className="w-4 h-4 mr-2" />
+              Partenaires
             </TabsTrigger>
             <TabsTrigger value="completed">
               <Check className="w-4 h-4 mr-2" />
@@ -276,6 +287,18 @@ export default function WeeklyChallenges() {
                 );
               })}
             </div>
+          </TabsContent>
+
+          <TabsContent value="personal">
+            <PersonalGoals user={user} userChallenges={userChallenges} />
+          </TabsContent>
+
+          <TabsContent value="team">
+            <TeamChallenges user={user} />
+          </TabsContent>
+
+          <TabsContent value="partner">
+            <PartnerChallenges user={user} />
           </TabsContent>
 
           <TabsContent value="all">

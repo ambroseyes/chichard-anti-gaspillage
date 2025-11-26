@@ -13,6 +13,9 @@ import ProductCard from '@/components/ui/ProductCard';
 import CategoryPill, { categories } from '@/components/ui/CategoryPill';
 import UrgencyBanner from '@/components/ui/UrgencyBanner';
 import SavingsCounter from '@/components/ui/SavingsCounter';
+import AIProductRecommendations from '@/components/ai/AIProductRecommendations';
+import AIRecipeRecommendations from '@/components/ai/AIRecipeRecommendations';
+import AIPartnerRecommendations from '@/components/ai/AIPartnerRecommendations';
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -115,18 +118,33 @@ export default function Home() {
 
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-8">
         {/* User Stats (if logged in) */}
-        {user && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <SavingsCounter 
-              totalSavings={user.total_savings || 0}
-              wasteAvoided={user.waste_avoided_kg || 0}
-              ecoLevel={user.eco_level || 'debutant'}
-            />
-          </motion.div>
-        )}
+          {user && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <SavingsCounter 
+                totalSavings={user.total_savings || 0}
+                wasteAvoided={user.waste_avoided_kg || 0}
+                ecoLevel={user.eco_level || 'debutant'}
+              />
+            </motion.div>
+          )}
+
+          {/* AI Product Recommendations */}
+          {user && (
+            <AIProductRecommendations user={user} onAddToCart={addToCart} />
+          )}
+
+          {/* AI Recipe Recommendations */}
+          {user && (
+            <AIRecipeRecommendations user={user} />
+          )}
+
+          {/* AI Partner Recommendations */}
+          {user && (
+            <AIPartnerRecommendations user={user} />
+          )}
 
         {/* Urgent Products Banner */}
         {urgentProducts.length > 0 && (
