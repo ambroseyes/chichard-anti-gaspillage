@@ -20,6 +20,9 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell
 } from 'recharts';
+import BulkProductManager from '@/components/partner/BulkProductManager';
+import LowStockAlerts from '@/components/partner/LowStockAlerts';
+import BundleSuggestions from '@/components/partner/BundleSuggestions';
 
 export default function PartnerDashboard() {
   const [user, setUser] = useState(null);
@@ -233,6 +236,16 @@ export default function PartnerDashboard() {
               <p className="text-xs text-gray-500 mt-1">optimisations disponibles</p>
             </div>
           </div>
+        </Card>
+
+        {/* Low Stock Alerts */}
+        <Card className="p-6">
+          <LowStockAlerts products={products} />
+        </Card>
+
+        {/* Bundle Suggestions */}
+        <Card className="p-6">
+          <BundleSuggestions products={products} user={user} />
         </Card>
 
         {/* Chart */}

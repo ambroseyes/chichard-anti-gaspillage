@@ -17,11 +17,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from 'sonner';
 
 const tiers = [
-  { id: 'bronze', name: 'Bronze', minPoints: 0, color: 'from-amber-600 to-amber-700', icon: '🥉', multiplier: 1 },
-  { id: 'silver', name: 'Argent', minPoints: 1000, color: 'from-gray-400 to-gray-500', icon: '🥈', multiplier: 1.25 },
-  { id: 'gold', name: 'Or', minPoints: 5000, color: 'from-yellow-400 to-amber-500', icon: '🥇', multiplier: 1.5 },
-  { id: 'platinum', name: 'Platine', minPoints: 15000, color: 'from-purple-400 to-indigo-500', icon: '💎', multiplier: 2 },
-  { id: 'diamond', name: 'Diamant', minPoints: 50000, color: 'from-cyan-400 to-blue-500', icon: '👑', multiplier: 3 },
+  { id: 'bronze', name: 'Bronze', minPoints: 0, color: 'from-amber-600 to-amber-700', icon: '🥉', multiplier: 1, benefits: ['Points de base'] },
+  { id: 'silver', name: 'Argent', minPoints: 1000, color: 'from-gray-400 to-gray-500', icon: '🥈', multiplier: 1.25, benefits: ['x1.25 points', 'Offres exclusives'] },
+  { id: 'gold', name: 'Or', minPoints: 5000, color: 'from-yellow-400 to-amber-500', icon: '🥇', multiplier: 1.5, benefits: ['x1.5 points', 'Livraison prioritaire', 'Accès anticipé'] },
+  { id: 'platinum', name: 'Platine', minPoints: 15000, color: 'from-purple-400 to-indigo-500', icon: '💎', multiplier: 2, benefits: ['x2 points', 'Support VIP', 'Événements exclusifs'] },
+  { id: 'diamond', name: 'Diamant', minPoints: 50000, color: 'from-cyan-400 to-blue-500', icon: '👑', multiplier: 3, benefits: ['x3 points', 'Concierge dédié', 'Expériences premium', 'Cadeaux anniversaire'] },
 ];
 
 const defaultRewards = [

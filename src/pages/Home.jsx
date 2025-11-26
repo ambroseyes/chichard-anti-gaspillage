@@ -16,6 +16,7 @@ import SavingsCounter from '@/components/ui/SavingsCounter';
 import AIProductRecommendations from '@/components/ai/AIProductRecommendations';
 import AIRecipeRecommendations from '@/components/ai/AIRecipeRecommendations';
 import AIPartnerRecommendations from '@/components/ai/AIPartnerRecommendations';
+import PersonalizedFeed from '@/components/feed/PersonalizedFeed';
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -144,6 +145,13 @@ export default function Home() {
           {/* AI Partner Recommendations */}
           {user && (
             <AIPartnerRecommendations user={user} />
+          )}
+
+          {/* Personalized Feed */}
+          {user && (
+            <section>
+              <PersonalizedFeed user={user} onAddToCart={addToCart} />
+            </section>
           )}
 
         {/* Urgent Products Banner */}
