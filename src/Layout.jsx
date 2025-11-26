@@ -66,10 +66,17 @@ export default function Layout({ children, currentPageName }) {
     { name: 'PartnerProducts', icon: Package, label: 'Produits' },
     { name: 'PartnerStats', icon: TrendingUp, label: 'Statistiques' },
     { name: 'StockGuardian', icon: Leaf, label: 'StockGuardian' },
+    { name: 'Settings', icon: Store, label: 'Paramètres' },
+  ];
+
+  const driverNavItems = [
+    { name: 'DriverDashboard', icon: Users, label: 'Livraisons' },
     { name: 'Home', icon: Store, label: 'Boutique' },
   ];
 
-  const navItems = isPartnerPage ? partnerNavItems : mainNavItems;
+  const isDriverPage = currentPageName === 'DriverDashboard';
+
+  const navItems = isDriverPage ? driverNavItems : isPartnerPage ? partnerNavItems : mainNavItems;
 
   if (hideNav) {
     return <div className="min-h-screen bg-gray-50">{children}</div>;

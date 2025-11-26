@@ -17,6 +17,9 @@ import AdminPartners from './pages/AdminPartners';
 import ChichardPlus from './pages/ChichardPlus';
 import DeliveryTracking from './pages/DeliveryTracking';
 import LoyaltyProgram from './pages/LoyaltyProgram';
+import DriverDashboard from './pages/DriverDashboard';
+import Settings from './pages/Settings';
+import BecomePartner from './pages/BecomePartner';
 import __Layout from './Layout.jsx';
 
 
@@ -40,6 +43,9 @@ export const PAGES = {
     "ChichardPlus": ChichardPlus,
     "DeliveryTracking": DeliveryTracking,
     "LoyaltyProgram": LoyaltyProgram,
+    "DriverDashboard": DriverDashboard,
+    "Settings": Settings,
+    "BecomePartner": BecomePartner,
 }
 
 export const pagesConfig = {
