@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { toast } from 'sonner';
 import SavingsCounter from '@/components/ui/SavingsCounter';
 import BadgeDisplay from '@/components/gamification/BadgeDisplay';
@@ -194,6 +195,11 @@ export default function Profile() {
           <BadgeDisplay userBadges={user.badges || []} compact />
         </Card>
 
+        {/* Community Badges */}
+        <Card className="p-4">
+          <CommunityBadges userBadges={user.community_badges || []} showAll />
+        </Card>
+
         {/* Actions */}
         <Card className="divide-y">
           {user.is_partner && (
@@ -245,6 +251,15 @@ export default function Profile() {
             <Crown className="w-5 h-5 text-amber-500" />
             <span className="flex-1 font-medium">CHICHARD+</span>
             {!user.is_premium && <Badge className="bg-amber-100 text-amber-700 text-xs">Premium</Badge>}
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </Link>
+          <Link 
+            to={createPageUrl('LoyaltyProgram')}
+            className="flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors"
+          >
+            <TrendingUp className="w-5 h-5 text-purple-500" />
+            <span className="flex-1 font-medium">Programme Fidélité</span>
+            <Badge className="bg-purple-100 text-purple-700 text-xs">{user.loyalty_points || 0} pts</Badge>
             <ChevronRight className="w-5 h-5 text-gray-400" />
           </Link>
           <button className="flex items-center gap-4 p-4 w-full hover:bg-gray-50 transition-colors">
