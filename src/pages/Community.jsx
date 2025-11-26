@@ -13,7 +13,7 @@ import CreatePostModal from '@/components/community/CreatePostModal';
 import LeaderboardCard from '@/components/gamification/LeaderboardCard';
 import ChallengeCard from '@/components/gamification/ChallengeCard';
 import ZeroWasteTips from '@/components/community/ZeroWasteTips';
-import DirectMessages from '@/components/community/DirectMessages';
+import EnhancedDirectMessages from '@/components/community/EnhancedDirectMessages';
 import { toast } from 'sonner';
 
 export default function Community() {
@@ -142,7 +142,7 @@ export default function Community() {
           {/* Messages Tab */}
           <TabsContent value="messages">
             <div className="max-w-4xl mx-auto">
-              <DirectMessages user={user} />
+              <EnhancedDirectMessages user={user} />
             </div>
           </TabsContent>
 

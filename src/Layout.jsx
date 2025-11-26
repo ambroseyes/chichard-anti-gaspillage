@@ -20,7 +20,8 @@ import {
   TrendingUp,
   Crown,
   Flame,
-  Ticket
+  Ticket,
+  MessageCircle
 } from 'lucide-react';
 import GlobalSearch from '@/components/search/GlobalSearch';
 import { Badge } from "@/components/ui/badge";
@@ -59,9 +60,9 @@ export default function Layout({ children, currentPageName }) {
   const mainNavItems = [
     { name: 'Home', icon: Home, label: 'Accueil' },
     { name: 'Catalog', icon: Search, label: 'Catalogue' },
-    { name: 'Community', icon: Users, label: 'Communauté' },
+    { name: 'CommunityChat', icon: MessageCircle, label: 'Chat' },
+    { name: 'Community', icon: Users, label: 'Social' },
     { name: 'Cart', icon: ShoppingCart, label: 'Panier', badge: cartCount },
-    { name: 'Profile', icon: User, label: 'Profil' },
   ];
 
   const partnerNavItems = [

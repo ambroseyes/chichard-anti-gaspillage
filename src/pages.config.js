@@ -22,6 +22,7 @@ import Settings from './pages/Settings';
 import BecomePartner from './pages/BecomePartner';
 import PartnerChallenges from './pages/PartnerChallenges';
 import PartnerExperiences from './pages/PartnerExperiences';
+import CommunityChat from './pages/CommunityChat';
 import __Layout from './Layout.jsx';
 
 
@@ -50,6 +51,7 @@ export const PAGES = {
     "BecomePartner": BecomePartner,
     "PartnerChallenges": PartnerChallenges,
     "PartnerExperiences": PartnerExperiences,
+    "CommunityChat": CommunityChat,
 }
 
 export const pagesConfig = {
