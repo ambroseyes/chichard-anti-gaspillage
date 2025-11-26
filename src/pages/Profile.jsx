@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from 'sonner';
 import SavingsCounter from '@/components/ui/SavingsCounter';
 import BadgeDisplay from '@/components/gamification/BadgeDisplay';
+import CommunityBadges from '@/components/gamification/CommunityBadges';
 
 const ecoLevels = {
   debutant: { name: 'Débutant', icon: '🌱', color: 'from-gray-400 to-gray-500' },
