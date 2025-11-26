@@ -20,6 +20,8 @@ import LoyaltyProgram from './pages/LoyaltyProgram';
 import DriverDashboard from './pages/DriverDashboard';
 import Settings from './pages/Settings';
 import BecomePartner from './pages/BecomePartner';
+import PartnerChallenges from './pages/PartnerChallenges';
+import PartnerExperiences from './pages/PartnerExperiences';
 import __Layout from './Layout.jsx';
 
 
@@ -46,6 +48,8 @@ export const PAGES = {
     "DriverDashboard": DriverDashboard,
     "Settings": Settings,
     "BecomePartner": BecomePartner,
+    "PartnerChallenges": PartnerChallenges,
+    "PartnerExperiences": PartnerExperiences,
 }
 
 export const pagesConfig = {

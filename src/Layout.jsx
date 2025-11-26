@@ -19,8 +19,10 @@ import {
   ChefHat,
   TrendingUp,
   Crown,
-  Flame
+  Flame,
+  Ticket
 } from 'lucide-react';
+import GlobalSearch from '@/components/search/GlobalSearch';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from 'framer-motion';
@@ -29,6 +31,7 @@ export default function Layout({ children, currentPageName }) {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -64,9 +67,9 @@ export default function Layout({ children, currentPageName }) {
   const partnerNavItems = [
     { name: 'PartnerDashboard', icon: BarChart3, label: 'Tableau de bord' },
     { name: 'PartnerProducts', icon: Package, label: 'Produits' },
-    { name: 'PartnerStats', icon: TrendingUp, label: 'Statistiques' },
+    { name: 'PartnerChallenges', icon: Flame, label: 'Défis' },
+    { name: 'PartnerExperiences', icon: Ticket, label: 'Expériences' },
     { name: 'StockGuardian', icon: Leaf, label: 'StockGuardian' },
-    { name: 'Settings', icon: Store, label: 'Paramètres' },
   ];
 
   const driverNavItems = [
@@ -176,6 +179,9 @@ export default function Layout({ children, currentPageName }) {
           </Link>
 
           <div className="flex items-center gap-2">
+            <button onClick={() => setShowSearch(true)} className="p-2">
+              <Search className="w-6 h-6 text-gray-600" />
+            </button>
             <Link to={createPageUrl('Cart')} className="relative p-2">
               <ShoppingCart className="w-6 h-6 text-gray-600" />
               {cartCount > 0 && (
@@ -190,6 +196,9 @@ export default function Layout({ children, currentPageName }) {
           </div>
         </div>
       </header>
+
+      {/* Global Search */}
+      <GlobalSearch isOpen={showSearch} onClose={() => setShowSearch(false)} />
 
       {/* Mobile Menu Overlay */}
       <AnimatePresence>
