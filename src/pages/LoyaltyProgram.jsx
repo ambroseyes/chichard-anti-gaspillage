@@ -6,8 +6,9 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
   Crown, Gift, Star, TrendingUp, Zap, Truck, Percent,
-  Award, ChevronRight, Lock, Check, Sparkles, ShoppingBag
+  Award, ChevronRight, Lock, Check, Sparkles, ShoppingBag, ChefHat
 } from 'lucide-react';
+import ExperienceRewards from '@/components/loyalty/ExperienceRewards';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,7 @@ const tiers = [
   { id: 'silver', name: 'Argent', minPoints: 1000, color: 'from-gray-400 to-gray-500', icon: '🥈', multiplier: 1.25 },
   { id: 'gold', name: 'Or', minPoints: 5000, color: 'from-yellow-400 to-amber-500', icon: '🥇', multiplier: 1.5 },
   { id: 'platinum', name: 'Platine', minPoints: 15000, color: 'from-purple-400 to-indigo-500', icon: '💎', multiplier: 2 },
+  { id: 'diamond', name: 'Diamant', minPoints: 50000, color: 'from-cyan-400 to-blue-500', icon: '👑', multiplier: 3 },
 ];
 
 const defaultRewards = [
@@ -184,10 +186,14 @@ export default function LoyaltyProgram() {
         </Card>
 
         <Tabs defaultValue="rewards">
-          <TabsList className="mb-6">
+          <TabsList className="mb-6 flex-wrap">
             <TabsTrigger value="rewards">
               <Gift className="w-4 h-4 mr-2" />
               Récompenses
+            </TabsTrigger>
+            <TabsTrigger value="experiences">
+              <ChefHat className="w-4 h-4 mr-2" />
+              Expériences
             </TabsTrigger>
             <TabsTrigger value="history">
               <TrendingUp className="w-4 h-4 mr-2" />
@@ -279,6 +285,10 @@ export default function LoyaltyProgram() {
                 </div>
               )}
             </Card>
+          </TabsContent>
+
+          <TabsContent value="experiences">
+            <ExperienceRewards user={user} />
           </TabsContent>
 
           <TabsContent value="earn">
