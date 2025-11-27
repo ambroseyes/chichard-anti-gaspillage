@@ -8,7 +8,7 @@ import {
   Crown, Gift, Star, TrendingUp, Zap, Truck, Percent,
   Award, ChevronRight, Lock, Check, Sparkles, ShoppingBag, ChefHat
 } from 'lucide-react';
-import ExperienceRewards from '@/components/loyalty/ExperienceRewards';
+import ExperienceBookingSection from '@/components/loyalty/ExperienceBooking';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -288,7 +288,7 @@ export default function LoyaltyProgram() {
           </TabsContent>
 
           <TabsContent value="experiences">
-            <ExperienceRewards user={user} />
+            <ExperienceBookingSection user={user} userPoints={userPoints} userTier={currentTier.id} />
           </TabsContent>
 
           <TabsContent value="earn">

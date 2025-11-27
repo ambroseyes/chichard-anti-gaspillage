@@ -23,6 +23,7 @@ import BecomePartner from './pages/BecomePartner';
 import PartnerChallenges from './pages/PartnerChallenges';
 import PartnerExperiences from './pages/PartnerExperiences';
 import CommunityChat from './pages/CommunityChat';
+import Notifications from './pages/Notifications';
 import __Layout from './Layout.jsx';
 
 
@@ -52,6 +53,7 @@ export const PAGES = {
     "PartnerChallenges": PartnerChallenges,
     "PartnerExperiences": PartnerExperiences,
     "CommunityChat": CommunityChat,
+    "Notifications": Notifications,
 }
 
 export const pagesConfig = {

@@ -21,7 +21,8 @@ import {
   Crown,
   Flame,
   Ticket,
-  MessageCircle
+  MessageCircle,
+  Bell
 } from 'lucide-react';
 import GlobalSearch from '@/components/search/GlobalSearch';
 import { Badge } from "@/components/ui/badge";
@@ -52,7 +53,15 @@ export default function Layout({ children, currentPageName }) {
     enabled: !!user,
   });
 
+  const { data: notifications = [] } = useQuery({
+    queryKey: ['notifications-count', user?.email],
+    queryFn: () => user ? base44.entities.Notification.filter({ user_email: user.email, is_read: false }) : [],
+    enabled: !!user,
+    refetchInterval: 10000,
+  });
+
   const cartCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+  const unreadCount = notifications.length;
 
   const isPartnerPage = currentPageName?.startsWith('Partner') || currentPageName === 'StockGuardian';
   const hideNav = ['Onboarding'].includes(currentPageName);
@@ -145,15 +154,23 @@ export default function Layout({ children, currentPageName }) {
 
             <div className="flex items-center gap-3">
               {user ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => base44.auth.logout()}
-                  className="text-gray-500"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Déconnexion
-                </Button>
+                <>
+                  <Link to={createPageUrl('Notifications')} className="relative p-2 text-gray-500 hover:bg-gray-50 rounded-full">
+                    <Bell className="w-5 h-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                    )}
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => base44.auth.logout()}
+                    className="text-gray-500"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Déconnexion
+                  </Button>
+                </>
               ) : (
                 <Button
                   onClick={() => base44.auth.redirectToLogin()}

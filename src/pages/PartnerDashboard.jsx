@@ -21,8 +21,7 @@ import {
   PieChart, Pie, Cell
 } from 'recharts';
 import BulkProductManager from '@/components/partner/BulkProductManager';
-import LowStockAlerts from '@/components/partner/LowStockAlerts';
-import BundleSuggestions from '@/components/partner/BundleSuggestions';
+import AdvancedStockManager from '@/components/partner/AdvancedStockManager';
 
 export default function PartnerDashboard() {
   const [user, setUser] = useState(null);
@@ -238,14 +237,9 @@ export default function PartnerDashboard() {
           </div>
         </Card>
 
-        {/* Low Stock Alerts */}
+        {/* Advanced Stock Manager */}
         <Card className="p-6">
-          <LowStockAlerts products={products} />
-        </Card>
-
-        {/* Bundle Suggestions */}
-        <Card className="p-6">
-          <BundleSuggestions products={products} user={user} />
+          <AdvancedStockManager products={products} user={user} />
         </Card>
 
         {/* Chart */}
