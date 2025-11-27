@@ -21,13 +21,32 @@ export default function AdvancedStockManager({ products, user }) {
   const [showBatchForm, setShowBatchForm] = useState(null);
   const [showAlertSettings, setShowAlertSettings] = useState(false);
   const [reorderSuggestions, setReorderSuggestions] = useState([]);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [alertSettings, setAlertSettings] = useState({
     low_stock_threshold: 5,
     expiration_warning_days: 5,
     critical_expiration_days: 2,
     enable_email_alerts: true,
+    last_alert_date: null
   });
   const queryClient = useQueryClient();
+
+  // Load store settings
+  const { data: store } = useQuery({
+    queryKey: ['store', user?.store_id],
+    queryFn: async () => {
+      if (!user?.store_id) return null;
+      const stores = await base44.entities.Store.filter({ id: user.store_id });
+      return stores[0];
+    },
+    enabled: !!user?.store_id,
+  });
+
+  useEffect(() => {
+    if (store?.stock_alert_settings) {
+      setAlertSettings(prev => ({ ...prev, ...store.stock_alert_settings }));
+    }
+  }, [store]);
 
   const { data: batches = [] } = useQuery({
     queryKey: ['product-batches', user?.store_id],
@@ -44,7 +63,62 @@ export default function AdvancedStockManager({ products, user }) {
     if (products.length > 0 && orders.length > 0) {
       generateReorderSuggestions();
     }
-  }, [products, orders]);
+  }, [products, orders, alertSettings]);
+
+  // Check for email alerts
+  useEffect(() => {
+    const checkAndSendAlerts = async () => {
+      if (!alertSettings.enable_email_alerts || !user?.email || !store) return;
+
+      // Don't send if sent recently (within 24h)
+      if (alertSettings.last_alert_date) {
+        const lastAlert = new Date(alertSettings.last_alert_date);
+        if ((new Date() - lastAlert) < 86400000) return;
+      }
+
+      if (reorderSuggestions.length > 0 && reorderSuggestions.some(s => s.urgency === 'critical')) {
+        const criticalItems = reorderSuggestions.filter(s => s.urgency === 'critical');
+        
+        await base44.integrations.Core.SendEmail({
+          to: user.email,
+          subject: `⚠️ Alerte Stock Critique - ${store.name}`,
+          body: `Attention, ${criticalItems.length} produits nécessitent une attention immédiate :\n\n` +
+            criticalItems.map(item => 
+              `- ${item.product.name}: ${item.daysToExpire}j avant expiration, ${item.product.quantity_available} en stock`
+            ).join('\n') +
+            `\n\nConnectez-vous à votre espace partenaire pour gérer ces alertes.`
+        });
+
+        // Update last alert date
+        const newSettings = { ...alertSettings, last_alert_date: new Date().toISOString() };
+        await base44.entities.Store.update(store.id, {
+          stock_alert_settings: newSettings
+        });
+        setAlertSettings(newSettings);
+        toast.success('Rapport d\'alerte envoyé par email');
+      }
+    };
+
+    if (reorderSuggestions.length > 0) {
+      checkAndSendAlerts();
+    }
+  }, [reorderSuggestions, alertSettings.enable_email_alerts]);
+
+  const saveSettings = async () => {
+    if (!store) return;
+    setIsSavingSettings(true);
+    try {
+      await base44.entities.Store.update(store.id, {
+        stock_alert_settings: alertSettings
+      });
+      toast.success('Paramètres sauvegardés');
+      setShowAlertSettings(false);
+    } catch (e) {
+      toast.error('Erreur lors de la sauvegarde');
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
 
   const generateReorderSuggestions = () => {
     const suggestions = products.map(product => {
@@ -62,14 +136,24 @@ export default function AdvancedStockManager({ products, user }) {
       // Days until expiration
       const daysToExpire = Math.ceil((new Date(product.expiration_date) - new Date()) / 86400000);
       
-      // Suggest reorder if stock will run out before typical delivery time (7 days)
-      const needsReorder = daysOfStock < 7 && daysOfStock < daysToExpire;
+      // Suggest reorder based on thresholds
+      const needsReorder = daysOfStock < 7 || 
+                          product.quantity_available <= alertSettings.low_stock_threshold ||
+                          daysToExpire <= alertSettings.expiration_warning_days;
       
       // Calculate optimal reorder quantity (14 days of stock)
       const suggestedQuantity = Math.ceil(dailyVelocity * 14) - product.quantity_available;
       
       // Optimal restock date
       const optimalRestockDate = addDays(new Date(), Math.max(0, daysOfStock - 3));
+
+      // Determine urgency
+      let urgency = 'normal';
+      if (daysToExpire <= alertSettings.critical_expiration_days || product.quantity_available === 0) {
+        urgency = 'critical';
+      } else if (daysToExpire <= alertSettings.expiration_warning_days || product.quantity_available <= alertSettings.low_stock_threshold) {
+        urgency = 'high';
+      }
 
       return {
         product,
@@ -79,11 +163,18 @@ export default function AdvancedStockManager({ products, user }) {
         needsReorder,
         suggestedQuantity: Math.max(0, suggestedQuantity),
         optimalRestockDate,
-        urgency: daysOfStock <= 3 ? 'critical' : daysOfStock <= 7 ? 'high' : 'normal'
+        urgency
       };
-    }).filter(s => s.needsReorder || s.daysToExpire <= alertSettings.expiration_warning_days);
+    }).filter(s => s.needsReorder);
 
-    setReorderSuggestions(suggestions.sort((a, b) => a.daysOfStock - b.daysOfStock));
+    setReorderSuggestions(suggestions.sort((a, b) => {
+      // Sort by urgency then by days of stock
+      const urgencyScore = { critical: 0, high: 1, normal: 2 };
+      if (urgencyScore[a.urgency] !== urgencyScore[b.urgency]) {
+        return urgencyScore[a.urgency] - urgencyScore[b.urgency];
+      }
+      return a.daysOfStock - b.daysOfStock;
+    }));
   };
 
   const createBatchMutation = useMutation({
@@ -333,10 +424,8 @@ export default function AdvancedStockManager({ products, user }) {
                 })}
               />
             </div>
-            <Button onClick={() => {
-              toast.success('Paramètres sauvegardés');
-              setShowAlertSettings(false);
-            }} className="w-full">
+            <Button onClick={saveSettings} disabled={isSavingSettings} className="w-full">
+              {isSavingSettings ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Enregistrer
             </Button>
           </div>
