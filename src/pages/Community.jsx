@@ -14,11 +14,14 @@ import LeaderboardCard from '@/components/gamification/LeaderboardCard';
 import ChallengeCard from '@/components/gamification/ChallengeCard';
 import ZeroWasteTips from '@/components/community/ZeroWasteTips';
 import EnhancedDirectMessages from '@/components/community/EnhancedDirectMessages';
+import ContentSubmissionModal from '@/components/community/ContentSubmissionModal';
+import ForumSection from '@/components/community/ForumSection';
 import { toast } from 'sonner';
 
 export default function Community() {
   const [user, setUser] = useState(null);
   const [showCreatePost, setShowCreatePost] = useState(false);
+  const [showSubmissionModal, setShowSubmissionModal] = useState(false);
   const [activeTab, setActiveTab] = useState('feed');
   const queryClient = useQueryClient();
 
@@ -122,6 +125,10 @@ export default function Community() {
               <Mail className="w-4 h-4 mr-2" />
               Messages
             </TabsTrigger>
+            <TabsTrigger value="forum" className="flex-1 md:flex-none">
+              <Users className="w-4 h-4 mr-2" />
+              Entraide
+            </TabsTrigger>
             <TabsTrigger value="challenges" className="flex-1 md:flex-none">
               <Flame className="w-4 h-4 mr-2" />
               Défis
@@ -144,6 +151,11 @@ export default function Community() {
             <div className="max-w-4xl mx-auto">
               <EnhancedDirectMessages user={user} />
             </div>
+          </TabsContent>
+
+          {/* Forum Tab */}
+          <TabsContent value="forum">
+            <ForumSection user={user} />
           </TabsContent>
 
           {/* Feed Tab */}
@@ -172,6 +184,18 @@ export default function Community() {
                         <Plus className="w-4 h-4" />
                       </Button>
                     </button>
+                    
+                    <div className="flex justify-end gap-2 px-2">
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                            onClick={() => setShowSubmissionModal(true)}
+                        >
+                            <Sparkles className="w-4 h-4 mr-2" />
+                            Proposer une recette / astuce
+                        </Button>
+                    </div>
                   </motion.div>
                 )}
 
@@ -240,6 +264,16 @@ export default function Community() {
         onClose={() => setShowCreatePost(false)}
         user={user}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ['social-posts'] })}
+      />
+
+      {/* Content Submission Modal */}
+      <ContentSubmissionModal
+        open={showSubmissionModal}
+        onClose={() => setShowSubmissionModal(false)}
+        user={user}
+        onSuccess={() => {
+            // Invalidate queries if needed
+        }}
       />
     </div>
   );

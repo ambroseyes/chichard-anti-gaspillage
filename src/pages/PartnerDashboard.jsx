@@ -22,6 +22,8 @@ import {
 } from 'recharts';
 import BulkProductManager from '@/components/partner/BulkProductManager';
 import AdvancedStockManager from '@/components/partner/AdvancedStockManager';
+import StockPredictions from '@/components/partner/StockPredictions';
+import SmartBundles from '@/components/partner/SmartBundles';
 
 export default function PartnerDashboard() {
   const [user, setUser] = useState(null);
@@ -236,6 +238,16 @@ export default function PartnerDashboard() {
             </div>
           </div>
         </Card>
+
+        {/* Prediction & Bundling Row */}
+        <div className="grid md:grid-cols-2 gap-6">
+          <Card className="p-6">
+            <StockPredictions products={products} />
+          </Card>
+          <Card className="p-6">
+            <SmartBundles products={products} />
+          </Card>
+        </div>
 
         {/* Advanced Stock Manager */}
         <Card className="p-6">
