@@ -18,7 +18,7 @@ import SavingsCounter from '@/components/ui/SavingsCounter';
 import BadgeDisplay from '@/components/gamification/BadgeDisplay';
 import CommunityBadges from '@/components/gamification/CommunityBadges';
 import ReferralSystem from '@/components/gamification/ReferralSystem';
-import { Lightbulb, Heart, Star, TrendingUp } from 'lucide-react';
+import { Lightbulb, Heart, Star } from 'lucide-react';
 
 // Badge mapping for featured display
 const badgeIcons = {
