@@ -17,7 +17,8 @@ import { toast } from 'sonner';
 import SavingsCounter from '@/components/ui/SavingsCounter';
 import BadgeDisplay from '@/components/gamification/BadgeDisplay';
 import CommunityBadges from '@/components/gamification/CommunityBadges';
-import { Lightbulb, Heart, Star } from 'lucide-react';
+import ReferralSystem from '@/components/gamification/ReferralSystem';
+import { Lightbulb, Heart, Star, TrendingUp } from 'lucide-react';
 
 // Badge mapping for featured display
 const badgeIcons = {
@@ -118,12 +119,29 @@ export default function Profile() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 -mt-4 space-y-6">
-        {/* Stats */}
-        <SavingsCounter 
-          totalSavings={user.total_savings || 0}
-          wasteAvoided={user.waste_avoided_kg || 0}
-          ecoLevel={user.eco_level || 'debutant'}
-        />
+        {/* Stats & Progression */}
+        <div className="space-y-2">
+            <SavingsCounter 
+            totalSavings={user.total_savings || 0}
+            wasteAvoided={user.waste_avoided_kg || 0}
+            ecoLevel={user.eco_level || 'debutant'}
+            />
+            
+            {/* Next Level Progression */}
+            <Card className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-100">
+                <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-emerald-600" />
+                        <span className="text-sm font-semibold text-emerald-800">Prochaine étape: Éco-Héros</span>
+                    </div>
+                    <span className="text-xs font-bold text-emerald-600">75%</span>
+                </div>
+                <div className="w-full bg-emerald-200 rounded-full h-2 mb-2">
+                    <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '75%' }}></div>
+                </div>
+                <p className="text-xs text-emerald-600">Plus que 250 points pour atteindre le niveau supérieur !</p>
+            </Card>
+        </div>
 
         {/* Quick stats */}
         <div className="grid grid-cols-2 gap-4">

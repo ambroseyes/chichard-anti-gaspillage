@@ -218,6 +218,37 @@ export default function WeeklyChallenges() {
         )}
 
         <Tabs defaultValue="weekly">
+        {/* Community Goal Banner */}
+        <Card className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-6 mb-8 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <Users className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold">Objectif Communautaire: Semaine Sans Gaspi</h3>
+                  <p className="text-indigo-100 text-sm">Objectif: Sauver 500kg de nourriture collectivement</p>
+                </div>
+              </div>
+              <Badge className="bg-white text-indigo-600">En cours</Badge>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm font-medium">
+                <span>Progression actuelle: 342kg</span>
+                <span>68%</span>
+              </div>
+              <Progress value={68} className="h-3 bg-indigo-800/50" />
+              <p className="text-xs text-indigo-200 mt-2">
+                Participez en sauvant des paniers ou en partageant vos astuces zéro déchet !
+              </p>
+            </div>
+          </div>
+        </Card>
+
+        <Tabs defaultValue="weekly">
           <TabsList className="mb-6 flex-wrap">
             <TabsTrigger value="weekly">
               <Flame className="w-4 h-4 mr-2" />

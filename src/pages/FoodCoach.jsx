@@ -7,8 +7,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import {
   ChefHat, Clock, Users, Sparkles, Refrigerator, AlertTriangle,
-  BookOpen, Heart, Share2, ShoppingCart, Loader2, ArrowRight
+  BookOpen, Heart, Share2, ShoppingCart, Loader2, ArrowRight,
+  Calendar, Search
 } from 'lucide-react';
+import MealPlanner from '@/components/ai/MealPlanner';
+import RecipeAnalyzer from '@/components/ai/RecipeAnalyzer';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -217,6 +220,14 @@ Réponds en français avec ce format JSON exact:`,
                 Ma recette IA
               </TabsTrigger>
             )}
+            <TabsTrigger value="planner">
+              <Calendar className="w-4 h-4 mr-2" />
+              Planning Repas
+            </TabsTrigger>
+            <TabsTrigger value="analyzer">
+              <Search className="w-4 h-4 mr-2" />
+              Analyse & Alternatives
+            </TabsTrigger>
           </TabsList>
 
           {/* Suggestions Tab */}
@@ -386,6 +397,16 @@ Réponds en français avec ce format JSON exact:`,
                 </Card>
               </motion.div>
             )}
+          </TabsContent>
+
+          {/* Meal Planner Tab */}
+          <TabsContent value="planner">
+            <MealPlanner user={user} />
+          </TabsContent>
+
+          {/* Recipe Analyzer Tab */}
+          <TabsContent value="analyzer">
+            <RecipeAnalyzer />
           </TabsContent>
         </Tabs>
       </div>

@@ -9,8 +9,11 @@ import { fr } from 'date-fns/locale';
 import {
   Package, TrendingUp, Leaf, AlertTriangle, Plus,
   BarChart3, Clock, CheckCircle, ArrowUpRight, Sparkles,
-  DollarSign, Zap, Target, RefreshCw
+  DollarSign, Zap, Target, RefreshCw, PieChart as PieChartIcon
 } from 'lucide-react';
+import SalesForecast from '@/components/partner/SalesForecast';
+import BundlingAnalysis from '@/components/partner/BundlingAnalysis';
+import CustomKPIs from '@/components/partner/CustomKPIs';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -130,63 +133,8 @@ export default function PartnerDashboard() {
           </motion.div>
         )}
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="p-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-100 rounded-full -translate-y-1/2 translate-x-1/2 opacity-50" />
-            <div className="relative">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 bg-emerald-100 rounded-xl">
-                  <Package className="w-5 h-5 text-emerald-600" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{activeProducts}</p>
-              <p className="text-sm text-gray-500">Produits actifs</p>
-            </div>
-          </Card>
-
-          <Card className="p-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-orange-100 rounded-full -translate-y-1/2 translate-x-1/2 opacity-50" />
-            <div className="relative">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 bg-orange-100 rounded-xl">
-                  <Clock className="w-5 h-5 text-orange-600" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{urgentProducts.length}</p>
-              <p className="text-sm text-gray-500">Urgents (-3j)</p>
-              {urgentProducts.length > 0 && (
-                <Badge className="mt-2 bg-orange-100 text-orange-700 text-xs">Action requise</Badge>
-              )}
-            </div>
-          </Card>
-
-          <Card className="p-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-blue-100 rounded-full -translate-y-1/2 translate-x-1/2 opacity-50" />
-            <div className="relative">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 bg-blue-100 rounded-xl">
-                  <TrendingUp className="w-5 h-5 text-blue-600" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{totalRevenue.toLocaleString()}</p>
-              <p className="text-sm text-gray-500">FCFA récupérés</p>
-            </div>
-          </Card>
-
-          <Card className="p-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-teal-100 rounded-full -translate-y-1/2 translate-x-1/2 opacity-50" />
-            <div className="relative">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 bg-teal-100 rounded-xl">
-                  <Leaf className="w-5 h-5 text-teal-600" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{totalSaved}</p>
-              <p className="text-sm text-gray-500">Produits sauvés</p>
-            </div>
-          </Card>
-        </div>
+        {/* Custom KPIs */}
+        <CustomKPIs />
 
         {/* StockGuardian Quick Insights */}
         <Card className="p-6 bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-200">
@@ -254,39 +202,15 @@ export default function PartnerDashboard() {
           <AdvancedStockManager products={products} user={user} />
         </Card>
 
-        {/* Chart */}
-        <Card className="p-6">
-          <h2 className="font-semibold mb-4">Évolution des ventes (7 derniers jours)</h2>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} />
-                <YAxis stroke="#9ca3af" fontSize={12} />
-                <Tooltip />
-                <Line 
-                  name="Ventes Réelles"
-                  type="monotone" 
-                  dataKey="ventes" 
-                  stroke="#10b981" 
-                  strokeWidth={2}
-                  dot={{ fill: '#10b981' }}
-                />
-                {/* Predictive line (visual only for demo) */}
-                <Line 
-                  name="Prédiction IA"
-                  type="monotone" 
-                  dataKey="ventes" 
-                  stroke="#8b5cf6" 
-                  strokeWidth={2}
-                  strokeDasharray="5 5"
-                  data={chartData.map(d => ({...d, ventes: d.ventes * 1.1}))} // Simple visual projection
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
+        {/* Forecast & Bundling Row */}
+        <div className="grid md:grid-cols-2 gap-6">
+            <Card className="p-6">
+                <SalesForecast />
+            </Card>
+            <Card className="p-6">
+                <BundlingAnalysis />
+            </Card>
+        </div>
 
         {/* Recent Products */}
         <Card className="p-6">
