@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
@@ -30,6 +30,7 @@ import SmartBundles from '@/components/partner/SmartBundles';
 
 export default function PartnerDashboard() {
   const [user, setUser] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const loadUser = async () => {
@@ -37,7 +38,7 @@ export default function PartnerDashboard() {
         const userData = await base44.auth.me();
         setUser(userData);
         if (!userData.is_partner) {
-          window.location.href = createPageUrl('Home');
+          navigate(createPageUrl('Home'));
         }
       } catch (e) {
         base44.auth.redirectToLogin();

@@ -7,8 +7,10 @@ import { motion } from 'framer-motion';
 import { 
   ArrowLeft, Clock, MapPin, ShoppingCart, Plus, Minus, 
   CheckCircle, Shield, Truck, Store, Share2, Heart, Star,
-  Leaf, AlertTriangle
+  Leaf, AlertTriangle, Flag
 } from 'lucide-react';
+import ReportModal from '@/components/safety/ReportModal';
+import TrustBadge from '@/components/safety/TrustBadge';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -130,6 +132,11 @@ export default function ProductDetail() {
             <span className="hidden md:inline">Retour</span>
           </Link>
           <div className="flex items-center gap-2">
+            <ReportModal 
+              entityType="product" 
+              entityId={product.id} 
+              entityName={product.name}
+            />
             <Button variant="ghost" size="icon">
               <Share2 className="w-5 h-5" />
             </Button>
@@ -230,19 +237,28 @@ export default function ProductDetail() {
             )}
 
             {/* Trust badges */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="bg-white rounded-xl p-3 text-center border">
-                <Shield className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
-                <span className="text-xs text-gray-600">Vérifié</span>
-              </div>
-              <div className="bg-white rounded-xl p-3 text-center border">
-                <Clock className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
-                <span className="text-xs text-gray-600">Frais garanti</span>
-              </div>
-              <div className="bg-white rounded-xl p-3 text-center border">
-                <Truck className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
-                <span className="text-xs text-gray-600">Retrait rapide</span>
-              </div>
+            <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-2">
+                    <TrustBadge 
+                        verificationStatus={product.is_verified ? 'verified' : 'unverified'} 
+                        trustScore={95} // Mock score for now, would come from store entity
+                        showScore={true}
+                    />
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                <div className="bg-white rounded-xl p-3 text-center border">
+                    <Shield className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
+                    <span className="text-xs text-gray-600">Paiement Sécurisé</span>
+                </div>
+                <div className="bg-white rounded-xl p-3 text-center border">
+                    <Clock className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
+                    <span className="text-xs text-gray-600">Frais garanti</span>
+                </div>
+                <div className="bg-white rounded-xl p-3 text-center border">
+                    <Truck className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
+                    <span className="text-xs text-gray-600">Suivi Livraison</span>
+                </div>
+                </div>
             </div>
 
             {/* Quantity selector */}

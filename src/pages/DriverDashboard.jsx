@@ -28,6 +28,7 @@ export default function DriverDashboard() {
   const [signature, setSignature] = useState('');
   const [proofPhoto, setProofPhoto] = useState(null);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const loadUser = async () => {
@@ -35,7 +36,7 @@ export default function DriverDashboard() {
         const userData = await base44.auth.me();
         setUser(userData);
         if (!userData.is_delivery_driver) {
-          window.location.href = '/';
+          navigate(createPageUrl('Home'));
         }
       } catch (e) {
         base44.auth.redirectToLogin();

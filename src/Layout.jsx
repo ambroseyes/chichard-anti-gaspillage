@@ -4,26 +4,27 @@ import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { 
-  Home, 
-  Search, 
-  ShoppingCart, 
-  User, 
-  Menu,
-  X,
-  Package,
-  Store,
-  BarChart3,
-  LogOut,
-  Leaf,
-  Users,
-  ChefHat,
-  TrendingUp,
-  Crown,
-  Flame,
-  Ticket,
-  MessageCircle,
-  Bell
-} from 'lucide-react';
+        Home, 
+        Search, 
+        ShoppingCart, 
+        User, 
+        Menu,
+        X,
+        Package,
+        Store,
+        BarChart3,
+        LogOut,
+        Leaf,
+        Users,
+        ChefHat,
+        TrendingUp,
+        Crown,
+        Flame,
+        Ticket,
+        MessageCircle,
+        Bell,
+        Truck
+      } from 'lucide-react';
 import GlobalSearch from '@/components/search/GlobalSearch';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -74,12 +75,21 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Cart', icon: ShoppingCart, label: 'Panier', badge: cartCount },
   ];
 
+  // RBAC: Add Dashboard links if user has role but is on main nav
+  if (user?.is_partner && !mainNavItems.find(i => i.name === 'PartnerDashboard')) {
+      mainNavItems.splice(1, 0, { name: 'PartnerDashboard', icon: BarChart3, label: 'Espace Partenaire' });
+  }
+  if (user?.is_delivery_driver && !mainNavItems.find(i => i.name === 'DriverDashboard')) {
+      mainNavItems.splice(1, 0, { name: 'DriverDashboard', icon: Truck, label: 'Espace Livreur' });
+  }
+
   const partnerNavItems = [
     { name: 'PartnerDashboard', icon: BarChart3, label: 'Tableau de bord' },
     { name: 'PartnerProducts', icon: Package, label: 'Produits' },
     { name: 'PartnerChallenges', icon: Flame, label: 'Défis' },
     { name: 'PartnerExperiences', icon: Ticket, label: 'Expériences' },
     { name: 'StockGuardian', icon: Leaf, label: 'StockGuardian' },
+    { name: 'Home', icon: Store, label: 'Retour Site' },
   ];
 
   const driverNavItems = [
