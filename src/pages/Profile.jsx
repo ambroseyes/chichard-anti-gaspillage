@@ -235,6 +235,9 @@ export default function Profile() {
           <BadgeDisplay userBadges={user.badges || []} compact />
         </Card>
 
+        {/* Referral System */}
+        <ReferralSystem user={user} />
+
         {/* Community Badges Link */}
         <Link to={createPageUrl('Achievements')}>
             <Card className="p-4 hover:bg-gray-50 transition-colors">
