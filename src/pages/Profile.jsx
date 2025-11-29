@@ -20,7 +20,7 @@ import CommunityBadges from '@/components/gamification/CommunityBadges';
 import ReferralSystem from '@/components/gamification/ReferralSystem';
 import { Lightbulb, Heart, Star } from 'lucide-react';
 
-// Badge mapping for featured display
+// Badge mapping configuration
 const badgeIcons = {
   top_advisor: { icon: Lightbulb, color: 'bg-amber-500' },
   recipe_master: { icon: ChefHat, color: 'bg-pink-500' },

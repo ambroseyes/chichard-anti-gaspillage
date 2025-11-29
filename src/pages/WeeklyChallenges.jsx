@@ -217,7 +217,7 @@ export default function WeeklyChallenges() {
           </Card>
         )}
 
-        {/* Community Goal Banner */}
+        {/* Community Goal Banner Section */}
         <Card className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-6 mb-8 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full -translate-y-1/2 translate-x-1/2" />
           <div className="relative z-10">
