@@ -17,10 +17,7 @@ import { toast } from 'sonner';
 import SavingsCounter from '@/components/ui/SavingsCounter';
 import BadgeDisplay from '@/components/gamification/BadgeDisplay';
 import CommunityBadges from '@/components/gamification/CommunityBadges';
-import { Crown } from 'lucide-react'; // Ensure Crown is imported if used, though I see it in line 9 imports in file content.
-// Actually Crown is already imported in line 9.
-// I need to import the badge icons to display the featured badge.
-import { Lightbulb, Heart, Star } from 'lucide-react'; // Adding potential badge icons for mapping
+import { Lightbulb, Heart, Star } from 'lucide-react';
 
 // Badge mapping for featured display
 const badgeIcons = {
