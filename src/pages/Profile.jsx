@@ -17,6 +17,22 @@ import { toast } from 'sonner';
 import SavingsCounter from '@/components/ui/SavingsCounter';
 import BadgeDisplay from '@/components/gamification/BadgeDisplay';
 import CommunityBadges from '@/components/gamification/CommunityBadges';
+import { Crown } from 'lucide-react'; // Ensure Crown is imported if used, though I see it in line 9 imports in file content.
+// Actually Crown is already imported in line 9.
+// I need to import the badge icons to display the featured badge.
+import { Lightbulb, Heart, Star } from 'lucide-react'; // Adding potential badge icons for mapping
+
+// Badge mapping for featured display
+const badgeIcons = {
+  top_advisor: { icon: Lightbulb, color: 'bg-amber-500' },
+  recipe_master: { icon: ChefHat, color: 'bg-pink-500' },
+  community_star: { icon: Star, color: 'bg-purple-500' },
+  helper: { icon: Heart, color: 'bg-red-500' },
+  influencer: { icon: Users, color: 'bg-emerald-500' },
+  pioneer: { icon: Flame, color: 'bg-orange-500' },
+  champion: { icon: Trophy, color: 'bg-yellow-500' },
+  diamond: { icon: Crown, color: 'bg-blue-500' },
+};
 
 const ecoLevels = {
   debutant: { name: 'Débutant', icon: '🌱', color: 'from-gray-400 to-gray-500' },
@@ -87,9 +103,18 @@ export default function Profile() {
             </div>
             <h1 className="text-2xl font-bold mb-1">{user.full_name}</h1>
             <p className="text-white/80 mb-2">{user.email}</p>
-            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-1.5">
-              <Award className="w-4 h-4" />
-              <span className="text-sm font-medium">{level.name}</span>
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-1.5">
+                <Award className="w-4 h-4" />
+                <span className="text-sm font-medium">{level.name}</span>
+              </div>
+
+              {user.featured_badge && badgeIcons[user.featured_badge] && (
+                <div className={`inline-flex items-center gap-2 ${badgeIcons[user.featured_badge].color} text-white rounded-full px-4 py-1.5 shadow-sm`}>
+                  {React.createElement(badgeIcons[user.featured_badge].icon, { className: "w-4 h-4" })}
+                  <span className="text-sm font-medium">Badge Actif</span>
+                </div>
+              )}
             </div>
           </motion.div>
         </div>
@@ -188,17 +213,30 @@ export default function Profile() {
               <Trophy className="w-5 h-5 text-amber-500" />
               Mes badges
             </h2>
-            <Link to={createPageUrl('Community')} className="text-sm text-emerald-600">
-              Voir tout
+            <Link to={createPageUrl('Achievements')} className="text-sm text-emerald-600">
+              Gérer mes badges
             </Link>
           </div>
           <BadgeDisplay userBadges={user.badges || []} compact />
         </Card>
 
-        {/* Community Badges */}
-        <Card className="p-4">
-          <CommunityBadges userBadges={user.community_badges || []} showAll />
-        </Card>
+        {/* Community Badges Link */}
+        <Link to={createPageUrl('Achievements')}>
+            <Card className="p-4 hover:bg-gray-50 transition-colors">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-amber-100 rounded-full text-amber-600">
+                            <Trophy className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h3 className="font-semibold">Accomplissements & Badges</h3>
+                            <p className="text-sm text-gray-500">Voir votre progression et personnaliser</p>
+                        </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                </div>
+            </Card>
+        </Link>
 
         {/* Actions */}
         <Card className="divide-y">

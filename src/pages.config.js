@@ -24,6 +24,7 @@ import PartnerChallenges from './pages/PartnerChallenges';
 import PartnerExperiences from './pages/PartnerExperiences';
 import CommunityChat from './pages/CommunityChat';
 import Notifications from './pages/Notifications';
+import Achievements from './pages/Achievements';
 import __Layout from './Layout.jsx';
 
 
@@ -54,6 +55,7 @@ export const PAGES = {
     "PartnerExperiences": PartnerExperiences,
     "CommunityChat": CommunityChat,
     "Notifications": Notifications,
+    "Achievements": Achievements,
 }
 
 export const pagesConfig = {

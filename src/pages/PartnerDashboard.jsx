@@ -265,11 +265,23 @@ export default function PartnerDashboard() {
                 <YAxis stroke="#9ca3af" fontSize={12} />
                 <Tooltip />
                 <Line 
+                  name="Ventes Réelles"
                   type="monotone" 
                   dataKey="ventes" 
                   stroke="#10b981" 
                   strokeWidth={2}
                   dot={{ fill: '#10b981' }}
+                />
+                {/* Predictive line (visual only for demo) */}
+                <Line 
+                  name="Prédiction IA"
+                  type="monotone" 
+                  dataKey="ventes" 
+                  stroke="#8b5cf6" 
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  data={chartData.map(d => ({...d, ventes: d.ventes * 1.1}))} // Simple visual projection
+                  dot={false}
                 />
               </LineChart>
             </ResponsiveContainer>
