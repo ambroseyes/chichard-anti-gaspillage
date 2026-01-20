@@ -247,75 +247,17 @@ export default function PartnerDashboard() {
           </Card>
         )}
 
-        {/* StockGuardian Quick Insights */}
-        {visibleWidgets.includes('predictions') && (
-          <Card className="p-6 bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-200">
-            {/* ... existing StockGuardian content ... */}
-          </Card>
-        )}
-
-        {/* Duplicate removed */}
-        <div style={{display: 'none'}}>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl">
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Insights StockGuardian</h3>
-                <p className="text-xs text-gray-500">Recommandations IA en temps réel</p>
-              </div>
-            </div>
-            <Link to={createPageUrl('StockGuardian')}>
-              <Button size="sm" variant="outline" className="border-indigo-300">
-                Voir plus <ArrowUpRight className="w-4 h-4 ml-1" />
-              </Button>
-            </Link>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl p-4">
-              <div className="flex items-center gap-2 text-orange-600 mb-2">
-                <AlertTriangle className="w-4 h-4" />
-                <span className="text-sm font-medium">Risque de pertes</span>
-              </div>
-              <p className="text-xl font-bold text-gray-900">
-                {(urgentProducts.reduce((sum, p) => sum + (p.discounted_price * p.quantity_available), 0)).toLocaleString()} FCFA
-              </p>
-              <p className="text-xs text-gray-500 mt-1">si aucune action dans 72h</p>
-            </div>
-
-            <div className="bg-white rounded-xl p-4">
-              <div className="flex items-center gap-2 text-emerald-600 mb-2">
-                <Target className="w-4 h-4" />
-                <span className="text-sm font-medium">Taux de conversion</span>
-              </div>
-              <p className="text-xl font-bold text-gray-900">73%</p>
-              <Progress value={73} className="h-2 mt-2" />
-            </div>
-
-            <div className="bg-white rounded-xl p-4">
-              <div className="flex items-center gap-2 text-blue-600 mb-2">
-                <Zap className="w-4 h-4" />
-                <span className="text-sm font-medium">Actions suggérées</span>
-              </div>
-              <p className="text-xl font-bold text-gray-900">{urgentProducts.length + 2}</p>
-              <p className="text-xs text-gray-500 mt-1">optimisations disponibles</p>
-            </div>
-          </div>
-        </div>
-
         {/* Prediction & Bundling Row */}
         {(visibleWidgets.includes('predictions') || visibleWidgets.includes('bundles')) && (
           <div className="grid md:grid-cols-2 gap-6">
-          <Card className="p-6">
-            <StockPredictions products={products} />
-          </Card>
-          <Card className="p-6">
-            <SmartBundles products={products} />
+            <Card className="p-6">
+              <StockPredictions products={products} />
             </Card>
-            </div>
-            )}
+            <Card className="p-6">
+              <SmartBundles products={products} />
+            </Card>
+          </div>
+        )}
 
         {/* Advanced Stock Manager */}
         <Card className="p-6">
@@ -335,7 +277,7 @@ export default function PartnerDashboard() {
         {/* Recent Products */}
         {visibleWidgets.includes('products') && (
           <Card className="p-6">
-          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold">Produits récents</h2>
             <Link to={createPageUrl('PartnerProducts')} className="text-emerald-600 text-sm font-medium">
               Voir tout
@@ -406,18 +348,18 @@ export default function PartnerDashboard() {
                 );
               })}
             </div>
-            )}
-            </Card>
-            )}
+          )}
+          </Card>
+        )}
 
-            {/* Widget Customizer */}
-            <WidgetCustomizer
-            open={showCustomizer}
-            onClose={() => setShowCustomizer(false)}
-            dashboardType="partner"
-            preferences={preferences}
-            onSave={(data) => savePrefsMutation.mutate(data)}
-            />
+        {/* Widget Customizer */}
+        <WidgetCustomizer
+          open={showCustomizer}
+          onClose={() => setShowCustomizer(false)}
+          dashboardType="partner"
+          preferences={preferences}
+          onSave={(data) => savePrefsMutation.mutate(data)}
+        />
       </div>
     </div>
   );
