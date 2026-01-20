@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { format, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -248,6 +248,13 @@ export default function PartnerDashboard() {
         )}
 
         {/* StockGuardian Quick Insights */}
+        {visibleWidgets.includes('predictions') && (
+          <Card className="p-6 bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-200">
+            {/* ... existing StockGuardian content ... */}
+          </Card>
+        )}
+
+        {/* Placeholder - to be removed */}
         {visibleWidgets.includes('predictions') && (
           <Card className="p-6 bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-200">
           <div className="flex items-center justify-between mb-4">
