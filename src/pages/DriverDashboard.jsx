@@ -20,6 +20,9 @@ import { toast } from 'sonner';
 import LiveDeliveryMap from '@/components/delivery/LiveDeliveryMap';
 import EnhancedQRScanner from '@/components/delivery/EnhancedQRScanner';
 import DeliveryNotifications from '@/components/delivery/DeliveryNotifications';
+import WidgetCustomizer from '@/components/dashboard/WidgetCustomizer';
+import SmartAlert from '@/components/dashboard/SmartAlert';
+import { BarChart3 } from 'lucide-react';
 
 const statusConfig = {
   confirmed: { label: 'À récupérer', color: 'bg-blue-100 text-blue-700', icon: Package },
@@ -35,6 +38,8 @@ export default function DriverDashboard() {
   const [proofPhoto, setProofPhoto] = useState(null);
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [showMap, setShowMap] = useState(false);
+  const [showCustomizer, setShowCustomizer] = useState(false);
+  const [alerts, setAlerts] = useState([]);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -65,6 +70,34 @@ export default function DriverDashboard() {
     },
     enabled: !!user,
     refetchInterval: 30000,
+  });
+
+  const { data: preferences } = useQuery({
+    queryKey: ['dashboard-preferences', user?.email],
+    queryFn: async () => {
+      const prefs = await base44.entities.DashboardPreference.filter({ 
+        user_email: user.email, 
+        dashboard_type: 'driver' 
+      });
+      return prefs[0];
+    },
+    enabled: !!user
+  });
+
+  const savePrefsMutation = useMutation({
+    mutationFn: async (data) => {
+      if (preferences?.id) {
+        return base44.entities.DashboardPreference.update(preferences.id, data);
+      }
+      return base44.entities.DashboardPreference.create({
+        user_email: user.email,
+        dashboard_type: 'driver',
+        ...data
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboard-preferences'] });
+    }
   });
 
   const updateStatusMutation = useMutation({
@@ -201,6 +234,14 @@ export default function DriverDashboard() {
               <Map className="w-4 h-4 mr-2" />
               {showMap ? 'Masquer' : 'Carte'}
             </Button>
+            <Button 
+              variant="secondary" 
+              size="sm"
+              onClick={() => setShowCustomizer(true)}
+            >
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Personnaliser
+            </Button>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mt-6">
@@ -217,6 +258,11 @@ export default function DriverDashboard() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {/* Smart Alerts */}
+        {visibleWidgets.includes('stats') && alerts.length > 0 && (
+          <SmartAlert alerts={alerts} onDismiss={(id) => setAlerts(alerts.filter(a => a.id !== id))} />
+        )}
+
         {/* Interactive Live Map */}
         {visibleWidgets.includes('map') && showMap && orders.length > 0 && (
           <Card className="p-4">
@@ -337,6 +383,15 @@ export default function DriverDashboard() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Widget Customizer */}
+      <WidgetCustomizer
+        open={showCustomizer}
+        onClose={() => setShowCustomizer(false)}
+        dashboardType="driver"
+        preferences={preferences}
+        onSave={(data) => savePrefsMutation.mutate(data)}
+      />
     </div>
   );
 }
