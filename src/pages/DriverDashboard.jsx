@@ -17,8 +17,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from 'sonner';
-import DeliveryMap from '@/components/delivery/DeliveryMap';
-import QRScanner from '@/components/delivery/QRScanner';
+import LiveDeliveryMap from '@/components/delivery/LiveDeliveryMap';
+import EnhancedQRScanner from '@/components/delivery/EnhancedQRScanner';
 import DeliveryNotifications from '@/components/delivery/DeliveryNotifications';
 
 const statusConfig = {
@@ -112,6 +112,10 @@ export default function DriverDashboard() {
     queryClient.invalidateQueries({ queryKey: ['driver-orders'] });
   };
 
+  const handleRouteOptimize = (route) => {
+    toast.success(`Route optimisée: ${route.length} arrêts`);
+  };
+
   const pendingPickup = orders.filter(o => o.status === 'confirmed');
   const inDelivery = orders.filter(o => o.status === 'ready');
 
@@ -164,14 +168,23 @@ export default function DriverDashboard() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-        {/* Interactive Map */}
+        {/* Interactive Live Map */}
         {showMap && orders.length > 0 && (
           <Card className="p-4">
-            <h2 className="font-semibold mb-3 flex items-center gap-2">
-              <Map className="w-5 h-5 text-blue-500" />
-              Carte des livraisons
-            </h2>
-            <DeliveryMap orders={orders} />
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold flex items-center gap-2">
+                <Map className="w-5 h-5 text-blue-500" />
+                Carte en temps réel
+              </h2>
+              <Badge className="bg-green-100 text-green-700">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-2"></div>
+                Live
+              </Badge>
+            </div>
+            <LiveDeliveryMap 
+              orders={orders} 
+              onRouteOptimize={handleRouteOptimize}
+            />
           </Card>
         )}
 
@@ -225,12 +238,12 @@ export default function DriverDashboard() {
         )}
       </div>
 
-      {/* QR Scanner */}
+      {/* Enhanced QR Scanner */}
       {selectedOrder && (
-        <QRScanner
+        <EnhancedQRScanner
           open={showQRScanner}
           onClose={() => setShowQRScanner(false)}
-          orderId={selectedOrder.id}
+          order={selectedOrder}
           onSuccess={handleQRSuccess}
         />
       )}

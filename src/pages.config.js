@@ -25,6 +25,7 @@ import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import StockGuardian from './pages/StockGuardian';
 import WeeklyChallenges from './pages/WeeklyChallenges';
+import OrderConfirmation from './pages/OrderConfirmation';
 import __Layout from './Layout.jsx';
 
 
@@ -56,6 +57,7 @@ export const PAGES = {
     "Settings": Settings,
     "StockGuardian": StockGuardian,
     "WeeklyChallenges": WeeklyChallenges,
+    "OrderConfirmation": OrderConfirmation,
 }
 
 export const pagesConfig = {
