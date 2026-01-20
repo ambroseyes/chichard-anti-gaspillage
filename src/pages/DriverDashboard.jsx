@@ -8,7 +8,8 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
   Truck, Package, MapPin, Phone, Navigation, CheckCircle,
-  Clock, Camera, FileSignature, AlertTriangle, User, Loader2
+  Clock, Camera, FileSignature, AlertTriangle, User, Loader2,
+  QrCode, Map
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -16,6 +17,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from 'sonner';
+import DeliveryMap from '@/components/delivery/DeliveryMap';
+import QRScanner from '@/components/delivery/QRScanner';
+import DeliveryNotifications from '@/components/delivery/DeliveryNotifications';
 
 const statusConfig = {
   confirmed: { label: 'À récupérer', color: 'bg-blue-100 text-blue-700', icon: Package },
@@ -29,6 +33,8 @@ export default function DriverDashboard() {
   const [showProofModal, setShowProofModal] = useState(false);
   const [signature, setSignature] = useState('');
   const [proofPhoto, setProofPhoto] = useState(null);
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [showMap, setShowMap] = useState(false);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -97,6 +103,15 @@ export default function DriverDashboard() {
     });
   };
 
+  const handleQRSuccess = (code) => {
+    setShowQRScanner(false);
+    setShowProofModal(true);
+  };
+
+  const handleNewOrder = (order) => {
+    queryClient.invalidateQueries({ queryKey: ['driver-orders'] });
+  };
+
   const pendingPickup = orders.filter(o => o.status === 'confirmed');
   const inDelivery = orders.filter(o => o.status === 'ready');
 
@@ -110,17 +125,29 @@ export default function DriverDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <DeliveryNotifications userEmail={user?.email} onNewOrder={handleNewOrder} />
+      
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
         <div className="max-w-4xl mx-auto px-4 py-6">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-white/20 rounded-xl">
-              <Truck className="w-6 h-6" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-white/20 rounded-xl">
+                <Truck className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold">Espace Livreur</h1>
+                <p className="text-blue-100 text-sm">Bonjour, {user.full_name}</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold">Espace Livreur</h1>
-              <p className="text-blue-100 text-sm">Bonjour, {user.full_name}</p>
-            </div>
+            <Button 
+              variant="secondary" 
+              size="sm"
+              onClick={() => setShowMap(!showMap)}
+            >
+              <Map className="w-4 h-4 mr-2" />
+              {showMap ? 'Masquer' : 'Carte'}
+            </Button>
           </div>
 
           <div className="grid grid-cols-2 gap-4 mt-6">
@@ -137,6 +164,17 @@ export default function DriverDashboard() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {/* Interactive Map */}
+        {showMap && orders.length > 0 && (
+          <Card className="p-4">
+            <h2 className="font-semibold mb-3 flex items-center gap-2">
+              <Map className="w-5 h-5 text-blue-500" />
+              Carte des livraisons
+            </h2>
+            <DeliveryMap orders={orders} />
+          </Card>
+        )}
+
         {/* Pending Pickup */}
         {pendingPickup.length > 0 && (
           <section>
@@ -170,7 +208,7 @@ export default function DriverDashboard() {
                   order={order}
                   onComplete={() => {
                     setSelectedOrder(order);
-                    setShowProofModal(true);
+                    setShowQRScanner(true);
                   }}
                 />
               ))}
@@ -186,6 +224,16 @@ export default function DriverDashboard() {
           </Card>
         )}
       </div>
+
+      {/* QR Scanner */}
+      {selectedOrder && (
+        <QRScanner
+          open={showQRScanner}
+          onClose={() => setShowQRScanner(false)}
+          orderId={selectedOrder.id}
+          onSuccess={handleQRSuccess}
+        />
+      )}
 
       {/* Proof of Delivery Modal */}
       <Dialog open={showProofModal} onOpenChange={setShowProofModal}>
