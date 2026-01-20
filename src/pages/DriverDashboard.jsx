@@ -116,6 +116,55 @@ export default function DriverDashboard() {
     toast.success(`Route optimisée: ${route.length} arrêts`);
   };
 
+  // Generate smart alerts for drivers
+  useEffect(() => {
+    if (!orders.length || !preferences) return;
+
+    const newAlerts = [];
+    const config = preferences.alerts_config || {};
+
+    // Urgent deliveries
+    const urgentOrders = orders.filter(o => {
+      const orderTime = new Date(o.created_date);
+      const now = new Date();
+      const minutesPassed = (now - orderTime) / (1000 * 60);
+      return minutesPassed >= (config.urgent_delivery_minutes || 30);
+    });
+
+    if (urgentOrders.length > 0) {
+      newAlerts.push({
+        id: 'urgent_orders',
+        type: 'urgent_delivery',
+        priority: 'critical',
+        title: 'Livraisons urgentes',
+        message: `${urgentOrders.length} commande(s) en attente depuis plus de ${config.urgent_delivery_minutes || 30} min`,
+        action: {
+          label: 'Voir',
+          onClick: () => setSelectedOrder(urgentOrders[0])
+        }
+      });
+    }
+
+    // High volume
+    if (orders.length >= 10) {
+      newAlerts.push({
+        id: 'high_volume',
+        type: 'high_demand',
+        priority: 'medium',
+        title: 'Forte demande',
+        message: `${orders.length} commandes en attente. Optimisez votre itinéraire!`,
+        action: {
+          label: 'Optimiser',
+          onClick: () => setShowMap(true)
+        }
+      });
+    }
+
+    setAlerts(newAlerts);
+  }, [orders, preferences]);
+
+  const visibleWidgets = preferences?.visible_widgets || ['stats', 'map', 'orders', 'earnings'];
+
   const pendingPickup = orders.filter(o => o.status === 'confirmed');
   const inDelivery = orders.filter(o => o.status === 'ready');
 
@@ -169,7 +218,7 @@ export default function DriverDashboard() {
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {/* Interactive Live Map */}
-        {showMap && orders.length > 0 && (
+        {visibleWidgets.includes('map') && showMap && orders.length > 0 && (
           <Card className="p-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-semibold flex items-center gap-2">
