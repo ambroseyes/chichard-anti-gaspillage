@@ -254,9 +254,8 @@ export default function PartnerDashboard() {
           </Card>
         )}
 
-        {/* Placeholder - to be removed */}
-        {visibleWidgets.includes('predictions') && (
-          <Card className="p-6 bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-200">
+        {/* Duplicate removed */}
+        <div style={{display: 'none'}}>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl">
@@ -304,7 +303,7 @@ export default function PartnerDashboard() {
               <p className="text-xs text-gray-500 mt-1">optimisations disponibles</p>
             </div>
           </div>
-        </Card>
+        </div>
 
         {/* Prediction & Bundling Row */}
         {(visibleWidgets.includes('predictions') || visibleWidgets.includes('bundles')) && (
