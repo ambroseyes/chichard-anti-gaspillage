@@ -30,6 +30,9 @@ import BulkProductManager from '@/components/partner/BulkProductManager';
 import AdvancedStockManager from '@/components/partner/AdvancedStockManager';
 import StockPredictions from '@/components/partner/StockPredictions';
 import SmartBundles from '@/components/partner/SmartBundles';
+import AIProductRecommendations from '@/components/partner/AIProductRecommendations';
+import ProductBundleManager from '@/components/partner/ProductBundleManager';
+import PromotionManager from '@/components/partner/PromotionManager';
 
 export default function PartnerDashboard() {
   const [user, setUser] = useState(null);
@@ -234,6 +237,18 @@ export default function PartnerDashboard() {
 
         {/* Custom KPIs */}
         {visibleWidgets.includes('stats') && <CustomKPIs />}
+
+        {/* AI Product Recommendations */}
+        <AIProductRecommendations 
+          storeId={user.store_id} 
+          onAddProduct={(rec) => navigate(createPageUrl('PartnerProducts'))}
+        />
+
+        {/* Product Bundle Manager */}
+        <ProductBundleManager storeEmail={user.email} />
+
+        {/* Promotion Manager */}
+        <PromotionManager storeId={user.store_id} storeEmail={user.email} />
 
         {/* Advanced Sales Chart */}
         {visibleWidgets.includes('revenue') && (
