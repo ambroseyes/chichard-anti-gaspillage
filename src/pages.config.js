@@ -14,6 +14,7 @@ import FoodCoach from './pages/FoodCoach';
 import Home from './pages/Home';
 import LoyaltyProgram from './pages/LoyaltyProgram';
 import Notifications from './pages/Notifications';
+import OrderConfirmation from './pages/OrderConfirmation';
 import Orders from './pages/Orders';
 import PartnerChallenges from './pages/PartnerChallenges';
 import PartnerDashboard from './pages/PartnerDashboard';
@@ -22,11 +23,10 @@ import PartnerProducts from './pages/PartnerProducts';
 import PartnerStats from './pages/PartnerStats';
 import ProductDetail from './pages/ProductDetail';
 import Profile from './pages/Profile';
+import SecurityCenter from './pages/SecurityCenter';
 import Settings from './pages/Settings';
 import StockGuardian from './pages/StockGuardian';
 import WeeklyChallenges from './pages/WeeklyChallenges';
-import OrderConfirmation from './pages/OrderConfirmation';
-import SecurityCenter from './pages/SecurityCenter';
 import __Layout from './Layout.jsx';
 
 
@@ -47,6 +47,7 @@ export const PAGES = {
     "Home": Home,
     "LoyaltyProgram": LoyaltyProgram,
     "Notifications": Notifications,
+    "OrderConfirmation": OrderConfirmation,
     "Orders": Orders,
     "PartnerChallenges": PartnerChallenges,
     "PartnerDashboard": PartnerDashboard,
@@ -55,11 +56,10 @@ export const PAGES = {
     "PartnerStats": PartnerStats,
     "ProductDetail": ProductDetail,
     "Profile": Profile,
+    "SecurityCenter": SecurityCenter,
     "Settings": Settings,
     "StockGuardian": StockGuardian,
     "WeeklyChallenges": WeeklyChallenges,
-    "OrderConfirmation": OrderConfirmation,
-    "SecurityCenter": SecurityCenter,
 }
 
 export const pagesConfig = {

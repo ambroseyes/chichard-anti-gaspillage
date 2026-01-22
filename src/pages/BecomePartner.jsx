@@ -18,6 +18,13 @@ const benefits = [
   { icon: Zap, title: 'IA StockGuardian', desc: 'Optimisez vos prix avec notre assistant intelligent' },
 ];
 
+const steps = [
+  { number: '1', title: 'Créez votre compte', desc: 'Inscription rapide en 2 minutes' },
+  { number: '2', title: 'Ajoutez votre magasin', desc: 'Remplissez les informations de base' },
+  { number: '3', title: 'Validation express', desc: 'Vérification sous 24h' },
+  { number: '4', title: 'Commencez à vendre', desc: 'Ajoutez vos produits instantanément' },
+];
+
 export default function BecomePartner() {
   const [user, setUser] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -71,22 +78,29 @@ export default function BecomePartner() {
               Rejoignez notre réseau de magasins engagés contre le gaspillage alimentaire
               et transformez vos invendus en opportunités.
             </p>
-            {!showForm && (
-              <Button 
-                size="lg" 
-                className="bg-white text-emerald-600 hover:bg-emerald-50"
-                onClick={() => {
-                  if (!user) {
-                    base44.auth.redirectToLogin();
-                  } else {
-                    setShowForm(true);
-                  }
-                }}
-              >
-                {user ? 'Inscrire mon magasin' : 'Se connecter pour commencer'}
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-            )}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              {!showForm && (
+                <>
+                  <Button 
+                    size="lg" 
+                    className="bg-white text-emerald-600 hover:bg-emerald-50"
+                    onClick={() => {
+                      if (!user) {
+                        base44.auth.redirectToLogin();
+                      } else {
+                        setShowForm(true);
+                      }
+                    }}
+                  >
+                    {user ? 'Inscrire mon magasin' : 'Créer mon compte gratuitement'}
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+                  <div className="text-emerald-100 text-sm">
+                    ✓ Sans engagement • ✓ Configuration en 5 min • ✓ 100% gratuit
+                  </div>
+                </>
+              )}
+            </div>
           </motion.div>
         </div>
       </div>
@@ -107,8 +121,35 @@ export default function BecomePartner() {
           </motion.div>
         ) : (
           <>
+            {/* Simple Steps */}
+            <div className="mb-12">
+              <h2 className="text-2xl font-bold text-center mb-3">Inscription simple en 4 étapes</h2>
+              <p className="text-center text-gray-500 mb-8">Démarrez en moins de 5 minutes</p>
+              <div className="grid md:grid-cols-4 gap-4">
+                {steps.map((step, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                  >
+                    <Card className="p-4 text-center relative">
+                      <div className="w-12 h-12 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto mb-3 text-xl font-bold">
+                        {step.number}
+                      </div>
+                      <h3 className="font-semibold text-sm mb-1">{step.title}</h3>
+                      <p className="text-xs text-gray-500">{step.desc}</p>
+                      {idx < steps.length - 1 && (
+                        <ArrowRight className="hidden md:block absolute -right-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" />
+                      )}
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+
             {/* Benefits */}
-            <h2 className="text-2xl font-bold text-center mb-8">Pourquoi nous rejoindre ?</h2>
+            <h2 className="text-2xl font-bold text-center mb-8">Les avantages CHICHARD</h2>
             <div className="grid md:grid-cols-2 gap-6 mb-12">
               {benefits.map((benefit, idx) => (
                 <motion.div
@@ -150,11 +191,36 @@ export default function BecomePartner() {
               </div>
             </Card>
 
+            {/* FAQ Quick */}
+            <Card className="p-6 mb-8">
+              <h3 className="font-bold text-lg mb-4">Questions fréquentes</h3>
+              <div className="space-y-3 text-sm">
+                <div>
+                  <p className="font-semibold text-gray-900">💰 Combien ça coûte ?</p>
+                  <p className="text-gray-600">Inscription 100% gratuite, sans frais cachés.</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">⏱️ Combien de temps pour être validé ?</p>
+                  <p className="text-gray-600">Votre compte est vérifié sous 24h maximum.</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">📱 Besoin d'équipement spécial ?</p>
+                  <p className="text-gray-600">Non, un smartphone suffit pour gérer vos produits.</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">🤝 Engagement requis ?</p>
+                  <p className="text-gray-600">Aucun engagement, arrêtez quand vous voulez.</p>
+                </div>
+              </div>
+            </Card>
+
             {/* CTA */}
-            <div className="text-center">
+            <div className="text-center bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl p-8 text-white">
+              <h3 className="text-2xl font-bold mb-2">Prêt à commencer ?</h3>
+              <p className="text-emerald-100 mb-6">Rejoignez 500+ magasins qui font confiance à CHICHARD</p>
               <Button 
                 size="lg" 
-                className="bg-emerald-500 hover:bg-emerald-600"
+                className="bg-white text-emerald-600 hover:bg-emerald-50"
                 onClick={() => {
                   if (!user) {
                     base44.auth.redirectToLogin();
@@ -163,7 +229,7 @@ export default function BecomePartner() {
                   }
                 }}
               >
-                Commencer maintenant
+                {user ? 'Inscrire mon magasin maintenant' : 'Créer mon compte gratuitement'}
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </div>

@@ -59,80 +59,120 @@ export default function StoreForm({ store, onSuccess, onCancel }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+        <p className="text-sm text-blue-900">
+          <strong>⚡ Astuce :</strong> Remplissez uniquement les champs obligatoires (*) pour une inscription rapide. 
+          Vous pourrez compléter les autres informations plus tard depuis votre tableau de bord.
+        </p>
+      </div>
+
       <div>
-        <Label>Nom du magasin *</Label>
+        <Label className="text-base font-semibold">Nom du magasin *</Label>
         <Input
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          placeholder="Super Marché Express"
+          placeholder="Ex: Super Marché Express, Boulangerie du Coin..."
           required
+          className="mt-1"
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-2 gap-4">
         <div>
-          <Label>Ville *</Label>
+          <Label className="text-base font-semibold">Ville *</Label>
           <Input
             value={formData.city}
             onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-            placeholder="Douala"
+            placeholder="Ex: Douala, Yaoundé..."
             required
+            className="mt-1"
           />
         </div>
         <div>
-          <Label>Téléphone *</Label>
+          <Label className="text-base font-semibold">Téléphone *</Label>
           <Input
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
             placeholder="6XX XX XX XX"
             required
+            className="mt-1"
           />
         </div>
       </div>
 
       <div>
-        <Label>Adresse complète *</Label>
+        <Label className="text-base font-semibold">Adresse complète *</Label>
         <Input
           value={formData.address}
           onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-          placeholder="Rue, quartier..."
+          placeholder="Ex: Avenue de la Liberté, Quartier Akwa..."
           required
+          className="mt-1"
         />
       </div>
 
-      <div>
-        <Label>Email</Label>
-        <Input
-          type="email"
-          value={formData.email}
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          placeholder="contact@magasin.cm"
-        />
+      <div className="border-t pt-4">
+        <p className="text-sm text-gray-500 mb-4">
+          <strong>Informations optionnelles</strong> - Complétez maintenant ou plus tard
+        </p>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <div>
+          <Label>Email de contact</Label>
+          <Input
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            placeholder="contact@magasin.cm"
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <Label>Horaires d'ouverture</Label>
+          <Input
+            value={formData.opening_hours}
+            onChange={(e) => setFormData({ ...formData, opening_hours: e.target.value })}
+            placeholder="Ex: Lun-Sam: 8h-20h"
+            className="mt-1"
+          />
+        </div>
       </div>
 
       <div>
-        <Label>Horaires d'ouverture</Label>
-        <Input
-          value={formData.opening_hours}
-          onChange={(e) => setFormData({ ...formData, opening_hours: e.target.value })}
-          placeholder="Lun-Sam: 8h-20h, Dim: 9h-14h"
-        />
-      </div>
-
-      <div>
-        <Label>Description</Label>
+        <Label>Description du magasin</Label>
         <Textarea
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          placeholder="Présentez votre magasin..."
+          placeholder="Présentez brièvement votre magasin et vos spécialités..."
           rows={3}
+          className="mt-1"
         />
       </div>
 
       <div>
-        <Label>Logo du magasin</Label>
-        <Input type="file" accept="image/*" onChange={(e) => setLogoFile(e.target.files[0])} />
+        <Label>Logo du magasin (optionnel)</Label>
+        <Input 
+          type="file" 
+          accept="image/*" 
+          onChange={(e) => setLogoFile(e.target.files[0])}
+          className="mt-1"
+        />
+        <p className="text-xs text-gray-500 mt-1">Format recommandé : JPG ou PNG, max 2MB</p>
+      </div>
+
+      <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mt-6">
+        <div className="flex items-start gap-3">
+          <div className="text-2xl">✓</div>
+          <div className="flex-1 text-sm">
+            <p className="font-semibold text-emerald-900 mb-1">Validation rapide garantie</p>
+            <p className="text-emerald-700">
+              Votre demande sera examinée sous 24h. Vous recevrez un email de confirmation 
+              dès que votre compte sera activé.
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="flex gap-3 pt-4">
@@ -141,9 +181,18 @@ export default function StoreForm({ store, onSuccess, onCancel }) {
             Annuler
           </Button>
         )}
-        <Button type="submit" disabled={loading} className="flex-1 bg-emerald-500 hover:bg-emerald-600">
-          {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Store className="w-4 h-4 mr-2" />}
-          {store?.id ? 'Mettre à jour' : 'Enregistrer le magasin'}
+        <Button type="submit" disabled={loading} className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-base py-6">
+          {loading ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin mr-2" />
+              Inscription en cours...
+            </>
+          ) : (
+            <>
+              <Store className="w-5 h-5 mr-2" />
+              {store?.id ? 'Mettre à jour' : 'Créer mon compte partenaire'}
+            </>
+          )}
         </Button>
       </div>
     </form>
