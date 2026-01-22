@@ -193,6 +193,19 @@ export default function DriverDashboard() {
       });
     }
 
+    // Daily target progress
+    const targetDeliveries = config.daily_delivery_target || 20;
+    const todayDelivered = 0; // TODO: calculate from delivered orders today
+    if (todayDelivered >= targetDeliveries) {
+      newAlerts.push({
+        id: 'target_reached',
+        type: 'target_reached',
+        priority: 'low',
+        title: '🎉 Objectif atteint!',
+        message: `Vous avez livré ${todayDelivered} commandes aujourd'hui (objectif: ${targetDeliveries})`
+      });
+    }
+
     setAlerts(newAlerts);
   }, [orders, preferences]);
 

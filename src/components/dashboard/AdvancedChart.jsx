@@ -10,9 +10,10 @@ import { BarChart3, LineChart as LineIcon, PieChart as PieIcon, TrendingUp } fro
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 
-export default function AdvancedChart({ data, title, type = 'line', dataKeys = [], period = '7d' }) {
+export default function AdvancedChart({ data, title, type = 'line', dataKeys = [], period = '7d', onPeriodChange }) {
   const [chartType, setChartType] = useState(type);
   const [selectedPeriod, setSelectedPeriod] = useState(period);
+  const [selectedMetric, setSelectedMetric] = useState(dataKeys[0] || '');
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload) return null;
@@ -145,7 +146,10 @@ export default function AdvancedChart({ data, title, type = 'line', dataKeys = [
                 key={p}
                 size="sm"
                 variant={selectedPeriod === p ? 'default' : 'ghost'}
-                onClick={() => setSelectedPeriod(p)}
+                onClick={() => {
+                  setSelectedPeriod(p);
+                  onPeriodChange?.(p);
+                }}
                 className="h-7 px-3"
               >
                 {p}
@@ -180,13 +184,27 @@ export default function AdvancedChart({ data, title, type = 'line', dataKeys = [
         {renderChart()}
       </ResponsiveContainer>
 
-      {/* Stats summary */}
+      {/* Stats summary with trends */}
       <div className="grid grid-cols-3 gap-4 pt-4 border-t">
         {dataKeys.slice(0, 3).map((key, idx) => {
           const total = data.reduce((sum, item) => sum + (item[key] || 0), 0);
           const avg = total / data.length;
+          
+          // Calculate trend
+          const mid = Math.floor(data.length / 2);
+          const firstHalf = data.slice(0, mid).reduce((sum, item) => sum + (item[key] || 0), 0) / mid;
+          const secondHalf = data.slice(mid).reduce((sum, item) => sum + (item[key] || 0), 0) / (data.length - mid);
+          const trend = ((secondHalf - firstHalf) / firstHalf * 100) || 0;
+          const isPositive = trend > 0;
+          
           return (
-            <div key={key} className="text-center">
+            <button 
+              key={key} 
+              onClick={() => setSelectedMetric(key)}
+              className={`text-center p-2 rounded-lg transition-all ${
+                selectedMetric === key ? 'bg-emerald-50 border border-emerald-200' : 'hover:bg-gray-50'
+              }`}
+            >
               <div className="flex items-center justify-center gap-1 mb-1">
                 <div 
                   className="w-2 h-2 rounded-full" 
@@ -195,8 +213,12 @@ export default function AdvancedChart({ data, title, type = 'line', dataKeys = [
                 <p className="text-xs text-gray-600 capitalize">{key}</p>
               </div>
               <p className="text-lg font-bold">{avg.toFixed(0)}</p>
-              <p className="text-xs text-gray-500">Moyenne</p>
-            </div>
+              <div className="flex items-center justify-center gap-1 text-xs">
+                <span className={isPositive ? 'text-green-600' : 'text-red-600'}>
+                  {isPositive ? '↑' : '↓'} {Math.abs(trend).toFixed(1)}%
+                </span>
+              </div>
+            </button>
           );
         })}
       </div>

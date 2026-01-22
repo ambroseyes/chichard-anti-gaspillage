@@ -22,6 +22,7 @@ import { Progress } from "@/components/ui/progress";
 import WidgetCustomizer from '@/components/dashboard/WidgetCustomizer';
 import SmartAlert from '@/components/dashboard/SmartAlert';
 import AdvancedChart from '@/components/dashboard/AdvancedChart';
+import PerformanceMetrics from '@/components/dashboard/PerformanceMetrics';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell
@@ -133,9 +134,30 @@ export default function PartnerDashboard() {
         type: 'low_stock',
         priority: 'high',
         title: 'Stock faible',
-        message: `${lowStock.length} produit(s) ont un stock inférieur au seuil`,
+        message: `${lowStock.length} produit(s) ont un stock inférieur au seuil (${config.low_stock_threshold || 5} unités)`,
         action: {
           label: 'Voir les produits',
+          onClick: () => navigate(createPageUrl('PartnerProducts'))
+        }
+      });
+    }
+
+    // Expiration warning
+    const expiringDays = config.expiration_warning_days || 5;
+    const expiringSoon = products.filter(p => {
+      if (!p.expiration_date || p.status !== 'active') return false;
+      const daysLeft = Math.ceil((new Date(p.expiration_date) - new Date()) / (1000 * 60 * 60 * 24));
+      return daysLeft > 0 && daysLeft <= expiringDays;
+    });
+    if (expiringSoon.length > 0) {
+      newAlerts.push({
+        id: 'expiring_soon',
+        type: 'expiration_warning',
+        priority: 'medium',
+        title: 'Produits à promouvoir',
+        message: `${expiringSoon.length} produit(s) expirent dans moins de ${expiringDays} jours`,
+        action: {
+          label: 'Voir',
           onClick: () => navigate(createPageUrl('PartnerProducts'))
         }
       });
@@ -256,8 +278,9 @@ export default function PartnerDashboard() {
             <AdvancedChart
               title="Performance des ventes"
               data={chartData}
-              dataKeys={['ventes', 'commandes']}
+              dataKeys={['ventes', 'produits', 'commandes']}
               type="line"
+              onPeriodChange={(period) => console.log('Period changed:', period)}
             />
           </Card>
         )}

@@ -9,22 +9,25 @@ import { toast } from 'sonner';
 
 const availableWidgets = {
   partner: [
-    { id: 'stats', name: 'Statistiques globales', icon: '📊' },
-    { id: 'revenue', name: 'Graphique revenus', icon: '💰' },
-    { id: 'products', name: 'Produits récents', icon: '📦' },
-    { id: 'alerts', name: 'Alertes stock', icon: '⚠️' },
-    { id: 'predictions', name: 'Prédictions IA', icon: '🔮' },
-    { id: 'bundles', name: 'Suggestions bundles', icon: '🎁' },
-    { id: 'forecast', name: 'Prévisions ventes', icon: '📈' },
-    { id: 'performance', name: 'Performance produits', icon: '🎯' }
+    { id: 'stats', name: 'Statistiques globales', icon: '📊', description: 'Vue d\'ensemble des métriques clés' },
+    { id: 'revenue', name: 'Graphique revenus', icon: '💰', description: 'Évolution des ventes dans le temps' },
+    { id: 'products', name: 'Produits récents', icon: '📦', description: 'Liste des derniers produits ajoutés' },
+    { id: 'alerts', name: 'Alertes intelligentes', icon: '⚠️', description: 'Notifications basées sur vos seuils' },
+    { id: 'predictions', name: 'Prédictions IA', icon: '🔮', description: 'Prévisions de stock et ventes' },
+    { id: 'bundles', name: 'Suggestions bundles', icon: '🎁', description: 'Recommandations de packs produits' },
+    { id: 'forecast', name: 'Prévisions ventes', icon: '📈', description: 'Tendances futures des ventes' },
+    { id: 'performance', name: 'Performance produits', icon: '🎯', description: 'Analyse des produits performants' },
+    { id: 'recommendations', name: 'Recommandations IA', icon: '✨', description: 'Produits tendance à ajouter' },
+    { id: 'promotions', name: 'Gestion promotions', icon: '🏷️', description: 'Vos promotions actives' }
   ],
   driver: [
-    { id: 'stats', name: 'Statistiques du jour', icon: '📊' },
-    { id: 'map', name: 'Carte interactive', icon: '🗺️' },
-    { id: 'orders', name: 'Liste des commandes', icon: '📋' },
-    { id: 'earnings', name: 'Gains journaliers', icon: '💵' },
-    { id: 'routes', name: 'Optimisation routes', icon: '🛣️' },
-    { id: 'history', name: 'Historique', icon: '📜' }
+    { id: 'stats', name: 'Statistiques du jour', icon: '📊', description: 'Résumé de votre activité' },
+    { id: 'map', name: 'Carte temps réel', icon: '🗺️', description: 'Carte interactive des livraisons' },
+    { id: 'orders', name: 'Liste des commandes', icon: '📋', description: 'Commandes en attente' },
+    { id: 'earnings', name: 'Gains journaliers', icon: '💵', description: 'Revenus du jour' },
+    { id: 'routes', name: 'Optimisation routes', icon: '🛣️', description: 'Itinéraires optimisés' },
+    { id: 'history', name: 'Historique', icon: '📜', description: 'Vos livraisons passées' },
+    { id: 'performance', name: 'Performance', icon: '⭐', description: 'Votre évaluation et statistiques' }
   ]
 };
 
@@ -72,18 +75,31 @@ export default function WidgetCustomizer({ open, onClose, dashboardType, prefere
             <h3 className="font-semibold mb-3">Widgets visibles</h3>
             <div className="grid gap-3">
               {widgets.map((widget) => (
-                <div key={widget.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{widget.icon}</span>
-                    <span className="font-medium">{widget.name}</span>
+                <div 
+                  key={widget.id} 
+                  className={`p-3 border rounded-lg transition-all ${
+                    visibleWidgets.includes(widget.id) ? 'border-emerald-300 bg-emerald-50' : 'border-gray-200'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 flex-1">
+                      <span className="text-2xl">{widget.icon}</span>
+                      <div className="flex-1">
+                        <p className="font-medium">{widget.name}</p>
+                        <p className="text-xs text-gray-500">{widget.description}</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={visibleWidgets.includes(widget.id)}
+                      onCheckedChange={() => toggleWidget(widget.id)}
+                    />
                   </div>
-                  <Switch
-                    checked={visibleWidgets.includes(widget.id)}
-                    onCheckedChange={() => toggleWidget(widget.id)}
-                  />
                 </div>
               ))}
             </div>
+            <p className="text-xs text-gray-500 mt-2">
+              {visibleWidgets.length} widget(s) activé(s)
+            </p>
           </div>
 
           {/* Alerts Configuration */}
@@ -92,20 +108,47 @@ export default function WidgetCustomizer({ open, onClose, dashboardType, prefere
             <div className="space-y-4">
               {dashboardType === 'partner' && (
                 <>
-                  <div>
-                    <Label>Seuil stock faible (unités)</Label>
-                    <Input
-                      type="number"
-                      value={alertsConfig.low_stock_threshold}
-                      onChange={(e) => setAlertsConfig({
-                        ...alertsConfig,
-                        low_stock_threshold: parseInt(e.target.value)
-                      })}
-                      className="mt-1"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="flex items-center gap-2">
+                        Stock faible (unités)
+                        <Badge variant="outline" className="text-xs">⚠️</Badge>
+                      </Label>
+                      <Input
+                        type="number"
+                        value={alertsConfig.low_stock_threshold}
+                        onChange={(e) => setAlertsConfig({
+                          ...alertsConfig,
+                          low_stock_threshold: parseInt(e.target.value)
+                        })}
+                        className="mt-1"
+                        min="1"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Alerte si stock ≤ ce seuil</p>
+                    </div>
+                    <div>
+                      <Label className="flex items-center gap-2">
+                        Jours avant expiration
+                        <Badge variant="outline" className="text-xs">🕐</Badge>
+                      </Label>
+                      <Input
+                        type="number"
+                        value={alertsConfig.expiration_warning_days || 5}
+                        onChange={(e) => setAlertsConfig({
+                          ...alertsConfig,
+                          expiration_warning_days: parseInt(e.target.value)
+                        })}
+                        className="mt-1"
+                        min="1"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Alerte produits expirant bientôt</p>
+                    </div>
                   </div>
                   <div>
-                    <Label>Objectif ventes quotidien (FCFA)</Label>
+                    <Label className="flex items-center gap-2">
+                      Objectif ventes quotidien (FCFA)
+                      <Badge variant="outline" className="text-xs">🎯</Badge>
+                    </Label>
                     <Input
                       type="number"
                       value={alertsConfig.daily_sales_target}
@@ -114,24 +157,52 @@ export default function WidgetCustomizer({ open, onClose, dashboardType, prefere
                         daily_sales_target: parseInt(e.target.value)
                       })}
                       className="mt-1"
+                      step="1000"
                     />
+                    <p className="text-xs text-gray-500 mt-1">Recevez une alerte lorsque cet objectif est atteint</p>
                   </div>
                 </>
               )}
               
               {dashboardType === 'driver' && (
-                <div>
-                  <Label>Livraison urgente (minutes)</Label>
-                  <Input
-                    type="number"
-                    value={alertsConfig.urgent_delivery_minutes}
-                    onChange={(e) => setAlertsConfig({
-                      ...alertsConfig,
-                      urgent_delivery_minutes: parseInt(e.target.value)
-                    })}
-                    className="mt-1"
-                  />
-                </div>
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="flex items-center gap-2">
+                        Livraison urgente (min)
+                        <Badge variant="outline" className="text-xs">⏰</Badge>
+                      </Label>
+                      <Input
+                        type="number"
+                        value={alertsConfig.urgent_delivery_minutes}
+                        onChange={(e) => setAlertsConfig({
+                          ...alertsConfig,
+                          urgent_delivery_minutes: parseInt(e.target.value)
+                        })}
+                        className="mt-1"
+                        min="5"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Alerte si commande en attente ≥ ce délai</p>
+                    </div>
+                    <div>
+                      <Label className="flex items-center gap-2">
+                        Objectif livraisons/jour
+                        <Badge variant="outline" className="text-xs">📦</Badge>
+                      </Label>
+                      <Input
+                        type="number"
+                        value={alertsConfig.daily_delivery_target || 20}
+                        onChange={(e) => setAlertsConfig({
+                          ...alertsConfig,
+                          daily_delivery_target: parseInt(e.target.value)
+                        })}
+                        className="mt-1"
+                        min="1"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Votre objectif quotidien de livraisons</p>
+                    </div>
+                  </div>
+                </>
               )}
 
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
