@@ -49,6 +49,9 @@ export default function PartnerProducts() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState(emptyProduct);
   const [isUploading, setIsUploading] = useState(false);
+  const [showVariantsDialog, setShowVariantsDialog] = useState(false);
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -258,6 +261,29 @@ export default function PartnerProducts() {
                         <p className="text-sm text-gray-500 mb-3">
                           {product.quantity_available} disponibles
                         </p>
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          <ProductCloner product={product} />
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedProduct(product);
+                              setShowVariantsDialog(true);
+                            }}
+                          >
+                            Variantes
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedProduct(product);
+                              setShowHistoryDialog(true);
+                            }}
+                          >
+                            Historique
+                          </Button>
+                        </div>
                         <div className="flex items-center justify-between">
                           <div>
                             <span className="font-bold text-emerald-600">
