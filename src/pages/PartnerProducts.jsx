@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
+import ProductVariantManager from '@/components/products/ProductVariantManager';
+import StockHistoryViewer from '@/components/products/StockHistoryViewer';
+import ProductCloner from '@/components/products/ProductCloner';
 import { format } from 'date-fns';
 import {
   Plus, Search, Edit2, Trash2, Clock, Package,
@@ -429,6 +432,30 @@ export default function PartnerProducts() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Variants Dialog */}
+      <Dialog open={showVariantsDialog} onOpenChange={setShowVariantsDialog}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Variantes - {selectedProduct?.name}</DialogTitle>
+          </DialogHeader>
+          {selectedProduct && (
+            <ProductVariantManager product={selectedProduct} />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Stock History Dialog */}
+      <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Historique du stock - {selectedProduct?.name}</DialogTitle>
+          </DialogHeader>
+          {selectedProduct && (
+            <StockHistoryViewer productId={selectedProduct.id} />
+          )}
         </DialogContent>
       </Dialog>
     </div>
