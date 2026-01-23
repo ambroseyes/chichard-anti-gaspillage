@@ -126,11 +126,30 @@ export default function AdminPartners() {
     }
   };
 
-  const updateStatus = (store, newStatus) => {
+  const updateStatus = (store, newStatus, notes = '') => {
     updateMutation.mutate({ 
       id: store.id, 
       data: { ...store, status: newStatus }
     });
+
+    // Notify partner owner about status change
+    if (store.owner_email) {
+      const statusMessages = {
+        verified: 'Félicitations! Votre boutique a été vérifiée et approuvée.',
+        rejected: 'Votre demande de partenariat a été rejetée. Contactez-nous pour plus d\'informations.',
+        suspended: 'Votre compte partenaire a été suspendu. Veuillez nous contacter.'
+      };
+
+      if (statusMessages[newStatus]) {
+        base44.entities.Notification.create({
+          user_email: store.owner_email,
+          title: `Statut de votre boutique: ${statusConfig[newStatus]?.label}`,
+          message: statusMessages[newStatus],
+          type: 'system',
+          data: { store_id: store.id, new_status: newStatus }
+        });
+      }
+    }
   };
 
   const getStoreStats = (storeId) => {
@@ -145,7 +164,9 @@ export default function AdminPartners() {
   const filteredStores = stores.filter(store => {
     const matchSearch = !searchQuery || 
       store.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      store.city?.toLowerCase().includes(searchQuery.toLowerCase());
+      store.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      store.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      store.address?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchStatus = statusFilter === 'all' || store.status === statusFilter;
     return matchSearch && matchStatus;
   });
@@ -154,7 +175,32 @@ export default function AdminPartners() {
     verified: { label: 'Vérifié', color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle },
     pending: { label: 'En attente', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
     rejected: { label: 'Rejeté', color: 'bg-red-100 text-red-700', icon: AlertCircle },
+    suspended: { label: 'Suspendu', color: 'bg-orange-100 text-orange-700', icon: AlertCircle },
   };
+
+  // Subscription to new partner registrations (for admins)
+  useEffect(() => {
+    if (!user || user.role !== 'admin') return;
+
+    const unsubscribe = base44.entities.Store.subscribe((event) => {
+      if (event.type === 'create' && event.data.status === 'pending') {
+        // Create notification for admin
+        base44.entities.Notification.create({
+          user_email: user.email,
+          title: 'Nouveau partenaire en attente',
+          message: `${event.data.name} a demandé à rejoindre CHICHARD`,
+          type: 'system',
+          action_url: '/AdminPartners',
+          data: { store_id: event.id }
+        });
+        
+        toast.success('Nouveau partenaire en attente de validation');
+        queryClient.invalidateQueries({ queryKey: ['admin-stores'] });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -220,28 +266,51 @@ export default function AdminPartners() {
         </div>
 
         {/* Filters */}
-        <div className="flex gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <Input
-              placeholder="Rechercher un partenaire..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+        <Card className="p-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Input
+                placeholder="Rechercher par nom, ville, email..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Statut" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les statuts</SelectItem>
+                  <SelectItem value="verified">✅ Vérifiés</SelectItem>
+                  <SelectItem value="pending">⏳ En attente</SelectItem>
+                  <SelectItem value="rejected">❌ Rejetés</SelectItem>
+                  <SelectItem value="suspended">⚠️ Suspendus</SelectItem>
+                </SelectContent>
+              </Select>
+              {(searchQuery || statusFilter !== 'all') && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setStatusFilter('all');
+                  }}
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Réinitialiser
+                </Button>
+              )}
+            </div>
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Statut" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous</SelectItem>
-              <SelectItem value="verified">Vérifiés</SelectItem>
-              <SelectItem value="pending">En attente</SelectItem>
-              <SelectItem value="rejected">Rejetés</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+          <div className="flex items-center gap-2 mt-3 text-sm text-gray-600">
+            <span>{filteredStores.length} résultat(s)</span>
+            {searchQuery && <span>• Recherche: "{searchQuery}"</span>}
+            {statusFilter !== 'all' && <span>• Statut: {statusConfig[statusFilter]?.label}</span>}
+          </div>
+        </Card>
 
         {/* Partners List */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -286,10 +355,30 @@ export default function AdminPartners() {
                             <Edit2 className="w-4 h-4 mr-2" />
                             Modifier
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => updateStatus(store, 'verified')}>
-                            <CheckCircle className="w-4 h-4 mr-2 text-emerald-500" />
-                            Vérifier
-                          </DropdownMenuItem>
+                          {store.status === 'pending' && (
+                            <>
+                              <DropdownMenuItem onClick={() => updateStatus(store, 'verified')}>
+                                <CheckCircle className="w-4 h-4 mr-2 text-emerald-500" />
+                                Approuver
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => updateStatus(store, 'rejected')}>
+                                <X className="w-4 h-4 mr-2 text-red-500" />
+                                Rejeter
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          {store.status === 'verified' && (
+                            <DropdownMenuItem onClick={() => updateStatus(store, 'suspended')}>
+                              <Shield className="w-4 h-4 mr-2 text-orange-500" />
+                              Suspendre
+                            </DropdownMenuItem>
+                          )}
+                          {store.status === 'suspended' && (
+                            <DropdownMenuItem onClick={() => updateStatus(store, 'verified')}>
+                              <CheckCircle className="w-4 h-4 mr-2 text-emerald-500" />
+                              Réactiver
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem 
                             onClick={() => deleteMutation.mutate(store.id)}
                             className="text-red-600"
@@ -369,6 +458,7 @@ export default function AdminPartners() {
                     <SelectItem value="pending">En attente</SelectItem>
                     <SelectItem value="verified">Vérifié</SelectItem>
                     <SelectItem value="rejected">Rejeté</SelectItem>
+                    <SelectItem value="suspended">Suspendu</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -44,9 +44,19 @@ export default function Layout({ children, currentPageName }) {
       } catch (e) {
         // User not logged in
       }
-    };
-    loadUser();
-  }, []);
+      };
+      loadUser();
+
+      // Real-time subscription for admin notifications
+      if (user && user.role === 'admin') {
+      const unsubscribe = base44.entities.Notification.subscribe((event) => {
+        if (event.type === 'create' && event.data.user_email === user.email) {
+          queryClient.invalidateQueries({ queryKey: ['notifications-count', user.email] });
+        }
+      });
+      return () => unsubscribe();
+      }
+      }, [user]);
 
   const { data: cartItems = [] } = useQuery({
     queryKey: ['cart', user?.email],
@@ -74,6 +84,11 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Community', icon: Users, label: 'Social' },
     { name: 'Cart', icon: ShoppingCart, label: 'Panier', badge: cartCount },
   ];
+
+  // Add admin link if user is admin
+  if (user?.role === 'admin' && !mainNavItems.find(i => i.name === 'AdminPartners')) {
+    mainNavItems.splice(1, 0, { name: 'AdminPartners', icon: Store, label: 'Gestion Partenaires' });
+  }
 
   // RBAC: Add Dashboard links if user has role but is on main nav
   if (user?.is_partner && !mainNavItems.find(i => i.name === 'PartnerDashboard')) {
