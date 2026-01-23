@@ -2,10 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
+import StatusHistoryModal from '@/components/admin/StatusHistoryModal';
+import BulkActionsBar from '@/components/admin/BulkActionsBar';
 import {
   Store, Plus, Search, Edit2, Trash2, Check, X, Clock,
   MapPin, Phone, Mail, Shield, Users, Package, TrendingUp,
-  Eye, MoreVertical, CheckCircle, AlertCircle
+  Eye, MoreVertical, CheckCircle, AlertCircle, History, BarChart3
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -13,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -39,6 +44,9 @@ export default function AdminPartners() {
   const [showDialog, setShowDialog] = useState(false);
   const [editingStore, setEditingStore] = useState(null);
   const [formData, setFormData] = useState(emptyStore);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyStore, setHistoryStore] = useState(null);
+  const [selectedStores, setSelectedStores] = useState([]);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -126,7 +134,18 @@ export default function AdminPartners() {
     }
   };
 
-  const updateStatus = (store, newStatus, notes = '') => {
+  const updateStatus = async (store, newStatus, notes = '') => {
+    // Record status change in history
+    await base44.entities.PartnerStatusHistory.create({
+      store_id: store.id,
+      store_name: store.name,
+      previous_status: store.status,
+      new_status: newStatus,
+      changed_by: user.email,
+      changed_by_name: user.full_name,
+      notes: notes
+    });
+
     updateMutation.mutate({ 
       id: store.id, 
       data: { ...store, status: newStatus }
@@ -150,6 +169,31 @@ export default function AdminPartners() {
         });
       }
     }
+  };
+
+  const handleBulkAction = async (actionType, notes) => {
+    if (actionType === 'delete') {
+      for (const storeId of selectedStores) {
+        await base44.entities.Store.delete(storeId);
+      }
+      toast.success(`${selectedStores.length} partenaire(s) supprimé(s)`);
+    } else {
+      for (const storeId of selectedStores) {
+        const store = stores.find(s => s.id === storeId);
+        if (store) {
+          await updateStatus(store, actionType, notes);
+        }
+      }
+      toast.success(`${selectedStores.length} partenaire(s) mis à jour`);
+    }
+    setSelectedStores([]);
+    queryClient.invalidateQueries({ queryKey: ['admin-stores'] });
+  };
+
+  const toggleStoreSelection = (storeId) => {
+    setSelectedStores(prev => 
+      prev.includes(storeId) ? prev.filter(id => id !== storeId) : [...prev, storeId]
+    );
   };
 
   const getStoreStats = (storeId) => {
@@ -211,10 +255,18 @@ export default function AdminPartners() {
             <h1 className="text-2xl font-bold text-gray-900">Gestion des Partenaires</h1>
             <p className="text-gray-500">{stores.length} partenaires enregistrés</p>
           </div>
-          <Button onClick={openCreateDialog} className="bg-emerald-500 hover:bg-emerald-600">
-            <Plus className="w-4 h-4 mr-2" />
-            Ajouter un partenaire
-          </Button>
+          <div className="flex gap-2">
+            <Link to={createPageUrl('PartnerAnalytics')}>
+              <Button variant="outline">
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Analytiques
+              </Button>
+            </Link>
+            <Button onClick={openCreateDialog} className="bg-emerald-500 hover:bg-emerald-600">
+              <Plus className="w-4 h-4 mr-2" />
+              Ajouter un partenaire
+            </Button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -329,6 +381,10 @@ export default function AdminPartners() {
                   <div className="p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={selectedStores.includes(store.id)}
+                          onCheckedChange={() => toggleStoreSelection(store.id)}
+                        />
                         <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
                           {store.logo_url ? (
                             <img src={store.logo_url} alt="" className="w-full h-full object-cover rounded-xl" />
@@ -354,6 +410,13 @@ export default function AdminPartners() {
                           <DropdownMenuItem onClick={() => openEditDialog(store)}>
                             <Edit2 className="w-4 h-4 mr-2" />
                             Modifier
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            setHistoryStore(store);
+                            setShowHistoryModal(true);
+                          }}>
+                            <History className="w-4 h-4 mr-2" />
+                            Historique
                           </DropdownMenuItem>
                           {store.status === 'pending' && (
                             <>
@@ -526,6 +589,20 @@ export default function AdminPartners() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Status History Modal */}
+      <StatusHistoryModal
+        store={historyStore}
+        isOpen={showHistoryModal}
+        onClose={() => setShowHistoryModal(false)}
+      />
+
+      {/* Bulk Actions Bar */}
+      <BulkActionsBar
+        selectedStores={selectedStores}
+        onBulkAction={handleBulkAction}
+        onClear={() => setSelectedStores([])}
+      />
     </div>
   );
 }
