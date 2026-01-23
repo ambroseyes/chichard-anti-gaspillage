@@ -28,6 +28,8 @@ import Settings from './pages/Settings';
 import StockGuardian from './pages/StockGuardian';
 import WeeklyChallenges from './pages/WeeklyChallenges';
 import MyAccount from './pages/MyAccount';
+import PartnerAnalytics from './pages/PartnerAnalytics';
+import VerifyPartner from './pages/VerifyPartner';
 import __Layout from './Layout.jsx';
 
 
@@ -62,6 +64,8 @@ export const PAGES = {
     "StockGuardian": StockGuardian,
     "WeeklyChallenges": WeeklyChallenges,
     "MyAccount": MyAccount,
+    "PartnerAnalytics": PartnerAnalytics,
+    "VerifyPartner": VerifyPartner,
 }
 
 export const pagesConfig = {
