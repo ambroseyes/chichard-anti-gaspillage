@@ -38,17 +38,41 @@ export default function StoreForm({ store, onSuccess, onCancel }) {
         ...formData,
         logo_url,
         is_partner: true,
-        status: store?.status || 'pending',
+        status: store?.status || 'email_verification_pending',
+        email_verified: store?.email_verified || false,
       };
 
       if (store?.id) {
         await base44.entities.Store.update(store.id, storeData);
         toast.success('Magasin mis à jour');
       } else {
+        const user = await base44.auth.me();
+        storeData.owner_email = user.email;
+        
         const newStore = await base44.entities.Store.create(storeData);
+        
+        // Generate verification token and send email
+        const verificationToken = `${newStore.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const verificationLink = `${window.location.origin}/VerifyPartner?token=${verificationToken}&store_id=${newStore.id}`;
+
+        await base44.integrations.Core.SendEmail({
+          to: formData.email || user.email,
+          subject: 'Vérifiez votre email - CHICHARD Partenaire',
+          body: `
+            <h2>Bienvenue sur CHICHARD !</h2>
+            <p>Merci de vous être inscrit en tant que partenaire.</p>
+            <p>Pour finaliser votre inscription, veuillez cliquer sur le lien ci-dessous pour vérifier votre adresse email :</p>
+            <a href="${verificationLink}" style="display: inline-block; padding: 12px 24px; background-color: #10B981; color: white; text-decoration: none; border-radius: 8px; margin: 16px 0;">
+              Vérifier mon email
+            </a>
+            <p>Une fois votre email vérifié, notre équipe examinera votre demande sous 24h.</p>
+            <p>À bientôt sur CHICHARD !</p>
+          `
+        });
+        
         // Update user with store_id
         await base44.auth.updateMe({ store_id: newStore.id, is_partner: true });
-        toast.success('Magasin enregistré ! En attente de validation.');
+        toast.success('Un email de vérification a été envoyé !');
       }
       
       onSuccess?.();
