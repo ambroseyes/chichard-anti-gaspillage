@@ -27,6 +27,7 @@ import SecurityCenter from './pages/SecurityCenter';
 import Settings from './pages/Settings';
 import StockGuardian from './pages/StockGuardian';
 import WeeklyChallenges from './pages/WeeklyChallenges';
+import MyAccount from './pages/MyAccount';
 import __Layout from './Layout.jsx';
 
 
@@ -60,6 +61,7 @@ export const PAGES = {
     "Settings": Settings,
     "StockGuardian": StockGuardian,
     "WeeklyChallenges": WeeklyChallenges,
+    "MyAccount": MyAccount,
 }
 
 export const pagesConfig = {

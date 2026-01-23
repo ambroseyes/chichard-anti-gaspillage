@@ -82,6 +82,7 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Catalog', icon: Search, label: 'Catalogue' },
     { name: 'CommunityChat', icon: MessageCircle, label: 'Chat' },
     { name: 'Community', icon: Users, label: 'Social' },
+    { name: 'MyAccount', icon: User, label: 'Mon Compte' },
     { name: 'Cart', icon: ShoppingCart, label: 'Panier', badge: cartCount },
   ];
 
@@ -241,7 +242,7 @@ export default function Layout({ children, currentPageName }) {
       </header>
 
       {/* Global Search */}
-      <GlobalSearch isOpen={showSearch} onClose={() => setShowSearch(false)} />
+      <GlobalSearch isOpen={showSearch} onClose={() => setShowSearch(false)} userRole={user?.role} />
 
       {/* Mobile Menu Overlay */}
       <AnimatePresence>

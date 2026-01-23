@@ -13,7 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
-export default function GlobalSearch({ isOpen, onClose }) {
+export default function GlobalSearch({ isOpen, onClose, userRole }) {
+  return <AdvancedGlobalSearch isOpen={isOpen} onClose={onClose} userRole={userRole} />;
+}
   const [query, setQuery] = useState('');
   const [results, setResults] = useState({ products: [], recipes: [], stores: [], challenges: [] });
   const [loading, setLoading] = useState(false);
