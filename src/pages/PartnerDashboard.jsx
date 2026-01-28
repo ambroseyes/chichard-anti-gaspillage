@@ -34,6 +34,7 @@ import SmartBundles from '@/components/partner/SmartBundles';
 import AIProductRecommendations from '@/components/partner/AIProductRecommendations';
 import ProductBundleManager from '@/components/partner/ProductBundleManager';
 import PromotionManager from '@/components/partner/PromotionManager';
+import PartnerChatbot from '@/components/partner/PartnerChatbot';
 
 export default function PartnerDashboard() {
   const [user, setUser] = useState(null);
@@ -398,6 +399,9 @@ export default function PartnerDashboard() {
           preferences={preferences}
           onSave={(data) => savePrefsMutation.mutate(data)}
         />
+
+        {/* AI Chatbot */}
+        <PartnerChatbot />
       </div>
     </div>
   );

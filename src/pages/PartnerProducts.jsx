@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ProductVariantManager from '@/components/products/ProductVariantManager';
 import StockHistoryViewer from '@/components/products/StockHistoryViewer';
 import ProductCloner from '@/components/products/ProductCloner';
+import PartnerChatbot from '@/components/partner/PartnerChatbot';
 import { format } from 'date-fns';
 import {
   Plus, Search, Edit2, Trash2, Clock, Package,
@@ -83,9 +84,15 @@ export default function PartnerProducts() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Product.update(id, data),
-    onSuccess: () => {
+    onSuccess: async (_, { id, data }) => {
       queryClient.invalidateQueries({ queryKey: ['partner-products'] });
       toast.success('Produit mis à jour');
+      
+      // Check for low stock alert
+      if (data.quantity_available && data.quantity_available <= 5) {
+        await sendLowStockAlert(data);
+      }
+      
       closeDialog();
     },
   });
@@ -159,6 +166,38 @@ export default function PartnerProducts() {
 
   const getDaysLeft = (date) => {
     return Math.ceil((new Date(date) - new Date()) / (1000 * 60 * 60 * 24));
+  };
+
+  const sendLowStockAlert = async (product) => {
+    try {
+      // Send email to partner
+      await base44.integrations.Core.SendEmail({
+        to: user.email,
+        subject: `⚠️ Stock faible - ${product.name}`,
+        body: `
+          <h2>Alerte stock faible</h2>
+          <p>Bonjour,</p>
+          <p>Le stock du produit <strong>${product.name}</strong> est faible.</p>
+          <p><strong>Quantité restante:</strong> ${product.quantity_available} unités</p>
+          <p>Pensez à réapprovisionner pour éviter les ruptures de stock.</p>
+          <br>
+          <a href="${window.location.origin}/PartnerProducts" style="display: inline-block; padding: 12px 24px; background-color: #10B981; color: white; text-decoration: none; border-radius: 8px;">
+            Voir mes produits
+          </a>
+        `
+      });
+
+      // Create notification
+      await base44.entities.Notification.create({
+        user_email: user.email,
+        title: 'Stock faible',
+        message: `Le produit "${product.name}" n'a plus que ${product.quantity_available} unités en stock`,
+        type: 'system',
+        action_url: '/PartnerProducts'
+      });
+    } catch (error) {
+      console.error('Failed to send low stock alert:', error);
+    }
   };
 
   if (!user) {
@@ -257,9 +296,17 @@ export default function PartnerProducts() {
                         </div>
                       </div>
                       <div className="p-4">
-                        <h3 className="font-semibold text-gray-900 mb-1">{product.name}</h3>
-                        <p className="text-sm text-gray-500 mb-3">
-                          {product.quantity_available} disponibles
+                        <div className="flex items-start justify-between mb-1">
+                          <h3 className="font-semibold text-gray-900 flex-1">{product.name}</h3>
+                          {product.quantity_available <= 5 && (
+                            <AlertTriangle className="w-5 h-5 text-orange-500 ml-2" />
+                          )}
+                        </div>
+                        <p className={`text-sm mb-3 ${
+                          product.quantity_available <= 5 ? 'text-orange-600 font-medium' : 'text-gray-500'
+                        }`}>
+                          {product.quantity_available} disponible{product.quantity_available > 1 ? 's' : ''}
+                          {product.quantity_available <= 5 && ' - Stock faible!'}
                         </p>
                         <div className="flex flex-wrap gap-2 mb-3">
                           <ProductCloner product={product} />
@@ -484,6 +531,9 @@ export default function PartnerProducts() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* AI Chatbot */}
+      <PartnerChatbot />
     </div>
   );
 }

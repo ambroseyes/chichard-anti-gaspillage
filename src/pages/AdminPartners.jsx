@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import StatusHistoryModal from '@/components/admin/StatusHistoryModal';
 import BulkActionsBar from '@/components/admin/BulkActionsBar';
+import PartnerChatbot from '@/components/partner/PartnerChatbot';
 import {
   Store, Plus, Search, Edit2, Trash2, Check, X, Clock,
   MapPin, Phone, Mail, Shield, Users, Package, TrendingUp,
@@ -603,6 +604,9 @@ export default function AdminPartners() {
         onBulkAction={handleBulkAction}
         onClear={() => setSelectedStores([])}
       />
+
+      {/* AI Chatbot */}
+      <PartnerChatbot />
     </div>
   );
 }
