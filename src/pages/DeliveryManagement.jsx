@@ -11,6 +11,8 @@ import { Truck, Package, MapPin, Clock, CheckCircle, Store, QrCode, Calendar } f
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import QRCode from 'qrcode';
+import RouteOptimizer from '@/components/logistics/RouteOptimizer';
+import TimeSlotManager from '@/components/logistics/TimeSlotManager';
 
 export default function DeliveryManagement() {
   const [user, setUser] = useState(null);
@@ -163,6 +165,29 @@ export default function DeliveryManagement() {
 
           {/* Delivery Tab */}
           <TabsContent value="delivery" className="space-y-4">
+            {/* Route Optimizer */}
+            <RouteOptimizer
+              orders={orders.filter(o => o.delivery_type === 'delivery')}
+              onRouteCreated={(route, recommendations) => {
+                base44.entities.DeliveryRoute.create(route).then(() => {
+                  queryClient.invalidateQueries({ queryKey: ['delivery-routes'] });
+                  if (recommendations?.length > 0) {
+                    toast.info(
+                      <div>
+                        <p className="font-semibold mb-1">Recommandations:</p>
+                        <ul className="text-sm space-y-1">
+                          {recommendations.slice(0, 3).map((r, i) => (
+                            <li key={i}>• {r}</li>
+                          ))}
+                        </ul>
+                      </div>,
+                      { duration: 8000 }
+                    );
+                  }
+                });
+              }}
+            />
+
             <Card className="p-6">
               <h3 className="font-bold mb-4">Commandes en attente de livraison</h3>
               
@@ -220,6 +245,18 @@ export default function DeliveryManagement() {
 
           {/* Pickup Tab */}
           <TabsContent value="pickup" className="space-y-4">
+            {/* Time Slot Manager */}
+            {orders.filter(o => o.delivery_type === 'pickup').length === 0 && (
+              <Card className="p-6 bg-blue-50">
+                <TimeSlotManager
+                  storeId={user?.store_id}
+                  onSlotSelected={(slotData) => {
+                    console.log('Slot selected:', slotData);
+                  }}
+                />
+              </Card>
+            )}
+
             <Card className="p-6">
               <h3 className="font-bold mb-4">Demandes de retrait en magasin</h3>
               

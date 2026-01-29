@@ -85,6 +85,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Order Notifications */}
+      {user && <OrderNotifications userEmail={user.email} />}
+      
       {/* Hero Section */}
       <div className="bg-gradient-to-br from-emerald-500 via-teal-500 to-emerald-600 text-white">
         <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">

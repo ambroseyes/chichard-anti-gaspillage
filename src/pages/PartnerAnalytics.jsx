@@ -1,34 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
-import { 
-  TrendingUp, Package, ShoppingCart, DollarSign, BarChart3, 
-  ArrowLeft, Calendar, Store, Download
-} from 'lucide-react';
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  BarChart3, TrendingUp, Users, Package, DollarSign, Download,
+  Calendar as CalendarIcon, Filter, Eye
+} from 'lucide-react';
+import {
+  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart
+} from 'recharts';
 import { format, subDays } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
-const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6'];
+const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 export default function PartnerAnalytics() {
   const [user, setUser] = useState(null);
-  const [selectedPeriod, setSelectedPeriod] = useState('7');
-  const [selectedStore, setSelectedStore] = useState('all');
+  const [store, setStore] = useState(null);
+  const [dateRange, setDateRange] = useState({
+    from: subDays(new Date(), 30),
+    to: new Date()
+  });
+  const [selectedCampaign, setSelectedCampaign] = useState('all');
 
   useEffect(() => {
     const loadUser = async () => {
       try {
         const userData = await base44.auth.me();
-        if (userData.role !== 'admin') {
-          window.location.href = createPageUrl('Home');
-          return;
-        }
         setUser(userData);
+        const stores = await base44.entities.Store.filter({ owner_email: userData.email });
+        setStore(stores[0]);
       } catch (e) {
         base44.auth.redirectToLogin();
       }
@@ -36,92 +44,102 @@ export default function PartnerAnalytics() {
     loadUser();
   }, []);
 
-  const { data: stores = [] } = useQuery({
-    queryKey: ['all-stores'],
-    queryFn: () => base44.entities.Store.list('-created_date'),
-    enabled: !!user
+  const { data: campaigns = [] } = useQuery({
+    queryKey: ['campaign-metrics', store?.id],
+    queryFn: () => base44.entities.CampaignMetrics.filter({ store_id: store.id }, '-created_date'),
+    enabled: !!store
   });
 
   const { data: products = [] } = useQuery({
-    queryKey: ['all-products'],
-    queryFn: () => base44.entities.Product.list(),
-    enabled: !!user
+    queryKey: ['store-products-analytics', store?.id],
+    queryFn: () => base44.entities.Product.filter({ store_id: store.id }),
+    enabled: !!store
   });
 
   const { data: orders = [] } = useQuery({
-    queryKey: ['all-orders'],
-    queryFn: () => base44.entities.Order.list('-created_date'),
-    enabled: !!user
+    queryKey: ['store-orders-analytics', store?.id],
+    queryFn: () => base44.entities.Order.filter({ store_id: store.id }, '-created_date', 200),
+    enabled: !!store
   });
 
-  const filteredStores = selectedStore === 'all' ? stores : stores.filter(s => s.id === selectedStore);
-  const filteredProducts = selectedStore === 'all' ? products : products.filter(p => p.store_id === selectedStore);
-
-  // Calculate KPIs
-  const totalRevenue = filteredProducts.reduce((sum, p) => 
-    sum + ((p.quantity_sold || 0) * (p.discounted_price || 0)), 0
-  );
-  const totalOrders = orders.filter(o => 
-    selectedStore === 'all' || o.store_id === selectedStore
-  ).length;
-  const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-
-  // Sales by store
-  const salesByStore = stores.map(store => {
-    const storeProducts = products.filter(p => p.store_id === store.id);
-    const revenue = storeProducts.reduce((sum, p) => 
-      sum + ((p.quantity_sold || 0) * (p.discounted_price || 0)), 0
-    );
-    return {
-      name: store.name,
-      revenue: revenue,
-      products: storeProducts.length,
-      sold: storeProducts.reduce((sum, p) => sum + (p.quantity_sold || 0), 0)
-    };
-  }).sort((a, b) => b.revenue - a.revenue).slice(0, 10);
-
-  // Sales timeline (last 7/30 days)
-  const days = parseInt(selectedPeriod);
-  const salesTimeline = Array.from({ length: days }, (_, i) => {
-    const date = subDays(new Date(), days - i - 1);
-    const dateStr = format(date, 'yyyy-MM-dd');
-    return {
-      date: format(date, 'dd/MM'),
-      sales: Math.floor(Math.random() * 50000) + 10000, // Mock data
-      orders: Math.floor(Math.random() * 30) + 5
-    };
+  const { data: segments = [] } = useQuery({
+    queryKey: ['customer-segments'],
+    queryFn: () => base44.entities.CustomerSegment.list(),
+    enabled: !!store
   });
 
-  // Category distribution
-  const categoryStats = {};
-  filteredProducts.forEach(p => {
-    if (!categoryStats[p.category]) {
-      categoryStats[p.category] = { count: 0, revenue: 0 };
-    }
-    categoryStats[p.category].count++;
-    categoryStats[p.category].revenue += (p.quantity_sold || 0) * (p.discounted_price || 0);
-  });
-
-  const categoryData = Object.entries(categoryStats).map(([category, data]) => ({
-    name: category,
-    value: data.revenue
+  // Calculate campaign ROI data
+  const campaignROIData = campaigns.map(c => ({
+    name: c.campaign_name,
+    revenue: c.revenue / 1000,
+    cost: c.cost / 1000,
+    roi: c.roi,
+    conversions: c.conversions
   }));
 
-  // Export CSV
-  const exportCSV = () => {
-    const csvData = salesByStore.map(s => 
-      `${s.name},${s.revenue},${s.products},${s.sold}`
-    ).join('\n');
-    const csv = `Magasin,Revenus (FCFA),Produits,Vendus\n${csvData}`;
-    const blob = new Blob([csv], { type: 'text/csv' });
+  // Product performance data
+  const productPerformanceData = products
+    .sort((a, b) => (b.quantity_sold || 0) - (a.quantity_sold || 0))
+    .slice(0, 10)
+    .map(p => ({
+      name: p.name.length > 20 ? p.name.substring(0, 20) + '...' : p.name,
+      sold: p.quantity_sold || 0,
+      revenue: ((p.discounted_price || 0) * (p.quantity_sold || 0)) / 1000
+    }));
+
+  // Customer segmentation data
+  const segmentData = [
+    { name: 'Nouveaux', value: segments.filter(s => s.segment_type === 'new').length },
+    { name: 'Réguliers', value: segments.filter(s => s.segment_type === 'regular').length },
+    { name: 'VIP', value: segments.filter(s => s.segment_type === 'vip').length },
+    { name: 'À risque', value: segments.filter(s => s.segment_type === 'at_risk').length },
+    { name: 'Dormants', value: segments.filter(s => s.segment_type === 'dormant').length }
+  ].filter(d => d.value > 0);
+
+  // Orders trend (last 30 days)
+  const last30Days = [...Array(30)].map((_, i) => {
+    const date = subDays(new Date(), 29 - i);
+    return date.toISOString().split('T')[0];
+  });
+
+  const ordersTrendData = last30Days.map(date => {
+    const dayOrders = orders.filter(o => o.created_date?.startsWith(date));
+    return {
+      date: format(new Date(date), 'dd MMM', { locale: fr }),
+      orders: dayOrders.length,
+      revenue: dayOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0) / 1000
+    };
+  });
+
+  // Promotion effectiveness
+  const promotionData = campaigns.map(c => ({
+    campaign: c.campaign_name,
+    impressions: c.impressions,
+    clicks: c.clicks,
+    conversions: c.conversions,
+    conversion_rate: c.conversion_rate * 100
+  }));
+
+  // Export report
+  const exportReport = () => {
+    const reportData = {
+      store: store.name,
+      period: `${format(dateRange.from, 'dd/MM/yyyy')} - ${format(dateRange.to, 'dd/MM/yyyy')}`,
+      campaigns: campaigns.length,
+      total_revenue: campaigns.reduce((sum, c) => sum + c.revenue, 0),
+      total_roi: campaigns.reduce((sum, c) => sum + c.roi, 0) / campaigns.length,
+      products_sold: products.reduce((sum, p) => sum + (p.quantity_sold || 0), 0)
+    };
+
+    const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `analytics-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.download = `rapport-analytics-${format(new Date(), 'yyyy-MM-dd')}.json`;
     a.click();
   };
 
-  if (!user) {
+  if (!store) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full" />
@@ -131,229 +149,297 @@ export default function PartnerAnalytics() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link to={createPageUrl('AdminPartners')}>
-              <Button variant="outline" size="icon">
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Analytiques Partenaires</h1>
-              <p className="text-gray-500">Tableau de bord des performances</p>
-            </div>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold">Analytics avancées</h1>
+            <p className="text-gray-500">Analyses détaillées de vos performances</p>
           </div>
           <div className="flex gap-2">
-            <Select value={selectedStore} onValueChange={setSelectedStore}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Tous les magasins" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les magasins</SelectItem>
-                {stores.map(store => (
-                  <SelectItem key={store.id} value={store.id}>{store.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7">7 jours</SelectItem>
-                <SelectItem value="30">30 jours</SelectItem>
-                <SelectItem value="90">90 jours</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="outline" onClick={exportCSV}>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <CalendarIcon className="w-4 h-4" />
+                  {format(dateRange.from, 'dd MMM', { locale: fr })} - {format(dateRange.to, 'dd MMM', { locale: fr })}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="range"
+                  selected={dateRange}
+                  onSelect={setDateRange}
+                  numberOfMonths={2}
+                />
+              </PopoverContent>
+            </Popover>
+            <Button onClick={exportReport} variant="outline">
               <Download className="w-4 h-4 mr-2" />
               Exporter
             </Button>
           </div>
         </div>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">Revenus Totaux</p>
-                  <p className="text-2xl font-bold text-gray-900">{(totalRevenue / 1000).toFixed(0)}K F</p>
-                  <p className="text-xs text-emerald-600 flex items-center gap-1 mt-1">
-                    <TrendingUp className="w-3 h-3" />
-                    +12.5% vs période précédente
-                  </p>
-                </div>
-                <div className="p-3 bg-emerald-100 rounded-lg">
-                  <DollarSign className="w-6 h-6 text-emerald-600" />
-                </div>
+        {/* KPIs */}
+        <div className="grid md:grid-cols-4 gap-4 mb-6">
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-emerald-100 rounded-lg">
+                <DollarSign className="w-6 h-6 text-emerald-600" />
               </div>
-            </CardContent>
+              <div>
+                <p className="text-sm text-gray-500">Revenus totaux</p>
+                <p className="text-xl font-bold">
+                  {(campaigns.reduce((sum, c) => sum + c.revenue, 0) / 1000).toFixed(0)}k F
+                </p>
+              </div>
+            </div>
           </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">Commandes</p>
-                  <p className="text-2xl font-bold text-gray-900">{totalOrders}</p>
-                  <p className="text-xs text-blue-600 flex items-center gap-1 mt-1">
-                    <TrendingUp className="w-3 h-3" />
-                    +8.2%
-                  </p>
-                </div>
-                <div className="p-3 bg-blue-100 rounded-lg">
-                  <ShoppingCart className="w-6 h-6 text-blue-600" />
-                </div>
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <TrendingUp className="w-6 h-6 text-blue-600" />
               </div>
-            </CardContent>
+              <div>
+                <p className="text-sm text-gray-500">ROI moyen</p>
+                <p className="text-xl font-bold">
+                  {campaigns.length > 0 
+                    ? (campaigns.reduce((sum, c) => sum + c.roi, 0) / campaigns.length).toFixed(1) 
+                    : 0}%
+                </p>
+              </div>
+            </div>
           </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">Panier Moyen</p>
-                  <p className="text-2xl font-bold text-gray-900">{avgOrderValue.toFixed(0)} F</p>
-                  <p className="text-xs text-purple-600 flex items-center gap-1 mt-1">
-                    <TrendingUp className="w-3 h-3" />
-                    +5.1%
-                  </p>
-                </div>
-                <div className="p-3 bg-purple-100 rounded-lg">
-                  <BarChart3 className="w-6 h-6 text-purple-600" />
-                </div>
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <Users className="w-6 h-6 text-purple-600" />
               </div>
-            </CardContent>
+              <div>
+                <p className="text-sm text-gray-500">Clients segments</p>
+                <p className="text-xl font-bold">{segments.length}</p>
+              </div>
+            </div>
           </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">Produits Actifs</p>
-                  <p className="text-2xl font-bold text-gray-900">{filteredProducts.length}</p>
-                  <p className="text-xs text-orange-600 flex items-center gap-1 mt-1">
-                    <TrendingUp className="w-3 h-3" />
-                    +15.3%
-                  </p>
-                </div>
-                <div className="p-3 bg-orange-100 rounded-lg">
-                  <Package className="w-6 h-6 text-orange-600" />
-                </div>
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-orange-100 rounded-lg">
+                <Package className="w-6 h-6 text-orange-600" />
               </div>
-            </CardContent>
+              <div>
+                <p className="text-sm text-gray-500">Produits vendus</p>
+                <p className="text-xl font-bold">
+                  {products.reduce((sum, p) => sum + (p.quantity_sold || 0), 0)}
+                </p>
+              </div>
+            </div>
           </Card>
         </div>
 
-        {/* Charts Row 1 */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Évolution des Ventes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={salesTimeline}>
+        <Tabs defaultValue="campaigns" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="campaigns">Campagnes</TabsTrigger>
+            <TabsTrigger value="products">Produits</TabsTrigger>
+            <TabsTrigger value="customers">Clients</TabsTrigger>
+            <TabsTrigger value="trends">Tendances</TabsTrigger>
+          </TabsList>
+
+          {/* Campaigns Tab */}
+          <TabsContent value="campaigns" className="space-y-6">
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold">ROI des campagnes</h3>
+                <Select value={selectedCampaign} onValueChange={setSelectedCampaign}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes les campagnes</SelectItem>
+                    {campaigns.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.campaign_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={campaignROIData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis yAxisId="left" />
+                  <YAxis yAxisId="right" orientation="right" />
+                  <Tooltip />
+                  <Legend />
+                  <Bar yAxisId="left" dataKey="revenue" fill="#10b981" name="Revenus (k FCFA)" />
+                  <Bar yAxisId="left" dataKey="cost" fill="#ef4444" name="Coûts (k FCFA)" />
+                  <Bar yAxisId="right" dataKey="roi" fill="#3b82f6" name="ROI %" />
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
+
+            <Card className="p-6">
+              <h3 className="font-bold mb-4">Efficacité des promotions</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={promotionData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="campaign" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="impressions" stroke="#8b5cf6" name="Impressions" />
+                  <Line type="monotone" dataKey="clicks" stroke="#3b82f6" name="Clics" />
+                  <Line type="monotone" dataKey="conversions" stroke="#10b981" name="Conversions" />
+                </LineChart>
+              </ResponsiveContainer>
+            </Card>
+          </TabsContent>
+
+          {/* Products Tab */}
+          <TabsContent value="products" className="space-y-6">
+            <Card className="p-6">
+              <h3 className="font-bold mb-4">Top 10 produits par ventes</h3>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={productPerformanceData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" />
+                  <YAxis dataKey="name" type="category" width={150} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="sold" fill="#10b981" name="Quantité vendue" />
+                  <Bar dataKey="revenue" fill="#3b82f6" name="Revenus (k FCFA)" />
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <Card className="p-6">
+                <h3 className="font-bold mb-4">Taux d'écoulement par catégorie</h3>
+                <div className="space-y-3">
+                  {['fruits_legumes', 'produits_laitiers', 'viandes_poissons', 'boulangerie'].map(cat => {
+                    const catProducts = products.filter(p => p.category === cat);
+                    const sold = catProducts.reduce((sum, p) => sum + (p.quantity_sold || 0), 0);
+                    const total = catProducts.reduce((sum, p) => sum + (p.quantity_available || 0) + (p.quantity_sold || 0), 0);
+                    const rate = total > 0 ? (sold / total) * 100 : 0;
+
+                    return (
+                      <div key={cat}>
+                        <div className="flex justify-between mb-1">
+                          <span className="text-sm capitalize">{cat.replace(/_/g, ' ')}</span>
+                          <span className="text-sm font-bold">{rate.toFixed(1)}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-emerald-500 h-2 rounded-full"
+                            style={{ width: `${rate}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+
+              <Card className="p-6">
+                <h3 className="font-bold mb-4">Statut des produits</h3>
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Actifs', value: products.filter(p => p.status === 'active').length },
+                        { name: 'Rupture', value: products.filter(p => p.status === 'sold_out').length },
+                        { name: 'Expirés', value: products.filter(p => p.status === 'expired').length }
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={(entry) => `${entry.name}: ${entry.value}`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {COLORS.map((color, index) => (
+                        <Cell key={`cell-${index}`} fill={color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Customers Tab */}
+          <TabsContent value="customers" className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <Card className="p-6">
+                <h3 className="font-bold mb-4">Segmentation clients</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={segmentData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={(entry) => `${entry.name}: ${entry.value}`}
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {segmentData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Card>
+
+              <Card className="p-6">
+                <h3 className="font-bold mb-4">Analyse comportementale</h3>
+                <div className="space-y-4">
+                  {['new', 'regular', 'vip', 'at_risk'].map(type => {
+                    const typeSegments = segments.filter(s => s.segment_type === type);
+                    const avgSpent = typeSegments.reduce((sum, s) => sum + (s.total_spent || 0), 0) / (typeSegments.length || 1);
+                    const avgOrders = typeSegments.reduce((sum, s) => sum + (s.total_orders || 0), 0) / (typeSegments.length || 1);
+
+                    return (
+                      <div key={type} className="p-3 border rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-semibold capitalize">{type.replace('_', ' ')}</span>
+                          <Badge>{typeSegments.length} clients</Badge>
+                        </div>
+                        <div className="text-sm text-gray-600 space-y-1">
+                          <p>Panier moyen: {avgSpent.toFixed(0)} FCFA</p>
+                          <p>Commandes moyennes: {avgOrders.toFixed(1)}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Trends Tab */}
+          <TabsContent value="trends" className="space-y-6">
+            <Card className="p-6">
+              <h3 className="font-bold mb-4">Évolution des ventes (30 jours)</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={ordersTrendData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Line type="monotone" dataKey="sales" stroke="#10B981" name="Ventes (FCFA)" />
-                  <Line type="monotone" dataKey="orders" stroke="#3B82F6" name="Commandes" />
-                </LineChart>
+                  <Area type="monotone" dataKey="orders" stackId="1" stroke="#3b82f6" fill="#3b82f6" name="Commandes" />
+                  <Area type="monotone" dataKey="revenue" stackId="2" stroke="#10b981" fill="#10b981" name="Revenus (k FCFA)" />
+                </AreaChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Répartition par Catégorie</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={categoryData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {categoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Top Performers */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Top 10 Partenaires</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={400}>
-              <BarChart data={salesByStore}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="revenue" fill="#10B981" name="Revenus (FCFA)" />
-                <Bar dataKey="sold" fill="#3B82F6" name="Produits Vendus" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Detailed Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Détails par Partenaire</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-3 text-sm font-medium text-gray-500">Magasin</th>
-                    <th className="text-right p-3 text-sm font-medium text-gray-500">Revenus</th>
-                    <th className="text-right p-3 text-sm font-medium text-gray-500">Produits</th>
-                    <th className="text-right p-3 text-sm font-medium text-gray-500">Vendus</th>
-                    <th className="text-right p-3 text-sm font-medium text-gray-500">Taux</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {salesByStore.map((store, idx) => (
-                    <tr key={idx} className="border-b hover:bg-gray-50">
-                      <td className="p-3 font-medium">{store.name}</td>
-                      <td className="p-3 text-right">{store.revenue.toLocaleString()} F</td>
-                      <td className="p-3 text-right">{store.products}</td>
-                      <td className="p-3 text-right">{store.sold}</td>
-                      <td className="p-3 text-right">
-                        <span className="text-emerald-600 font-medium">
-                          {store.products > 0 ? ((store.sold / store.products) * 100).toFixed(1) : 0}%
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
