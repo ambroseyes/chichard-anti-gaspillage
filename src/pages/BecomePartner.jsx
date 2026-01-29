@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   Store, TrendingUp, Leaf, Users, CheckCircle, ArrowRight,
@@ -9,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import StoreForm from '@/components/forms/StoreForm';
 
 const benefits = [
@@ -39,7 +41,17 @@ export default function BecomePartner() {
     loadUser();
   }, []);
 
-  if (user?.is_partner) {
+  // Check if user has a store
+  const { data: userStore } = useQuery({
+    queryKey: ['user-store', user?.email],
+    queryFn: async () => {
+      const stores = await base44.entities.Store.filter({ owner_email: user.email });
+      return stores[0];
+    },
+    enabled: !!user
+  });
+
+  if (userStore) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="max-w-md w-full p-8 text-center">
@@ -47,7 +59,18 @@ export default function BecomePartner() {
             <CheckCircle className="w-8 h-8 text-emerald-600" />
           </div>
           <h2 className="text-xl font-bold mb-2">Vous êtes déjà partenaire !</h2>
-          <p className="text-gray-500 mb-6">Accédez à votre tableau de bord pour gérer vos produits.</p>
+          <p className="text-gray-500 mb-2">Magasin: {userStore.name}</p>
+          <p className="text-sm text-gray-400 mb-6">
+            Statut: <Badge className={
+              userStore.status === 'verified' ? 'bg-green-500' :
+              userStore.status === 'pending' ? 'bg-orange-500' :
+              'bg-gray-500'
+            }>
+              {userStore.status === 'verified' ? 'Vérifié' :
+               userStore.status === 'pending' ? 'En attente' :
+               userStore.status}
+            </Badge>
+          </p>
           <Link to={createPageUrl('PartnerDashboard')}>
             <Button className="w-full bg-emerald-500 hover:bg-emerald-600">
               <BarChart3 className="w-4 h-4 mr-2" />

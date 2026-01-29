@@ -79,6 +79,8 @@ import Settings from './pages/Settings';
 import StockGuardian from './pages/StockGuardian';
 import VerifyPartner from './pages/VerifyPartner';
 import WeeklyChallenges from './pages/WeeklyChallenges';
+import AdminDashboard from './pages/AdminDashboard';
+import DeliveryManagement from './pages/DeliveryManagement';
 import __Layout from './Layout.jsx';
 
 
@@ -115,6 +117,8 @@ export const PAGES = {
     "StockGuardian": StockGuardian,
     "VerifyPartner": VerifyPartner,
     "WeeklyChallenges": WeeklyChallenges,
+    "AdminDashboard": AdminDashboard,
+    "DeliveryManagement": DeliveryManagement,
 }
 
 export const pagesConfig = {

@@ -325,8 +325,63 @@ export default function ProductDetail() {
                 </div>
               </div>
             )}
+
+            {/* Additional product info */}
+            {product.weight && (
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <span className="text-sm text-gray-600">Poids / Volume</span>
+                <span className="font-medium">{product.weight} {product.weight_unit}</span>
+              </div>
+            )}
+
+            {product.brand && (
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <span className="text-sm text-gray-600">Marque</span>
+                <span className="font-medium">{product.brand}</span>
+              </div>
+            )}
           </motion.div>
         </div>
+
+        {/* Store Info Section */}
+        <Card className="p-6 mt-6">
+          <h3 className="font-bold text-lg mb-4">À propos du magasin</h3>
+          <div className="flex items-start gap-4">
+            <div className="w-16 h-16 bg-emerald-100 rounded-lg flex items-center justify-center">
+              <Store className="w-8 h-8 text-emerald-600" />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-semibold text-lg">{product.store_name}</h4>
+              {product.store_location && (
+                <p className="text-gray-500 flex items-center gap-1 mt-1">
+                  <MapPin className="w-4 h-4" />
+                  {product.store_location}
+                </p>
+              )}
+              <div className="flex gap-2 mt-3">
+                <Badge variant="outline">Partenaire vérifié</Badge>
+                {product.quantity_available > 10 && (
+                  <Badge className="bg-green-100 text-green-700">En stock</Badge>
+                )}
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Nutritional Info */}
+        {product.nutritional_info && (
+          <Card className="p-6 mt-6">
+            <h3 className="font-bold text-lg mb-4">Informations nutritionnelles</h3>
+            <div className="grid grid-cols-2 gap-4">
+              {Object.entries(product.nutritional_info).map(([key, value]) => (
+                <div key={key} className="flex justify-between p-2 border-b">
+                  <span className="text-gray-600 capitalize">{key}</span>
+                  <span className="font-medium">{value}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
       </div>
 
       {/* Fixed bottom bar */}
