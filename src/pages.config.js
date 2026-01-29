@@ -81,6 +81,8 @@ import VerifyPartner from './pages/VerifyPartner';
 import WeeklyChallenges from './pages/WeeklyChallenges';
 import AdminDashboard from './pages/AdminDashboard';
 import DeliveryManagement from './pages/DeliveryManagement';
+import BrandOffers from './pages/BrandOffers';
+import BrandCampaignManager from './pages/BrandCampaignManager';
 import __Layout from './Layout.jsx';
 
 
@@ -119,6 +121,8 @@ export const PAGES = {
     "WeeklyChallenges": WeeklyChallenges,
     "AdminDashboard": AdminDashboard,
     "DeliveryManagement": DeliveryManagement,
+    "BrandOffers": BrandOffers,
+    "BrandCampaignManager": BrandCampaignManager,
 }
 
 export const pagesConfig = {
