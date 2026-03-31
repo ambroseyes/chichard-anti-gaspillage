@@ -9,6 +9,11 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import AdminBackoffice from './pages/AdminBackoffice';
+import BackofficeUsers from './pages/BackofficeUsers';
+import BackofficeSales from './pages/BackofficeSales';
+import BackofficeLogs from './pages/BackofficeLogs';
+import BackofficeTransactions from './pages/BackofficeTransactions';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -60,6 +65,11 @@ const AuthenticatedApp = () => {
           }
         />
       ))}
+      <Route path="/AdminBackoffice" element={<AdminBackoffice />} />
+      <Route path="/BackofficeUsers" element={<BackofficeUsers />} />
+      <Route path="/BackofficeSales" element={<BackofficeSales />} />
+      <Route path="/BackofficeLogs" element={<BackofficeLogs />} />
+      <Route path="/BackofficeTransactions" element={<BackofficeTransactions />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
