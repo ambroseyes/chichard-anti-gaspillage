@@ -26,6 +26,7 @@ import {
         Truck
       } from 'lucide-react';
 import GlobalSearch from '@/components/search/GlobalSearch';
+import FloatingCart from '@/components/cart/FloatingCart';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from 'framer-motion';
@@ -308,6 +309,11 @@ export default function Layout({ children, currentPageName }) {
       <main className="pb-20 md:pb-8">
         {children}
       </main>
+
+      {/* Floating Cart */}
+      {user && !isPartnerPage && !isDriverPage && (
+        <FloatingCart userEmail={user.email} />
+      )}
 
       {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-40">
