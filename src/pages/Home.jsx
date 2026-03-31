@@ -17,6 +17,7 @@ import AIProductRecommendations from '@/components/ai/AIProductRecommendations';
 import AIRecipeRecommendations from '@/components/ai/AIRecipeRecommendations';
 import AIPartnerRecommendations from '@/components/ai/AIPartnerRecommendations';
 import EnhancedPersonalizedFeed from '@/components/feed/EnhancedPersonalizedFeed';
+import OrderNotifications from '@/components/notifications/OrderNotifications';
 
 export default function Home() {
   const [user, setUser] = useState(null);
