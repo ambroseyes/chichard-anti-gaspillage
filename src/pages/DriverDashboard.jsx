@@ -24,10 +24,21 @@ import WidgetCustomizer from '@/components/dashboard/WidgetCustomizer';
 import SmartAlert from '@/components/dashboard/SmartAlert';
 import { BarChart3 } from 'lucide-react';
 
+const STATUS_FLOW = {
+  assigned:    { next: 'picked_up',   label: 'Récupérer',    btnClass: 'bg-blue-500 hover:bg-blue-600' },
+  confirmed:   { next: 'picked_up',   label: 'Récupérer',    btnClass: 'bg-blue-500 hover:bg-blue-600' },
+  picked_up:   { next: 'on_the_way',  label: 'En route',     btnClass: 'bg-orange-500 hover:bg-orange-600' },
+  on_the_way:  { next: 'delivered',   label: 'Livré ✓',      btnClass: 'bg-green-500 hover:bg-green-600' },
+};
+
 const statusConfig = {
-  confirmed: { label: 'À récupérer', color: 'bg-blue-100 text-blue-700', icon: Package },
-  ready: { label: 'En livraison', color: 'bg-orange-100 text-orange-700', icon: Truck },
-  delivered: { label: 'Livré', color: 'bg-green-100 text-green-700', icon: CheckCircle },
+  assigned:    { label: 'Assignée',    color: 'bg-indigo-100 text-indigo-700',  icon: Package },
+  confirmed:   { label: 'À récupérer', color: 'bg-blue-100 text-blue-700',     icon: Package },
+  picked_up:   { label: 'Récupérée',  color: 'bg-yellow-100 text-yellow-700', icon: Truck },
+  on_the_way:  { label: 'En route',   color: 'bg-orange-100 text-orange-700', icon: Navigation },
+  delivered:   { label: 'Livré',      color: 'bg-green-100 text-green-700',   icon: CheckCircle },
+  failed:      { label: 'Échec',      color: 'bg-red-100 text-red-700',       icon: AlertTriangle },
+  cancelled:   { label: 'Annulée',    color: 'bg-gray-100 text-gray-500',     icon: AlertTriangle },
 };
 
 export default function DriverDashboard() {
@@ -59,14 +70,26 @@ export default function DriverDashboard() {
   }, []);
 
   const { data: orders = [], isLoading } = useQuery({
-    queryKey: ['driver-orders'],
+    queryKey: ['driver-orders', user?.email],
     queryFn: async () => {
+      // RBAC: only fetch orders assigned to this courier
       const allOrders = await base44.entities.Order.filter(
-        { delivery_type: 'delivery' },
+        { driver_email: user.email },
         '-created_date',
-        50
+        100
       );
-      return allOrders.filter(o => ['confirmed', 'ready'].includes(o.status));
+      return allOrders.filter(o => ['assigned', 'confirmed', 'picked_up', 'on_the_way'].includes(o.status));
+    },
+    enabled: !!user,
+    refetchInterval: 15000,
+  });
+
+  const { data: deliveredToday = [] } = useQuery({
+    queryKey: ['driver-delivered-today', user?.email],
+    queryFn: async () => {
+      const all = await base44.entities.Order.filter({ driver_email: user.email, status: 'delivered' }, '-created_date', 50);
+      const today = new Date().toDateString();
+      return all.filter(o => new Date(o.updated_date || o.created_date).toDateString() === today);
     },
     enabled: !!user,
     refetchInterval: 30000,
@@ -101,13 +124,14 @@ export default function DriverDashboard() {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ orderId, status, proofData }) => {
-      const updateData = { status };
+    mutationFn: async ({ orderId, status, proofData, failReason }) => {
+      const updateData = { status, status_updated_at: new Date().toISOString(), status_updated_by: user.email };
       if (proofData) {
         updateData.delivery_proof = proofData;
         updateData.delivered_at = new Date().toISOString();
         updateData.delivered_by = user.email;
       }
+      if (failReason) updateData.fail_reason = failReason;
       await base44.entities.Order.update(orderId, updateData);
     },
     onSuccess: () => {
@@ -211,8 +235,9 @@ export default function DriverDashboard() {
 
   const visibleWidgets = preferences?.visible_widgets || ['stats', 'map', 'orders', 'earnings'];
 
-  const pendingPickup = orders.filter(o => o.status === 'confirmed');
-  const inDelivery = orders.filter(o => o.status === 'ready');
+  const pendingPickup = orders.filter(o => ['assigned', 'confirmed'].includes(o.status));
+  const inPickedUp   = orders.filter(o => o.status === 'picked_up');
+  const inDelivery   = orders.filter(o => o.status === 'on_the_way');
 
   if (!user) {
     return (
@@ -257,14 +282,18 @@ export default function DriverDashboard() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 mt-6">
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20 p-4 text-center">
-              <p className="text-3xl font-bold">{pendingPickup.length}</p>
-              <p className="text-sm text-blue-100">À récupérer</p>
+          <div className="grid grid-cols-3 gap-3 mt-6">
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20 p-3 text-center">
+              <p className="text-2xl font-bold">{pendingPickup.length}</p>
+              <p className="text-xs text-blue-100">À récupérer</p>
             </Card>
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20 p-4 text-center">
-              <p className="text-3xl font-bold">{inDelivery.length}</p>
-              <p className="text-sm text-blue-100">En livraison</p>
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20 p-3 text-center">
+              <p className="text-2xl font-bold">{inPickedUp.length + inDelivery.length}</p>
+              <p className="text-xs text-blue-100">En route</p>
+            </Card>
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20 p-3 text-center">
+              <p className="text-2xl font-bold">{deliveredToday.length}</p>
+              <p className="text-xs text-blue-100">Livrées auj.</p>
             </Card>
           </div>
         </div>
@@ -315,22 +344,42 @@ export default function DriverDashboard() {
           </section>
         )}
 
-        {/* In Delivery */}
+        {/* Picked up - en route */}
+        {inPickedUp.length > 0 && (
+          <section>
+            <h2 className="font-semibold mb-3 flex items-center gap-2">
+              <Truck className="w-5 h-5 text-yellow-500" />
+              Récupérées ({inPickedUp.length})
+            </h2>
+            <div className="space-y-3">
+              {inPickedUp.map((order) => (
+                <OrderCard
+                  key={order.id}
+                  order={order}
+                  onUpdateStatus={(status) => updateStatusMutation.mutate({ orderId: order.id, status })}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* On the way */}
         {inDelivery.length > 0 && (
           <section>
             <h2 className="font-semibold mb-3 flex items-center gap-2">
-              <Truck className="w-5 h-5 text-orange-500" />
-              En livraison ({inDelivery.length})
+              <Navigation className="w-5 h-5 text-orange-500" />
+              En route ({inDelivery.length})
             </h2>
             <div className="space-y-3">
               {inDelivery.map((order) => (
-                <OrderCard 
-                  key={order.id} 
+                <OrderCard
+                  key={order.id}
                   order={order}
                   onComplete={() => {
                     setSelectedOrder(order);
                     setShowQRScanner(true);
                   }}
+                  onUpdateStatus={(status) => updateStatusMutation.mutate({ orderId: order.id, status })}
                 />
               ))}
             </div>
