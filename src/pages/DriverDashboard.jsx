@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -22,7 +22,7 @@ import EnhancedQRScanner from '@/components/delivery/EnhancedQRScanner';
 import DeliveryNotifications from '@/components/delivery/DeliveryNotifications';
 import WidgetCustomizer from '@/components/dashboard/WidgetCustomizer';
 import SmartAlert from '@/components/dashboard/SmartAlert';
-import { BarChart3 } from 'lucide-react';
+import { BarChart3, RefreshCw, Gauge } from 'lucide-react';
 
 const STATUS_FLOW = {
   assigned:    { next: 'picked_up',   label: 'Récupérer',    btnClass: 'bg-blue-500 hover:bg-blue-600' },
@@ -50,9 +50,81 @@ function haversine(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+function getOrderCoords(order) {
+  return {
+    lat: order.delivery_lat || 0,
+    lng: order.delivery_lng || 0,
+  };
+}
+
+// Nearest Neighbor heuristic starting from courier position
+function nearestNeighborSort(origin, stops) {
+  if (!origin || !stops.length) return stops;
+  const remaining = [...stops];
+  const sorted = [];
+  let current = origin;
+  while (remaining.length > 0) {
+    let minDist = Infinity, minIdx = 0;
+    remaining.forEach((s, i) => {
+      const c = getOrderCoords(s);
+      const d = haversine(current.lat, current.lng, c.lat, c.lng);
+      if (d < minDist) { minDist = d; minIdx = i; }
+    });
+    sorted.push(remaining.splice(minIdx, 1)[0]);
+    const c = getOrderCoords(sorted[sorted.length - 1]);
+    current = c;
+  }
+  return sorted;
+}
+
+// 2-opt local search improvement
+function twoOpt(origin, route) {
+  if (route.length < 3) return route;
+  let improved = true;
+  let best = [...route];
+  const dist = (a, b) => {
+    const ca = getOrderCoords(a), cb = getOrderCoords(b);
+    return haversine(ca.lat, ca.lng, cb.lat, cb.lng);
+  };
+  const totalDist = (r) => {
+    let d = haversine(origin.lat, origin.lng, getOrderCoords(r[0]).lat, getOrderCoords(r[0]).lng);
+    for (let i = 0; i < r.length - 1; i++) d += dist(r[i], r[i + 1]);
+    return d;
+  };
+  while (improved) {
+    improved = false;
+    for (let i = 0; i < best.length - 1; i++) {
+      for (let j = i + 1; j < best.length; j++) {
+        const candidate = [...best.slice(0, i), ...best.slice(i, j + 1).reverse(), ...best.slice(j + 1)];
+        if (totalDist(candidate) < totalDist(best)) {
+          best = candidate;
+          improved = true;
+        }
+      }
+    }
+  }
+  return best;
+}
+
+function optimizeRoute(origin, stops) {
+  if (!origin || !stops.length) return stops;
+  const nn = nearestNeighborSort(origin, stops);
+  return twoOpt(origin, nn);
+}
+
+function formatDistance(meters) {
+  if (meters < 1000) return `${Math.round(meters)} m`;
+  return `${(meters / 1000).toFixed(1)} km`;
+}
+
 export default function DriverDashboard() {
   const [user, setUser] = useState(null);
   const [courierPos, setCourierPos] = useState(null);
+  const lastOptimizeTime = useRef(0);
+  const lastOptimizePos = useRef(null);
+  const [optimizedPickup, setOptimizedPickup] = useState([]);
+  const [optimizedDelivery, setOptimizedDelivery] = useState([]);
+  const [isOptimizing, setIsOptimizing] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showProofModal, setShowProofModal] = useState(false);
   const [signature, setSignature] = useState('');
@@ -83,17 +155,43 @@ export default function DriverDashboard() {
   useEffect(() => {
     if (!navigator.geolocation) return;
     const watchId = navigator.geolocation.watchPosition(
-      pos => setCourierPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      pos => {
+        const newPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setCourierPos(prev => {
+          // Throttle: only update if moved >250m or >60s
+          if (prev) {
+            const moved = haversine(prev.lat, prev.lng, newPos.lat, newPos.lng);
+            const elapsed = Date.now() - lastOptimizeTime.current;
+            if (moved < 250 && elapsed < 60000) return prev;
+          }
+          return newPos;
+        });
+      },
       () => {},
       { enableHighAccuracy: true, maximumAge: 15000, timeout: 10000 }
     );
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
+  // Throttled route optimization
+  const runOptimization = useCallback((pos, orderList) => {
+    const now = Date.now();
+    if (now - lastOptimizeTime.current < 30000) return; // throttle 30s
+    lastOptimizeTime.current = now;
+    lastOptimizePos.current = pos;
+    setIsOptimizing(true);
+    setTimeout(() => {
+      const pickups = orderList.filter(o => ['assigned', 'confirmed'].includes(o.status));
+      const deliveries = orderList.filter(o => ['picked_up', 'on_the_way'].includes(o.status));
+      setOptimizedPickup(optimizeRoute(pos, pickups));
+      setOptimizedDelivery(optimizeRoute(pos, deliveries));
+      setIsOptimizing(false);
+    }, 0);
+  }, []);
+
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['driver-orders', user?.email],
     queryFn: async () => {
-      // RBAC: only fetch orders assigned to this courier
       const allOrders = await base44.entities.Order.filter(
         { driver_email: user.email },
         '-created_date',
@@ -104,6 +202,16 @@ export default function DriverDashboard() {
     enabled: !!user,
     refetchInterval: 15000,
   });
+
+  // Trigger optimization when orders or position change
+  useEffect(() => {
+    if (orders.length && courierPos) {
+      runOptimization(courierPos, orders);
+    } else if (orders.length) {
+      setOptimizedPickup(orders.filter(o => ['assigned', 'confirmed'].includes(o.status)));
+      setOptimizedDelivery(orders.filter(o => ['picked_up', 'on_the_way'].includes(o.status)));
+    }
+  }, [orders, courierPos, runOptimization]);
 
   const { data: deliveredToday = [] } = useQuery({
     queryKey: ['driver-delivered-today', user?.email],
@@ -194,6 +302,12 @@ export default function DriverDashboard() {
     toast.success(`Route optimisée: ${route.length} arrêts`);
   };
 
+  const handleManualOptimize = () => {
+    lastOptimizeTime.current = 0; // force reset throttle
+    if (courierPos) runOptimization(courierPos, orders);
+    toast.success('Tournée recalculée ✓');
+  };
+
   // Generate smart alerts for drivers
   useEffect(() => {
     if (!orders.length || !preferences) return;
@@ -256,19 +370,8 @@ export default function DriverDashboard() {
 
   const visibleWidgets = preferences?.visible_widgets || ['stats', 'map', 'orders', 'earnings'];
 
-  // Sort by distance from courier GPS position (fallback: order by created_date)
-  const sortByProximity = (list) => {
-    if (!courierPos) return list;
-    return [...list].sort((a, b) => {
-      const da = haversine(courierPos.lat, courierPos.lng, a.delivery_lat || 0, a.delivery_lng || 0);
-      const db = haversine(courierPos.lat, courierPos.lng, b.delivery_lat || 0, b.delivery_lng || 0);
-      return da - db;
-    });
-  };
-
-  const pendingPickup = sortByProximity(orders.filter(o => ['assigned', 'confirmed'].includes(o.status)));
-  const inPickedUp   = sortByProximity(orders.filter(o => o.status === 'picked_up'));
-  const inDelivery   = sortByProximity(orders.filter(o => o.status === 'on_the_way'));
+  const pendingPickup = optimizedPickup.length > 0 ? optimizedPickup : orders.filter(o => ['assigned', 'confirmed'].includes(o.status));
+  const inDelivery = optimizedDelivery.length > 0 ? optimizedDelivery : orders.filter(o => ['picked_up', 'on_the_way'].includes(o.status));
 
   if (!user) {
     return (
@@ -295,22 +398,26 @@ export default function DriverDashboard() {
                 <p className="text-blue-100 text-sm">Bonjour, {user.full_name}</p>
               </div>
             </div>
-            <Button 
-              variant="secondary" 
-              size="sm"
-              onClick={() => setShowMap(!showMap)}
-            >
-              <Map className="w-4 h-4 mr-2" />
-              {showMap ? 'Masquer' : 'Carte'}
-            </Button>
-            <Button 
-              variant="secondary" 
-              size="sm"
-              onClick={() => setShowCustomizer(true)}
-            >
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Personnaliser
-            </Button>
+            <div className="flex items-center gap-2">
+              {courierPos && (
+                <span className="text-xs bg-white/20 px-2 py-1 rounded-full flex items-center gap-1">
+                  <div className="w-1.5 h-1.5 bg-green-300 rounded-full animate-pulse" />
+                  GPS actif
+                </span>
+              )}
+              <Button variant="secondary" size="sm" onClick={handleManualOptimize} disabled={isOptimizing}>
+                {isOptimizing ? <Gauge className="w-4 h-4 animate-spin mr-1" /> : <RefreshCw className="w-4 h-4 mr-1" />}
+                Recalculer
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setShowMap(!showMap)}>
+                <Map className="w-4 h-4 mr-2" />
+                {showMap ? 'Masquer' : 'Carte'}
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setShowCustomizer(true)}>
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Personnaliser
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-3 gap-3 mt-6">
@@ -319,7 +426,7 @@ export default function DriverDashboard() {
               <p className="text-xs text-blue-100">À récupérer</p>
             </Card>
             <Card className="bg-white/10 backdrop-blur-sm border-white/20 p-3 text-center">
-              <p className="text-2xl font-bold">{inPickedUp.length + inDelivery.length}</p>
+              <p className="text-2xl font-bold">{inDelivery.length}</p>
               <p className="text-xs text-blue-100">En route</p>
             </Card>
             <Card className="bg-white/10 backdrop-blur-sm border-white/20 p-3 text-center">
@@ -362,31 +469,15 @@ export default function DriverDashboard() {
             <h2 className="font-semibold mb-3 flex items-center gap-2">
               <Package className="w-5 h-5 text-blue-500" />
               À récupérer ({pendingPickup.length})
+              {courierPos && <span className="text-xs text-gray-400 font-normal">(trié par distance)</span>}
             </h2>
             <div className="space-y-3">
-              {pendingPickup.map((order) => (
+              {pendingPickup.map((order, idx) => (
                 <OrderCard 
-                  key={order.id} 
-                  order={order}
-                  onUpdateStatus={(status) => updateStatusMutation.mutate({ orderId: order.id, status })}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Picked up - en route */}
-        {inPickedUp.length > 0 && (
-          <section>
-            <h2 className="font-semibold mb-3 flex items-center gap-2">
-              <Truck className="w-5 h-5 text-yellow-500" />
-              Récupérées ({inPickedUp.length})
-            </h2>
-            <div className="space-y-3">
-              {inPickedUp.map((order) => (
-                <OrderCard
                   key={order.id}
                   order={order}
+                  index={idx + 1}
+                  courierPos={courierPos}
                   onUpdateStatus={(status) => updateStatusMutation.mutate({ orderId: order.id, status })}
                 />
               ))}
@@ -394,18 +485,21 @@ export default function DriverDashboard() {
           </section>
         )}
 
-        {/* On the way */}
+        {/* En route */}
         {inDelivery.length > 0 && (
           <section>
             <h2 className="font-semibold mb-3 flex items-center gap-2">
               <Navigation className="w-5 h-5 text-orange-500" />
               En route ({inDelivery.length})
+              {courierPos && <span className="text-xs text-gray-400 font-normal">(trié par distance)</span>}
             </h2>
             <div className="space-y-3">
-              {inDelivery.map((order) => (
+              {inDelivery.map((order, idx) => (
                 <OrderCard
                   key={order.id}
                   order={order}
+                  index={idx + 1}
+                  courierPos={courierPos}
                   onComplete={() => {
                     setSelectedOrder(order);
                     setShowQRScanner(true);
@@ -489,23 +583,36 @@ export default function DriverDashboard() {
   );
 }
 
-function OrderCard({ order, onUpdateStatus, onComplete }) {
+function OrderCard({ order, onUpdateStatus, onComplete, courierPos, index }) {
   const status = statusConfig[order.status];
   const Icon = status?.icon || Package;
+  const flow = STATUS_FLOW[order.status];
+
+  const distanceM = courierPos && (order.delivery_lat || order.delivery_lng)
+    ? haversine(courierPos.lat, courierPos.lng, order.delivery_lat || 0, order.delivery_lng || 0)
+    : null;
 
   const openNavigation = () => {
-    const address = encodeURIComponent(order.delivery_address || '');
-    window.open(`https://www.google.com/maps/search/?api=1&query=${address}`, '_blank');
+    if (order.delivery_lat && order.delivery_lng) {
+      window.open(`https://www.google.com/maps/dir/?api=1&destination=${order.delivery_lat},${order.delivery_lng}`, '_blank');
+    } else {
+      const address = encodeURIComponent(order.delivery_address || '');
+      window.open(`https://www.google.com/maps/search/?api=1&query=${address}`, '_blank');
+    }
   };
 
   return (
     <Card className="p-4">
       <div className="flex items-start justify-between mb-3">
-        <div>
-          <p className="font-semibold">{order.customer_name}</p>
-          <p className="text-sm text-gray-500">
-            {format(new Date(order.created_date), "d MMM à HH:mm", { locale: fr })}
-          </p>
+        <div className="flex items-center gap-2">
+          {index && <span className="w-6 h-6 bg-blue-100 text-blue-700 rounded-full text-xs flex items-center justify-center font-bold">{index}</span>}
+          <div>
+            <p className="font-semibold">{order.customer_name}</p>
+            <p className="text-sm text-gray-500">
+              {format(new Date(order.created_date), "d MMM à HH:mm", { locale: fr })}
+              {distanceM != null && <span className="ml-2 text-blue-500">· {formatDistance(distanceM)}</span>}
+            </p>
+          </div>
         </div>
         <Badge className={status.color}>
           <Icon className="w-3 h-3 mr-1" />
@@ -537,14 +644,16 @@ function OrderCard({ order, onUpdateStatus, onComplete }) {
           Itinéraire
         </Button>
         
-        {order.status === 'confirmed' && onUpdateStatus && (
-          <Button size="sm" onClick={() => onUpdateStatus('ready')} className="flex-1 bg-blue-500 hover:bg-blue-600">
+        {flow && onUpdateStatus && order.status !== 'on_the_way' && (
+          <Button size="sm"
+            onClick={() => onUpdateStatus(flow.next)}
+            className={`flex-1 ${flow.btnClass}`}>
             <Truck className="w-4 h-4 mr-1" />
-            Récupéré
+            {flow.label}
           </Button>
         )}
-        
-        {order.status === 'ready' && onComplete && (
+
+        {order.status === 'on_the_way' && onComplete && (
           <Button size="sm" onClick={onComplete} className="flex-1 bg-green-500 hover:bg-green-600">
             <CheckCircle className="w-4 h-4 mr-1" />
             Livré
