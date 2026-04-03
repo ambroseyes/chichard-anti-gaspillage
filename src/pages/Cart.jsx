@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShoppingCart, Trash2, Plus, Minus, ArrowRight, 
-  Clock, MapPin, ShoppingBag, Leaf, Sparkles
+  Clock, MapPin, ShoppingBag, Leaf, Sparkles, Tag, X
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -16,6 +16,9 @@ import SmartCartSuggestions from '@/components/cart/SmartCartSuggestions';
 
 export default function Cart() {
   const [user, setUser] = useState(null);
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponError, setCouponError] = useState('');
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -49,10 +52,33 @@ export default function Cart() {
     },
   });
 
+  const { data: userCoupons = [] } = useQuery({
+    queryKey: ['user-coupons', user?.email],
+    queryFn: () => base44.entities.Coupon.filter({ user_email: user.email, status: 'ACTIVE' }),
+    enabled: !!user,
+  });
+
   const totalAmount = cartItems.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
   const totalSavings = cartItems.reduce((sum, item) => 
     sum + ((item.original_price - item.unit_price) * item.quantity), 0
   );
+
+  const couponDiscount = appliedCoupon
+    ? appliedCoupon.type === 'PERCENT'
+      ? Math.round(totalAmount * appliedCoupon.value / 100)
+      : appliedCoupon.value
+    : 0;
+  const finalTotal = Math.max(0, totalAmount - couponDiscount);
+
+  const applyCoupon = () => {
+    setCouponError('');
+    const coupon = userCoupons.find(c => c.code.toUpperCase() === couponInput.toUpperCase());
+    if (!coupon) { setCouponError('Code invalide ou déjà utilisé'); return; }
+    if (new Date(coupon.valid_to) < new Date()) { setCouponError('Ce coupon a expiré'); return; }
+    if (coupon.min_cart_amount && totalAmount < coupon.min_cart_amount) { setCouponError(`Minimum de commande : ${coupon.min_cart_amount.toLocaleString()} FCFA`); return; }
+    setAppliedCoupon(coupon);
+    toast.success(`Coupon appliqué : -${coupon.type === 'PERCENT' ? coupon.value + '%' : coupon.value.toLocaleString() + ' FCFA'}`);
+  };
 
   if (!user) {
     return (
@@ -117,6 +143,37 @@ export default function Cart() {
             </div>
           </div>
         </motion.div>
+
+        {/* Coupon code */}
+        <div className="mb-4">
+          {!appliedCoupon ? (
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  value={couponInput}
+                  onChange={e => { setCouponInput(e.target.value); setCouponError(''); }}
+                  placeholder="Code coupon"
+                  className="w-full h-10 pl-9 pr-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                />
+              </div>
+              <Button onClick={applyCoupon} variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50">
+                Appliquer
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+              <Tag className="w-4 h-4 text-emerald-600" />
+              <span className="text-sm font-medium text-emerald-700 flex-1">
+                {appliedCoupon.code} — {appliedCoupon.type === 'PERCENT' ? `-${appliedCoupon.value}%` : `-${appliedCoupon.value.toLocaleString()} FCFA`}
+              </span>
+              <button onClick={() => { setAppliedCoupon(null); setCouponInput(''); }} className="text-gray-400 hover:text-red-500">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+          {couponError && <p className="text-xs text-red-500 mt-1 pl-1">{couponError}</p>}
+        </div>
 
         {/* Smart Cart AI */}
         {cartItems.length >= 2 && (
@@ -239,12 +296,18 @@ export default function Cart() {
             <span className="font-medium">{totalAmount.toLocaleString()} FCFA</span>
           </div>
           <div className="flex items-center justify-between text-sm text-emerald-600">
-            <span>Économies</span>
+            <span>Économies anti-gaspi</span>
             <span className="font-medium">-{totalSavings.toLocaleString()} FCFA</span>
           </div>
+          {appliedCoupon && (
+            <div className="flex items-center justify-between text-sm text-purple-600">
+              <span>Coupon {appliedCoupon.code}</span>
+              <span className="font-medium">-{couponDiscount.toLocaleString()} FCFA</span>
+            </div>
+          )}
           <div className="flex items-center justify-between text-lg font-bold">
             <span>Total</span>
-            <span>{totalAmount.toLocaleString()} FCFA</span>
+            <span>{finalTotal.toLocaleString()} FCFA</span>
           </div>
           <Link to={createPageUrl('Checkout')}>
             <Button className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-base">

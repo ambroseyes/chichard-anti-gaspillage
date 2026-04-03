@@ -41,8 +41,18 @@ const statusConfig = {
   cancelled:   { label: 'Annulée',    color: 'bg-gray-100 text-gray-500',     icon: AlertTriangle },
 };
 
+// Haversine distance in meters
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 export default function DriverDashboard() {
   const [user, setUser] = useState(null);
+  const [courierPos, setCourierPos] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showProofModal, setShowProofModal] = useState(false);
   const [signature, setSignature] = useState('');
@@ -67,6 +77,17 @@ export default function DriverDashboard() {
       }
     };
     loadUser();
+  }, []);
+
+  // GPS live tracking
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    const watchId = navigator.geolocation.watchPosition(
+      pos => setCourierPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 15000, timeout: 10000 }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
   const { data: orders = [], isLoading } = useQuery({
@@ -235,9 +256,19 @@ export default function DriverDashboard() {
 
   const visibleWidgets = preferences?.visible_widgets || ['stats', 'map', 'orders', 'earnings'];
 
-  const pendingPickup = orders.filter(o => ['assigned', 'confirmed'].includes(o.status));
-  const inPickedUp   = orders.filter(o => o.status === 'picked_up');
-  const inDelivery   = orders.filter(o => o.status === 'on_the_way');
+  // Sort by distance from courier GPS position (fallback: order by created_date)
+  const sortByProximity = (list) => {
+    if (!courierPos) return list;
+    return [...list].sort((a, b) => {
+      const da = haversine(courierPos.lat, courierPos.lng, a.delivery_lat || 0, a.delivery_lng || 0);
+      const db = haversine(courierPos.lat, courierPos.lng, b.delivery_lat || 0, b.delivery_lng || 0);
+      return da - db;
+    });
+  };
+
+  const pendingPickup = sortByProximity(orders.filter(o => ['assigned', 'confirmed'].includes(o.status)));
+  const inPickedUp   = sortByProximity(orders.filter(o => o.status === 'picked_up'));
+  const inDelivery   = sortByProximity(orders.filter(o => o.status === 'on_the_way'));
 
   if (!user) {
     return (

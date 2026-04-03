@@ -16,12 +16,35 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from 'sonner';
 
+const ECO_LEVELS = [
+  { id: 1, label: 'Débutant 🌱',        minKg: 0,  maxKg: 5,  color: 'from-gray-400 to-gray-500' },
+  { id: 2, label: 'Éco-Citoyen 🌿',    minKg: 5,  maxKg: 15, color: 'from-emerald-400 to-emerald-500' },
+  { id: 3, label: 'Éco-Héros 🌳',      minKg: 15, maxKg: 30, color: 'from-teal-400 to-teal-600' },
+  { id: 4, label: 'Éco-Champion 🌲',   minKg: 30, maxKg: 60, color: 'from-blue-400 to-blue-600' },
+  { id: 5, label: 'Éco-Légende 🌍',    minKg: 60, maxKg: 999, color: 'from-purple-500 to-indigo-600' },
+];
+
+const BADGES = [
+  { code: 'FIRST_SAVE',    icon: '🌱', title: 'Premier Sauvetage',    desc: 'Premier achat anti-gaspi',      rule: { minKg: 0.1 } },
+  { code: 'FRUIT_SAVER',  icon: '🍎', title: 'Sauveur de Fruits',     desc: '5 kg de fruits sauvés',         rule: { minKg: 5 } },
+  { code: 'ECO_WARRIOR',  icon: '⚔️', title: 'Guerrier Éco',          desc: '15 kg sauvés au total',         rule: { minKg: 15 } },
+  { code: 'CHAMPION',     icon: '🏆', title: 'Champion Anti-Gaspi',   desc: '30 kg sauvés au total',         rule: { minKg: 30 } },
+  { code: 'LEGEND',       icon: '🌍', title: 'Légende Planétaire',    desc: '60 kg sauvés au total',         rule: { minKg: 60 } },
+];
+
+const COUPON_REWARDS = [
+  { id: 'c1', label: '500 FCFA de réduction',  points: 100, value: 500,  type: 'FIXED' },
+  { id: 'c2', label: '1000 FCFA de réduction', points: 180, value: 1000, type: 'FIXED' },
+  { id: 'c3', label: '10% sur votre panier',   points: 250, value: 10,   type: 'PERCENT' },
+  { id: 'c4', label: '2500 FCFA de réduction', points: 400, value: 2500, type: 'FIXED' },
+];
+
 const tiers = [
-  { id: 'bronze', name: 'Bronze', minPoints: 0, color: 'from-amber-600 to-amber-700', icon: '🥉', multiplier: 1, benefits: ['Points de base'] },
-  { id: 'silver', name: 'Argent', minPoints: 1000, color: 'from-gray-400 to-gray-500', icon: '🥈', multiplier: 1.25, benefits: ['x1.25 points', 'Offres exclusives'] },
-  { id: 'gold', name: 'Or', minPoints: 5000, color: 'from-yellow-400 to-amber-500', icon: '🥇', multiplier: 1.5, benefits: ['x1.5 points', 'Livraison prioritaire', 'Accès anticipé'] },
-  { id: 'platinum', name: 'Platine', minPoints: 15000, color: 'from-purple-400 to-indigo-500', icon: '💎', multiplier: 2, benefits: ['x2 points', 'Support VIP', 'Événements exclusifs'] },
-  { id: 'diamond', name: 'Diamant', minPoints: 50000, color: 'from-cyan-400 to-blue-500', icon: '👑', multiplier: 3, benefits: ['x3 points', 'Concierge dédié', 'Expériences premium', 'Cadeaux anniversaire'] },
+  { id: 'bronze',   name: 'Bronze',  minPoints: 0,     color: 'from-amber-600 to-amber-700',   icon: '🥉', multiplier: 1,   benefits: ['Points de base'] },
+  { id: 'silver',   name: 'Argent',  minPoints: 1000,  color: 'from-gray-400 to-gray-500',     icon: '🥈', multiplier: 1.25, benefits: ['x1.25 points', 'Offres exclusives'] },
+  { id: 'gold',     name: 'Or',      minPoints: 5000,  color: 'from-yellow-400 to-amber-500',  icon: '🥇', multiplier: 1.5,  benefits: ['x1.5 points', 'Livraison prioritaire'] },
+  { id: 'platinum', name: 'Platine', minPoints: 15000, color: 'from-purple-400 to-indigo-500', icon: '💎', multiplier: 2,   benefits: ['x2 points', 'Support VIP'] },
+  { id: 'diamond',  name: 'Diamant', minPoints: 50000, color: 'from-cyan-400 to-blue-500',     icon: '👑', multiplier: 3,   benefits: ['x3 points', 'Expériences premium'] },
 ];
 
 const defaultRewards = [
@@ -67,12 +90,35 @@ export default function LoyaltyProgram() {
     ? ((userPoints - currentTier.minPoints) / (nextTier.minPoints - currentTier.minPoints)) * 100
     : 100;
 
+  const kgSaved = user?.kg_saved || 0;
+  const ecoLevel = [...ECO_LEVELS].reverse().find(l => kgSaved >= l.minKg) || ECO_LEVELS[0];
+  const nextEcoLevel = ECO_LEVELS[ECO_LEVELS.indexOf(ecoLevel) + 1];
+  const ecoProgress = nextEcoLevel
+    ? ((kgSaved - ecoLevel.minKg) / (nextEcoLevel.minKg - ecoLevel.minKg)) * 100
+    : 100;
+  const unlockedBadges = new Set(BADGES.filter(b => kgSaved >= b.rule.minKg).map(b => b.code));
+
+  const redeemCouponMutation = useMutation({
+    mutationFn: async (reward) => {
+      if (userPoints < reward.points) throw new Error('Points insuffisants');
+      const code = `ECO-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2,5).toUpperCase()}`;
+      const validTo = new Date(Date.now() + 30 * 86400000).toISOString();
+      await base44.entities.Coupon.create({
+        code, user_email: user.email, type: reward.type, value: reward.value,
+        points_cost: reward.points, valid_from: new Date().toISOString(), valid_to: validTo,
+        status: 'ACTIVE',
+      });
+      await base44.auth.updateMe({ loyalty_points: userPoints - reward.points });
+    },
+    onSuccess: () => { queryClient.invalidateQueries(); toast.success('Coupon généré ! Retrouvez-le dans votre panier 🎟️'); },
+    onError: (e) => toast.error(e.message),
+  });
+
   const redeemMutation = useMutation({
     mutationFn: async (reward) => {
       if (userPoints < reward.points_required) {
         throw new Error('Points insuffisants');
       }
-      
       await base44.entities.LoyaltyTransaction.create({
         user_email: user.email,
         type: 'redeem',
@@ -80,7 +126,6 @@ export default function LoyaltyProgram() {
         source: 'redemption',
         description: `Échange: ${reward.title}`
       });
-
       await base44.auth.updateMe({
         loyalty_points: userPoints - reward.points_required
       });
@@ -185,8 +230,9 @@ export default function LoyaltyProgram() {
           </div>
         </Card>
 
-        <Tabs defaultValue="rewards">
+        <Tabs defaultValue="eco-hero">
           <TabsList className="mb-6 flex-wrap">
+            <TabsTrigger value="eco-hero">🌍 Éco-Héros</TabsTrigger>
             <TabsTrigger value="rewards">
               <Gift className="w-4 h-4 mr-2" />
               Récompenses
@@ -205,19 +251,80 @@ export default function LoyaltyProgram() {
             </TabsTrigger>
           </TabsList>
 
+          <TabsContent value="eco-hero">
+            {/* Eco-Hero Gauge */}
+            <Card className={`p-5 mb-5 bg-gradient-to-br ${ecoLevel.color} text-white`}>
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-white/80 text-sm">Niveau Éco</p>
+                  <p className="text-2xl font-bold">{ecoLevel.label}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-3xl font-bold">{kgSaved.toFixed(1)}<span className="text-lg"> kg</span></p>
+                  <p className="text-white/70 text-sm">sauvés du gaspillage</p>
+                </div>
+              </div>
+              {nextEcoLevel && (
+                <div>
+                  <div className="flex justify-between text-xs text-white/70 mb-1">
+                    <span>{ecoLevel.minKg} kg</span>
+                    <span>{nextEcoLevel.minKg} kg → {nextEcoLevel.label}</span>
+                  </div>
+                  <div className="h-3 bg-white/20 rounded-full overflow-hidden">
+                    <div className="h-full bg-white rounded-full transition-all" style={{ width: `${Math.min(ecoProgress, 100)}%` }} />
+                  </div>
+                  <p className="text-center text-xs text-white/70 mt-1">{(nextEcoLevel.minKg - kgSaved).toFixed(1)} kg pour le niveau suivant</p>
+                </div>
+              )}
+            </Card>
+
+            {/* Badges */}
+            <h3 className="font-semibold mb-3">Badges</h3>
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-6">
+              {BADGES.map(badge => {
+                const unlocked = unlockedBadges.has(badge.code);
+                return (
+                  <div key={badge.code} className={`p-3 rounded-xl text-center border-2 transition-all ${
+                    unlocked ? 'border-emerald-300 bg-emerald-50' : 'border-dashed border-gray-200 bg-gray-50 opacity-50'
+                  }`}>
+                    <p className="text-2xl mb-1">{badge.icon}</p>
+                    <p className="text-xs font-medium text-gray-800">{badge.title}</p>
+                    <p className="text-[10px] text-gray-500">{badge.desc}</p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Convert points to coupon */}
+            <h3 className="font-semibold mb-3">Convertir mes points en coupon</h3>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {COUPON_REWARDS.map(r => {
+                const canAfford = userPoints >= r.points;
+                return (
+                  <Card key={r.id} className={`p-4 flex items-center justify-between ${!canAfford ? 'opacity-60' : ''}`}>
+                    <div>
+                      <p className="font-medium">{r.label}</p>
+                      <p className="text-xs text-gray-500">{r.points} pts · Valable 30 jours</p>
+                    </div>
+                    <Button size="sm" disabled={!canAfford || redeemCouponMutation.isPending}
+                      onClick={() => redeemCouponMutation.mutate(r)}
+                      className={canAfford ? 'bg-emerald-500 hover:bg-emerald-600' : ''}>
+                      Obtenir
+                    </Button>
+                  </Card>
+                );
+              })}
+            </div>
+          </TabsContent>
+
           <TabsContent value="rewards">
             <div className="grid md:grid-cols-2 gap-4">
               {displayRewards.map((reward) => {
                 const Icon = rewardIcons[reward.reward_type] || Gift;
                 const tierUnlocked = tiers.findIndex(t => t.id === reward.tier_required) <= tiers.indexOf(currentTier);
                 const canRedeem = userPoints >= reward.points_required && tierUnlocked;
-
                 return (
-                  <motion.div
-                    key={reward.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                  >
+                  <motion.div key={reward.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                     <Card className={`p-4 ${!tierUnlocked ? 'opacity-60' : ''}`}>
                       <div className="flex items-start gap-4">
                         <div className={`p-3 rounded-xl ${canRedeem ? 'bg-emerald-100' : 'bg-gray-100'}`}>
@@ -235,12 +342,8 @@ export default function LoyaltyProgram() {
                             )}
                           </div>
                         </div>
-                        <Button
-                          size="sm"
-                          disabled={!canRedeem}
-                          onClick={() => redeemMutation.mutate(reward)}
-                          className={canRedeem ? 'bg-emerald-500 hover:bg-emerald-600' : ''}
-                        >
+                        <Button size="sm" disabled={!canRedeem} onClick={() => redeemMutation.mutate(reward)}
+                          className={canRedeem ? 'bg-emerald-500 hover:bg-emerald-600' : ''}>
                           Échanger
                         </Button>
                       </div>
@@ -249,42 +352,6 @@ export default function LoyaltyProgram() {
                 );
               })}
             </div>
-          </TabsContent>
-
-          <TabsContent value="history">
-            <Card>
-              {transactions.length === 0 ? (
-                <div className="p-8 text-center">
-                  <TrendingUp className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">Aucune transaction</p>
-                </div>
-              ) : (
-                <div className="divide-y">
-                  {transactions.map((tx) => (
-                    <div key={tx.id} className="p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${tx.type === 'earn' ? 'bg-emerald-100' : 'bg-orange-100'}`}>
-                          {tx.type === 'earn' ? (
-                            <TrendingUp className="w-4 h-4 text-emerald-600" />
-                          ) : (
-                            <Gift className="w-4 h-4 text-orange-600" />
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-medium">{tx.description}</p>
-                          <p className="text-xs text-gray-500">
-                            {format(new Date(tx.created_date), "d MMM yyyy", { locale: fr })}
-                          </p>
-                        </div>
-                      </div>
-                      <span className={`font-bold ${tx.type === 'earn' ? 'text-emerald-600' : 'text-orange-600'}`}>
-                        {tx.type === 'earn' ? '+' : ''}{tx.points}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
           </TabsContent>
 
           <TabsContent value="experiences">

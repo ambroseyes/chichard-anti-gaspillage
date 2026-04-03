@@ -12,6 +12,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import AdminBackoffice from './pages/AdminBackoffice';
 import AIRecipes from './pages/AIRecipes';
 import NotificationSettings from './pages/NotificationSettings';
+import PartnerPredictiveDashboard from './pages/PartnerPredictiveDashboard';
 import BackofficeUsers from './pages/BackofficeUsers';
 import BackofficeSales from './pages/BackofficeSales';
 import BackofficeLogs from './pages/BackofficeLogs';
@@ -70,6 +71,7 @@ const AuthenticatedApp = () => {
       <Route path="/AdminBackoffice" element={<AdminBackoffice />} />
       <Route path="/AIRecipes" element={<LayoutWrapper currentPageName="AIRecipes"><AIRecipes /></LayoutWrapper>} />
       <Route path="/NotificationSettings" element={<LayoutWrapper currentPageName="NotificationSettings"><NotificationSettings /></LayoutWrapper>} />
+      <Route path="/PartnerPredictiveDashboard" element={<LayoutWrapper currentPageName="PartnerPredictiveDashboard"><PartnerPredictiveDashboard /></LayoutWrapper>} />
       <Route path="/BackofficeUsers" element={<BackofficeUsers />} />
       <Route path="/BackofficeSales" element={<BackofficeSales />} />
       <Route path="/BackofficeLogs" element={<BackofficeLogs />} />
