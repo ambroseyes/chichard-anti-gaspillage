@@ -10,11 +10,15 @@ import {
   Package, Clock, CheckCircle, Truck, XCircle, 
   ChevronRight, ShoppingBag, MapPin, Store
 } from 'lucide-react';
+import DeliveryChat from '@/components/delivery/DeliveryChat';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+// Active delivery statuses where chat is relevant
+const CHAT_ACTIVE_STATUSES = ['confirmed', 'picked_up', 'on_the_way', 'ready'];
 
 const statusConfig = {
   pending: { label: 'En attente', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
@@ -171,15 +175,20 @@ export default function Orders() {
                           </>
                         )}
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-emerald-600">
-                          {order.total_amount?.toLocaleString()} FCFA
-                        </p>
-                        {order.total_savings > 0 && (
-                          <p className="text-xs text-emerald-500">
-                            -{order.total_savings?.toLocaleString()} économisés
-                          </p>
+                      <div className="flex items-center gap-3">
+                        {CHAT_ACTIVE_STATUSES.includes(order.status) && order.driver_email && (
+                          <DeliveryChat order={order} currentUser={user} />
                         )}
+                        <div className="text-right">
+                          <p className="font-bold text-emerald-600">
+                            {order.total_amount?.toLocaleString()} FCFA
+                          </p>
+                          {order.total_savings > 0 && (
+                            <p className="text-xs text-emerald-500">
+                              -{order.total_savings?.toLocaleString()} économisés
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </Card>

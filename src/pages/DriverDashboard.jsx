@@ -23,6 +23,7 @@ import DeliveryNotifications from '@/components/delivery/DeliveryNotifications';
 import WidgetCustomizer from '@/components/dashboard/WidgetCustomizer';
 import SmartAlert from '@/components/dashboard/SmartAlert';
 import { BarChart3, RefreshCw, Gauge } from 'lucide-react';
+import DeliveryChat from '@/components/delivery/DeliveryChat';
 
 const STATUS_FLOW = {
   assigned:    { next: 'picked_up',   label: 'Récupérer',    btnClass: 'bg-blue-500 hover:bg-blue-600' },
@@ -478,6 +479,7 @@ export default function DriverDashboard() {
                   order={order}
                   index={idx + 1}
                   courierPos={courierPos}
+                  currentUser={user}
                   onUpdateStatus={(status) => updateStatusMutation.mutate({ orderId: order.id, status })}
                 />
               ))}
@@ -500,6 +502,7 @@ export default function DriverDashboard() {
                   order={order}
                   index={idx + 1}
                   courierPos={courierPos}
+                  currentUser={user}
                   onComplete={() => {
                     setSelectedOrder(order);
                     setShowQRScanner(true);
@@ -583,7 +586,7 @@ export default function DriverDashboard() {
   );
 }
 
-function OrderCard({ order, onUpdateStatus, onComplete, courierPos, index }) {
+function OrderCard({ order, onUpdateStatus, onComplete, courierPos, index, currentUser }) {
   const status = statusConfig[order.status];
   const Icon = status?.icon || Package;
   const flow = STATUS_FLOW[order.status];
@@ -638,12 +641,14 @@ function OrderCard({ order, onUpdateStatus, onComplete, courierPos, index }) {
         <p className="text-lg font-bold text-emerald-600">{order.total_amount?.toLocaleString()} FCFA</p>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <Button variant="outline" size="sm" onClick={openNavigation} className="flex-1">
           <Navigation className="w-4 h-4 mr-1" />
           Itinéraire
         </Button>
-        
+
+        <DeliveryChat order={order} currentUser={currentUser || { email: order.driver_email }} />
+
         {flow && onUpdateStatus && order.status !== 'on_the_way' && (
           <Button size="sm"
             onClick={() => onUpdateStatus(flow.next)}

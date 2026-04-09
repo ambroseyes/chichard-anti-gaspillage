@@ -6,6 +6,7 @@ import ProductVariantManager from '@/components/products/ProductVariantManager';
 import StockHistoryViewer from '@/components/products/StockHistoryViewer';
 import ProductCloner from '@/components/products/ProductCloner';
 import PartnerChatbot from '@/components/partner/PartnerChatbot';
+import RestockAdvisor from '@/components/partner/RestockAdvisor';
 import { format } from 'date-fns';
 import {
   Plus, Search, Edit2, Trash2, Clock, Package,
@@ -222,6 +223,16 @@ export default function PartnerProducts() {
             Ajouter un produit
           </Button>
         </div>
+
+        {/* Restock Advisor */}
+        {products.length > 0 && (
+          <RestockAdvisor
+            products={products}
+            onRestock={(product, qty) => {
+              // Optionally open edit dialog pre-filled for manual update
+            }}
+          />
+        )}
 
         {/* Search */}
         <div className="relative">
