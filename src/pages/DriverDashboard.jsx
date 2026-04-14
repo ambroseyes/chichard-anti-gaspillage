@@ -24,6 +24,8 @@ import WidgetCustomizer from '@/components/dashboard/WidgetCustomizer';
 import SmartAlert from '@/components/dashboard/SmartAlert';
 import { BarChart3, RefreshCw, Gauge } from 'lucide-react';
 import DeliveryChat from '@/components/delivery/DeliveryChat';
+import MultiBulkScanner from '@/components/delivery/MultiBulkScanner';
+import GoogleDirectionsMap from '@/components/delivery/GoogleDirectionsMap';
 
 const STATUS_FLOW = {
   assigned:    { next: 'picked_up',   label: 'Récupérer',    btnClass: 'bg-blue-500 hover:bg-blue-600' },
@@ -133,6 +135,7 @@ export default function DriverDashboard() {
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [showCustomizer, setShowCustomizer] = useState(false);
+  const [showBulkScanner, setShowBulkScanner] = useState(false);
   const [alerts, setAlerts] = useState([]);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -414,6 +417,10 @@ export default function DriverDashboard() {
                 <Map className="w-4 h-4 mr-2" />
                 {showMap ? 'Masquer' : 'Carte'}
               </Button>
+              <Button variant="secondary" size="sm" onClick={() => setShowBulkScanner(true)}>
+                <QrCode className="w-4 h-4 mr-2" />
+                Scan multiple
+              </Button>
               <Button variant="secondary" size="sm" onClick={() => setShowCustomizer(true)}>
                 <BarChart3 className="w-4 h-4 mr-2" />
                 Personnaliser
@@ -444,10 +451,10 @@ export default function DriverDashboard() {
           <SmartAlert alerts={alerts} onDismiss={(id) => setAlerts(alerts.filter(a => a.id !== id))} />
         )}
 
-        {/* Interactive Live Map */}
+        {/* Interactive Live Map + Google Directions */}
         {visibleWidgets.includes('map') && showMap && orders.length > 0 && (
-          <Card className="p-4">
-            <div className="flex items-center justify-between mb-3">
+          <Card className="p-4 space-y-4">
+            <div className="flex items-center justify-between">
               <h2 className="font-semibold flex items-center gap-2">
                 <Map className="w-5 h-5 text-blue-500" />
                 Carte en temps réel
@@ -457,6 +464,7 @@ export default function DriverDashboard() {
                 Live
               </Badge>
             </div>
+            <GoogleDirectionsMap orders={orders} courierPos={courierPos} />
             <LiveDeliveryMap 
               orders={orders} 
               onRouteOptimize={handleRouteOptimize}
@@ -573,6 +581,18 @@ export default function DriverDashboard() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Multi Scanner */}
+      <MultiBulkScanner
+        open={showBulkScanner}
+        onClose={() => setShowBulkScanner(false)}
+        availableOrders={inDelivery}
+        driverEmail={user?.email}
+        onSuccess={(delivered) => {
+          queryClient.invalidateQueries({ queryKey: ['driver-orders'] });
+          queryClient.invalidateQueries({ queryKey: ['driver-delivered-today'] });
+        }}
+      />
 
       {/* Widget Customizer */}
       <WidgetCustomizer

@@ -35,6 +35,7 @@ import AIProductRecommendations from '@/components/partner/AIProductRecommendati
 import ProductBundleManager from '@/components/partner/ProductBundleManager';
 import PromotionManager from '@/components/partner/PromotionManager';
 import PartnerChatbot from '@/components/partner/PartnerChatbot';
+import FoodSavingsDashboard from '@/components/partner/FoodSavingsDashboard';
 
 export default function PartnerDashboard() {
   const [user, setUser] = useState(null);
@@ -272,6 +273,9 @@ export default function PartnerDashboard() {
 
         {/* Promotion Manager */}
         <PromotionManager storeId={user.store_id} storeEmail={user.email} />
+
+        {/* Food Savings Analytics */}
+        <FoodSavingsDashboard products={products} />
 
         {/* Advanced Sales Chart */}
         {visibleWidgets.includes('revenue') && (
