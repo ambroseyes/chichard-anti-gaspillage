@@ -48,15 +48,7 @@ export default function Layout({ children, currentPageName }) {
       };
       loadUser();
 
-      // Real-time subscription for admin notifications
-      if (user && user.role === 'admin') {
-      const unsubscribe = base44.entities.Notification.subscribe((event) => {
-        if (event.type === 'create' && event.data.user_email === user.email) {
-          queryClient.invalidateQueries({ queryKey: ['notifications-count', user.email] });
-        }
-      });
-      return () => unsubscribe();
-      }
+
       }, [user]);
 
   const { data: cartItems = [] } = useQuery({

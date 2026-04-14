@@ -98,14 +98,6 @@ export default function Profile() {
     }));
   };
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full" />
-      </div>
-    );
-  }
-
   const { data: orders = [] } = useQuery({
     queryKey: ['profile-orders', user?.email],
     queryFn: () => base44.entities.Order.filter({ customer_email: user.email }, '-created_date', 50),
@@ -114,6 +106,14 @@ export default function Profile() {
 
   const totalSaved = orders.reduce((s, o) => s + (o.savings_amount || 0), 0);
   const level = ecoLevels[user?.eco_level] || ecoLevels.debutant;
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
