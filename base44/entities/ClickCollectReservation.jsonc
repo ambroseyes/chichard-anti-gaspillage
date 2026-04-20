@@ -1,0 +1,103 @@
+{
+  "name": "ClickCollectReservation",
+  "type": "object",
+  "properties": {
+    "customer_email": {
+      "type": "string"
+    },
+    "customer_name": {
+      "type": "string"
+    },
+    "customer_phone": {
+      "type": "string"
+    },
+    "basket_id": {
+      "type": "string"
+    },
+    "basket_name": {
+      "type": "string"
+    },
+    "store_id": {
+      "type": "string"
+    },
+    "store_name": {
+      "type": "string"
+    },
+    "store_address": {
+      "type": "string"
+    },
+    "pickup_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "pickup_slot": {
+      "type": "string",
+      "description": "Cr\u00e9neau choisi ex: 17:00-18:00"
+    },
+    "quantity": {
+      "type": "number",
+      "default": 1
+    },
+    "unit_price": {
+      "type": "number"
+    },
+    "total_amount": {
+      "type": "number"
+    },
+    "savings_amount": {
+      "type": "number"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "orange_money",
+        "mtn_money",
+        "card",
+        "cash_on_pickup"
+      ]
+    },
+    "payment_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "paid",
+        "refunded",
+        "failed"
+      ],
+      "default": "pending"
+    },
+    "confirmation_code": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "reserved",
+        "confirmed",
+        "ready",
+        "collected",
+        "cancelled",
+        "no_show"
+      ],
+      "default": "reserved"
+    },
+    "qr_code_url": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "co2_saved_kg": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "customer_email",
+    "basket_id",
+    "store_id",
+    "pickup_date",
+    "pickup_slot",
+    "total_amount",
+    "payment_method"
+  ]
+}

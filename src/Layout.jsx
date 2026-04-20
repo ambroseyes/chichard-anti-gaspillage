@@ -23,7 +23,8 @@ import {
         Ticket,
         MessageCircle,
         Bell,
-        Truck
+        Truck,
+        ShoppingBag
       } from 'lucide-react';
 import GlobalSearch from '@/components/search/GlobalSearch';
 import FloatingCart from '@/components/cart/FloatingCart';
@@ -75,6 +76,7 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Catalog', icon: Search, label: 'Catalogue' },
     { name: 'CommunityChat', icon: MessageCircle, label: 'Chat' },
     { name: 'Community', icon: Users, label: 'Social' },
+    { name: 'ClickCollect', icon: ShoppingBag, label: 'Click & Collect' },
     { name: 'MyAccount', icon: User, label: 'Mon Compte' },
     { name: 'Cart', icon: ShoppingCart, label: 'Panier', badge: cartCount },
   ];

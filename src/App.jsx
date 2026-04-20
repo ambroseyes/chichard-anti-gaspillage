@@ -17,6 +17,7 @@ import BackofficeUsers from './pages/BackofficeUsers';
 import BackofficeSales from './pages/BackofficeSales';
 import BackofficeLogs from './pages/BackofficeLogs';
 import BackofficeTransactions from './pages/BackofficeTransactions';
+import ClickCollect from './pages/ClickCollect';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -76,6 +77,7 @@ const AuthenticatedApp = () => {
       <Route path="/BackofficeSales" element={<BackofficeSales />} />
       <Route path="/BackofficeLogs" element={<BackofficeLogs />} />
       <Route path="/BackofficeTransactions" element={<BackofficeTransactions />} />
+      <Route path="/ClickCollect" element={<LayoutWrapper currentPageName="ClickCollect"><ClickCollect /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

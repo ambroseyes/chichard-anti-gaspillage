@@ -1,0 +1,111 @@
+{
+  "name": "ClickCollectBasket",
+  "type": "object",
+  "properties": {
+    "store_id": {
+      "type": "string"
+    },
+    "store_name": {
+      "type": "string"
+    },
+    "store_address": {
+      "type": "string"
+    },
+    "basket_type": {
+      "type": "string",
+      "enum": [
+        "surprise_basket",
+        "specific_products"
+      ],
+      "description": "Panier surprise ou produits sp\u00e9cifiques"
+    },
+    "name": {
+      "type": "string",
+      "description": "Nom du panier (ex: Panier du soir)"
+    },
+    "description": {
+      "type": "string"
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "original_price": {
+      "type": "number"
+    },
+    "discounted_price": {
+      "type": "number"
+    },
+    "quantity_available": {
+      "type": "number",
+      "default": 0
+    },
+    "quantity_reserved": {
+      "type": "number",
+      "default": 0
+    },
+    "products": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "type": "string"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unit_price": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "pickup_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "pickup_slots": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Cr\u00e9neaux disponibles ex: [17:00-18:00, 18:00-19:00]"
+    },
+    "category": {
+      "type": "string"
+    },
+    "allergens": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "weight_kg": {
+      "type": "number"
+    },
+    "co2_saved_kg": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "sold_out",
+        "expired"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "store_id",
+    "store_name",
+    "basket_type",
+    "name",
+    "original_price",
+    "discounted_price",
+    "pickup_date"
+  ]
+}
