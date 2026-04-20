@@ -97,6 +97,7 @@ export default function Layout({ children, currentPageName }) {
   const partnerNavItems = [
     { name: 'PartnerDashboard', icon: BarChart3, label: 'Tableau de bord' },
     { name: 'PartnerProducts', icon: Package, label: 'Produits' },
+    { name: 'MerchantBasketManager', icon: ShoppingBag, label: 'Paniers du soir' },
     { name: 'PartnerChallenges', icon: Flame, label: 'Défis' },
     { name: 'PartnerExperiences', icon: Ticket, label: 'Expériences' },
     { name: 'StockGuardian', icon: Leaf, label: 'StockGuardian' },
