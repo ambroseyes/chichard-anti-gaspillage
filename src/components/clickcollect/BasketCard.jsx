@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ShoppingBag, Clock, Leaf, Star } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import StoreRatingBadge from './StoreRatingBadge';
 
 export default function BasketCard({ basket, onReserve }) {
   const discount = Math.round((1 - basket.discounted_price / basket.original_price) * 100);
@@ -45,7 +46,10 @@ export default function BasketCard({ basket, onReserve }) {
             </span>
           )}
         </div>
-        <p className="text-xs text-gray-500 mb-2">{basket.store_name}</p>
+        <div className="flex items-center gap-2 mb-1">
+          <p className="text-xs text-gray-500">{basket.store_name}</p>
+          <StoreRatingBadge storeId={basket.store_id} />
+        </div>
         {basket.description && (
           <p className="text-sm text-gray-600 mb-3 line-clamp-2">{basket.description}</p>
         )}

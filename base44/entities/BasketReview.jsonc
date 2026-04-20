@@ -1,0 +1,62 @@
+{
+  "name": "BasketReview",
+  "type": "object",
+  "properties": {
+    "reservation_id": {
+      "type": "string"
+    },
+    "basket_id": {
+      "type": "string"
+    },
+    "basket_name": {
+      "type": "string"
+    },
+    "store_id": {
+      "type": "string"
+    },
+    "store_name": {
+      "type": "string"
+    },
+    "customer_email": {
+      "type": "string"
+    },
+    "customer_name": {
+      "type": "string"
+    },
+    "rating_overall": {
+      "type": "number",
+      "description": "Note globale 1-5"
+    },
+    "rating_quality": {
+      "type": "number",
+      "description": "Qualit\u00e9 des produits 1-5"
+    },
+    "rating_freshness": {
+      "type": "number",
+      "description": "Fra\u00eecheur 1-5"
+    },
+    "rating_quantity": {
+      "type": "number",
+      "description": "Quantit\u00e9 / rapport qualit\u00e9-prix 1-5"
+    },
+    "comment": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Ex: bien garni, tr\u00e8s frais, conforme description"
+    },
+    "would_recommend": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "reservation_id",
+    "store_id",
+    "customer_email",
+    "rating_overall"
+  ]
+}

@@ -11,6 +11,8 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import BasketCard from '@/components/clickcollect/BasketCard';
 import ReservationModal from '@/components/clickcollect/ReservationModal';
+import BasketReviewModal from '@/components/clickcollect/BasketReviewModal';
+import StoreRatingBadge from '@/components/clickcollect/StoreRatingBadge';
 import { toast } from 'sonner';
 
 export default function ClickCollect() {
@@ -19,6 +21,7 @@ export default function ClickCollect() {
   const [selectedBasket, setSelectedBasket] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [lastReservation, setLastReservation] = useState(null);
+  const [reviewReservation, setReviewReservation] = useState(null);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -36,6 +39,12 @@ export default function ClickCollect() {
       '-created_date',
       20
     ),
+    enabled: !!user?.email,
+  });
+
+  const { data: myReviews = [] } = useQuery({
+    queryKey: ['my-basket-reviews', user?.email],
+    queryFn: () => base44.entities.BasketReview.filter({ customer_email: user.email }),
     enabled: !!user?.email,
   });
 
@@ -190,6 +199,21 @@ export default function ClickCollect() {
                             <Leaf className="w-3 h-3" /> {r.co2_saved_kg} kg CO₂ évité
                           </p>
                         )}
+                        {r.status === 'collected' && !myReviews.find(rv => rv.reservation_id === r.id) && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="mt-3 w-full border-amber-300 text-amber-700 hover:bg-amber-50"
+                            onClick={() => setReviewReservation(r)}
+                          >
+                            ⭐ Noter ce panier
+                          </Button>
+                        )}
+                        {myReviews.find(rv => rv.reservation_id === r.id) && (
+                          <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">
+                            ✅ Vous avez noté ce panier · {myReviews.find(rv => rv.reservation_id === r.id).rating_overall}/5
+                          </p>
+                        )}
                       </Card>
                     );
                   })}
@@ -206,6 +230,12 @@ export default function ClickCollect() {
         open={showModal}
         onClose={() => { setShowModal(false); setSelectedBasket(null); }}
         onSuccess={handleReservationSuccess}
+      />
+      <BasketReviewModal
+        reservation={reviewReservation}
+        user={user}
+        open={!!reviewReservation}
+        onClose={() => setReviewReservation(null)}
       />
     </div>
   );
