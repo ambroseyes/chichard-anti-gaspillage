@@ -17,6 +17,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Switch } from "@/components/ui/switch";
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import SavingsDashboard from '@/components/account/SavingsDashboard';
+import { BarChart2 } from 'lucide-react';
 
 export default function MyAccount() {
   const [user, setUser] = useState(null);
@@ -192,7 +194,11 @@ export default function MyAccount() {
 
         {/* Tabs */}
         <Tabs defaultValue="orders" className="space-y-6">
-          <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+          <TabsList className="grid grid-cols-5 w-full max-w-3xl">
+            <TabsTrigger value="dashboard" className="flex items-center gap-2">
+              <BarChart2 className="w-4 h-4" />
+              Impact
+            </TabsTrigger>
             <TabsTrigger value="orders" className="flex items-center gap-2">
               <ShoppingBag className="w-4 h-4" />
               Commandes
@@ -210,6 +216,11 @@ export default function MyAccount() {
               Notifications
             </TabsTrigger>
           </TabsList>
+
+          {/* Dashboard Tab */}
+          <TabsContent value="dashboard">
+            <SavingsDashboard orders={orders} user={user} />
+          </TabsContent>
 
           {/* Orders Tab */}
           <TabsContent value="orders" className="space-y-4">

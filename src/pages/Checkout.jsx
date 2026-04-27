@@ -96,8 +96,73 @@ export default function Checkout() {
       await base44.entities.CartItem.delete(item.id);
     }
 
+    // Send confirmation email
+    const itemsHtml = cartItems.map(item =>
+      `<tr>
+        <td style="padding:6px 0;border-bottom:1px solid #f3f4f6">${item.product_name} x${item.quantity}</td>
+        <td style="padding:6px 0;border-bottom:1px solid #f3f4f6;text-align:right">${(item.unit_price * item.quantity).toLocaleString()} FCFA</td>
+      </tr>`
+    ).join('');
+
+    const paymentLabels = {
+      orange_money: 'Orange Money',
+      mtn_money: 'MTN Mobile Money',
+      cash: 'Paiement à la livraison',
+    };
+
+    await base44.integrations.Core.SendEmail({
+      to: user.email,
+      subject: `✅ Commande confirmée #${order.id.slice(0, 8)} — Chichard`,
+      body: `
+        <div style="font-family:sans-serif;max-width:560px;margin:auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb">
+          <div style="background:linear-gradient(135deg,#10b981,#0d9488);padding:32px 24px;text-align:center">
+            <h1 style="color:#fff;margin:0;font-size:24px">🌿 Chichard</h1>
+            <p style="color:#d1fae5;margin:8px 0 0">Merci pour votre commande !</p>
+          </div>
+          <div style="padding:28px 24px">
+            <p style="color:#374151;font-size:15px">Bonjour <strong>${user.full_name}</strong>,</p>
+            <p style="color:#6b7280;font-size:14px">Votre commande <strong>#${order.id.slice(0, 8)}</strong> a bien été reçue. En achetant des produits anti-gaspillage, vous avez contribué à sauver la planète ! 🌍</p>
+
+            <div style="background:#f9fafb;border-radius:12px;padding:16px;margin:20px 0">
+              <h2 style="font-size:15px;color:#111827;margin:0 0 12px">Détail de la commande</h2>
+              <table style="width:100%;font-size:14px;color:#374151">
+                ${itemsHtml}
+                <tr>
+                  <td style="padding:10px 0 4px;color:#10b981;font-weight:600">Économies réalisées</td>
+                  <td style="padding:10px 0 4px;color:#10b981;font-weight:600;text-align:right">-${totalSavings.toLocaleString()} FCFA</td>
+                </tr>
+                <tr>
+                  <td style="padding:6px 0;font-weight:700;font-size:16px;color:#111827">Total payé</td>
+                  <td style="padding:6px 0;font-weight:700;font-size:16px;color:#111827;text-align:right">${totalAmount.toLocaleString()} FCFA</td>
+                </tr>
+              </table>
+            </div>
+
+            <div style="display:flex;gap:12px;margin:20px 0">
+              <div style="flex:1;background:#ecfdf5;border-radius:10px;padding:12px;text-align:center">
+                <p style="margin:0;font-size:12px;color:#6b7280">Mode de récupération</p>
+                <p style="margin:4px 0 0;font-weight:600;color:#065f46;font-size:13px">${deliveryType === 'pickup' ? '🏪 Retrait en magasin' : '🚚 Livraison à domicile'}</p>
+              </div>
+              <div style="flex:1;background:#eff6ff;border-radius:10px;padding:12px;text-align:center">
+                <p style="margin:0;font-size:12px;color:#6b7280">Paiement</p>
+                <p style="margin:4px 0 0;font-weight:600;color:#1e40af;font-size:13px">${paymentLabels[paymentMethod] || paymentMethod}</p>
+              </div>
+            </div>
+
+            ${deliveryType === 'delivery' && address ? `<p style="color:#6b7280;font-size:13px">📍 Livraison à : <strong>${address}</strong></p>` : ''}
+
+            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;margin-top:16px;text-align:center">
+              <p style="margin:0;color:#065f46;font-size:13px">🌱 Vous avez évité environ <strong>${(cartItems.length * 0.5).toFixed(1)} kg de CO₂</strong> avec cette commande. Merci !</p>
+            </div>
+
+            <p style="color:#9ca3af;font-size:12px;text-align:center;margin-top:24px">Chichard — La plateforme anti-gaspillage 🌍</p>
+          </div>
+        </div>
+      `
+    });
+
     setIsProcessing(false);
-    toast.success('Commande confirmée !');
+    toast.success('Commande confirmée ! Un email de confirmation vous a été envoyé.');
     navigate(createPageUrl('Orders'));
   };
 
