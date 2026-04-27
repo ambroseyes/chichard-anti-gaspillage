@@ -19,6 +19,7 @@ import BackofficeLogs from './pages/BackofficeLogs';
 import BackofficeTransactions from './pages/BackofficeTransactions';
 import ClickCollect from './pages/ClickCollect';
 import MerchantBasketManager from './pages/MerchantBasketManager';
+import ProductPreferences from './pages/ProductPreferences';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -80,6 +81,7 @@ const AuthenticatedApp = () => {
       <Route path="/BackofficeTransactions" element={<BackofficeTransactions />} />
       <Route path="/ClickCollect" element={<LayoutWrapper currentPageName="ClickCollect"><ClickCollect /></LayoutWrapper>} />
       <Route path="/MerchantBasketManager" element={<LayoutWrapper currentPageName="MerchantBasketManager"><MerchantBasketManager /></LayoutWrapper>} />
+      <Route path="/ProductPreferences" element={<LayoutWrapper currentPageName="ProductPreferences"><ProductPreferences /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
