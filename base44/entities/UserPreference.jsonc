@@ -1,0 +1,92 @@
+{
+  "name": "UserPreference",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email de l'utilisateur"
+    },
+    "favorite_categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Cat\u00e9gories pr\u00e9f\u00e9r\u00e9es"
+    },
+    "budget_monthly": {
+      "type": "number",
+      "description": "Budget mensuel estim\u00e9 en FCFA"
+    },
+    "max_distance_km": {
+      "type": "number",
+      "default": 10,
+      "description": "Distance maximale pour les magasins (km)"
+    },
+    "preferred_stores": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs des magasins pr\u00e9f\u00e9r\u00e9s"
+    },
+    "notification_preferences": {
+      "type": "object",
+      "properties": {
+        "favorite_products_promo": {
+          "type": "boolean",
+          "default": true
+        },
+        "dlc_alerts": {
+          "type": "boolean",
+          "default": true
+        },
+        "price_drop_alerts": {
+          "type": "boolean",
+          "default": true
+        },
+        "new_stores_nearby": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "location": {
+      "type": "object",
+      "properties": {
+        "latitude": {
+          "type": "number"
+        },
+        "longitude": {
+          "type": "number"
+        },
+        "city": {
+          "type": "string"
+        },
+        "last_updated": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "allergens_to_avoid": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "dietary_preferences": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "V\u00e9g\u00e9tarien, vegan, halal, etc."
+    }
+  },
+  "required": [
+    "user_email"
+  ]
+}

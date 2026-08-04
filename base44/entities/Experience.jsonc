@@ -1,0 +1,77 @@
+{
+  "name": "Experience",
+  "type": "object",
+  "properties": {
+    "store_id": {
+      "type": "string"
+    },
+    "store_name": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "experience_type": {
+      "type": "string",
+      "enum": [
+        "workshop",
+        "visit",
+        "tasting",
+        "class",
+        "event"
+      ],
+      "default": "workshop"
+    },
+    "points_required": {
+      "type": "number"
+    },
+    "duration_minutes": {
+      "type": "number"
+    },
+    "max_participants": {
+      "type": "number"
+    },
+    "current_participants": {
+      "type": "number",
+      "default": 0
+    },
+    "event_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "event_time": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "tier_required": {
+      "type": "string",
+      "enum": [
+        "bronze",
+        "silver",
+        "gold",
+        "platinum",
+        "diamond"
+      ],
+      "default": "bronze"
+    }
+  },
+  "required": [
+    "store_id",
+    "title",
+    "points_required",
+    "event_date",
+    "max_participants"
+  ]
+}

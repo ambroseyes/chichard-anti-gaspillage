@@ -1,0 +1,49 @@
+{
+  "name": "UserInteraction",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "item_type": {
+      "type": "string",
+      "enum": [
+        "product",
+        "recipe",
+        "tip",
+        "challenge",
+        "post"
+      ]
+    },
+    "item_id": {
+      "type": "string"
+    },
+    "interaction_type": {
+      "type": "string",
+      "enum": [
+        "view",
+        "like",
+        "share",
+        "save",
+        "purchase",
+        "click"
+      ]
+    },
+    "category": {
+      "type": "string"
+    },
+    "metadata": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "user_email",
+    "item_type",
+    "item_id",
+    "interaction_type"
+  ]
+}

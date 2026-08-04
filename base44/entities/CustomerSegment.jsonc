@@ -1,0 +1,90 @@
+{
+  "name": "CustomerSegment",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "segment_type": {
+      "type": "string",
+      "enum": [
+        "new",
+        "regular",
+        "vip",
+        "at_risk",
+        "dormant"
+      ],
+      "description": "Type de segment client"
+    },
+    "total_orders": {
+      "type": "number",
+      "default": 0
+    },
+    "total_spent": {
+      "type": "number",
+      "default": 0
+    },
+    "average_order_value": {
+      "type": "number",
+      "default": 0
+    },
+    "last_purchase_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "days_since_last_purchase": {
+      "type": "number",
+      "default": 0
+    },
+    "favorite_categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "preferred_stores": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "price_sensitivity": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "description": "Sensibilit\u00e9 au prix"
+    },
+    "engagement_score": {
+      "type": "number",
+      "default": 0,
+      "description": "Score d'engagement (0-100)"
+    },
+    "churn_risk": {
+      "type": "number",
+      "default": 0,
+      "description": "Risque de d\u00e9part (0-100)"
+    },
+    "lifetime_value": {
+      "type": "number",
+      "default": 0,
+      "description": "Valeur vie client estim\u00e9e"
+    },
+    "recommended_offers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "user_email",
+    "segment_type"
+  ]
+}

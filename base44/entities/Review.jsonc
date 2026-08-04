@@ -1,0 +1,42 @@
+{
+  "name": "Review",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "product_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "rating": {
+      "type": "number",
+      "description": "Note de 1 \u00e0 5"
+    },
+    "comment": {
+      "type": "string"
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "is_verified_purchase": {
+      "type": "boolean",
+      "default": false
+    },
+    "helpful_count": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "product_id",
+    "user_email",
+    "rating"
+  ]
+}

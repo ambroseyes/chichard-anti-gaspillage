@@ -1,0 +1,62 @@
+{
+  "name": "ExperienceBooking",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "experience_id": {
+      "type": "string"
+    },
+    "experience_title": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "user_phone": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "confirmed",
+        "cancelled",
+        "completed",
+        "no_show"
+      ],
+      "default": "pending"
+    },
+    "points_spent": {
+      "type": "number"
+    },
+    "event_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "event_time": {
+      "type": "string"
+    },
+    "store_name": {
+      "type": "string"
+    },
+    "reminder_sent": {
+      "type": "boolean",
+      "default": false
+    },
+    "confirmation_sent": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "experience_id",
+    "user_email",
+    "points_spent"
+  ]
+}

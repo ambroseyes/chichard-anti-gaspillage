@@ -1,0 +1,122 @@
+{
+  "name": "Store",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nom du magasin"
+    },
+    "address": {
+      "type": "string",
+      "description": "Adresse compl\u00e8te"
+    },
+    "city": {
+      "type": "string",
+      "description": "Ville"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Num\u00e9ro de t\u00e9l\u00e9phone"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email du magasin"
+    },
+    "logo_url": {
+      "type": "string",
+      "description": "Logo du magasin"
+    },
+    "is_partner": {
+      "type": "boolean",
+      "default": true
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "verified",
+        "rejected",
+        "suspended"
+      ],
+      "default": "pending",
+      "description": "Statut de v\u00e9rification"
+    },
+    "rating": {
+      "type": "number",
+      "description": "Note moyenne"
+    },
+    "total_products_saved": {
+      "type": "number",
+      "default": 0,
+      "description": "Nombre de produits sauv\u00e9s du gaspillage"
+    },
+    "total_revenue_recovered": {
+      "type": "number",
+      "default": 0,
+      "description": "Revenus r\u00e9cup\u00e9r\u00e9s gr\u00e2ce \u00e0 CHICHARD"
+    },
+    "total_savings_generated": {
+      "type": "number",
+      "default": 0,
+      "description": "\u00c9conomies g\u00e9n\u00e9r\u00e9es pour les clients"
+    },
+    "owner_email": {
+      "type": "string",
+      "description": "Email du propri\u00e9taire"
+    },
+    "opening_hours": {
+      "type": "string",
+      "description": "Horaires d'ouverture"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description du magasin"
+    },
+    "latitude": {
+      "type": "number"
+    },
+    "longitude": {
+      "type": "number"
+    },
+    "employee_emails": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Emails des employ\u00e9s autoris\u00e9s"
+    },
+    "employee_roles": {
+      "type": "object",
+      "description": "R\u00f4les des employ\u00e9s"
+    },
+    "stock_alert_settings": {
+      "type": "object",
+      "properties": {
+        "low_stock_threshold": {
+          "type": "number",
+          "default": 5
+        },
+        "expiration_warning_days": {
+          "type": "number",
+          "default": 5
+        },
+        "critical_expiration_days": {
+          "type": "number",
+          "default": 2
+        },
+        "enable_email_alerts": {
+          "type": "boolean",
+          "default": true
+        },
+        "last_alert_date": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "required": [
+    "name",
+    "address",
+    "city"
+  ]
+}

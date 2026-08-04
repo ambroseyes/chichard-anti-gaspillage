@@ -305,6 +305,17 @@ export default function Layout({ children, currentPageName }) {
         {children}
       </main>
 
+      {/* Footer */}
+      <footer className="hidden md:block bg-white border-t border-gray-100">
+        <div className="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+          <p className="text-sm text-gray-500">© 2026 Chichard — La plateforme anti-gaspillage</p>
+          <nav className="flex items-center gap-5">
+            <Link to={createPageUrl('About')} className="text-sm text-gray-500 hover:text-emerald-600 transition-colors">À propos</Link>
+            <Link to={createPageUrl('Contact')} className="text-sm text-gray-500 hover:text-emerald-600 transition-colors">Contact</Link>
+          </nav>
+        </div>
+      </footer>
+
       {/* Floating Cart */}
       {user && !isPartnerPage && !isDriverPage && (
         <FloatingCart userEmail={user.email} />

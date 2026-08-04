@@ -1,0 +1,49 @@
+{
+  "name": "ProductVariant",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "product_id": {
+      "type": "string",
+      "description": "ID du produit parent"
+    },
+    "product_name": {
+      "type": "string"
+    },
+    "variant_name": {
+      "type": "string",
+      "description": "Nom de la variante (ex: Rouge - M)"
+    },
+    "attributes": {
+      "type": "object",
+      "description": "Attributs de la variante {color, size, etc.}"
+    },
+    "sku": {
+      "type": "string",
+      "description": "Code SKU unique"
+    },
+    "price_adjustment": {
+      "type": "number",
+      "default": 0,
+      "description": "Ajustement de prix par rapport au produit de base"
+    },
+    "quantity_available": {
+      "type": "number",
+      "default": 0
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "product_id",
+    "variant_name"
+  ]
+}

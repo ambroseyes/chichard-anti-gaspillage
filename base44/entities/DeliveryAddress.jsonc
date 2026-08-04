@@ -1,0 +1,57 @@
+{
+  "name": "DeliveryAddress",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email de l'utilisateur"
+    },
+    "label": {
+      "type": "string",
+      "description": "Libell\u00e9 de l'adresse (Maison, Bureau, etc.)"
+    },
+    "full_name": {
+      "type": "string",
+      "description": "Nom complet du destinataire"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "address_line1": {
+      "type": "string"
+    },
+    "address_line2": {
+      "type": "string"
+    },
+    "city": {
+      "type": "string"
+    },
+    "postal_code": {
+      "type": "string"
+    },
+    "country": {
+      "type": "string",
+      "default": "Cameroun"
+    },
+    "is_default": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_billing": {
+      "type": "boolean",
+      "default": false,
+      "description": "Adresse de facturation"
+    }
+  },
+  "required": [
+    "user_email",
+    "full_name",
+    "phone",
+    "address_line1",
+    "city"
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "name": "BrandPartnership",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "brand_name": {
+      "type": "string",
+      "description": "Nom de la marque"
+    },
+    "brand_logo_url": {
+      "type": "string"
+    },
+    "contact_email": {
+      "type": "string"
+    },
+    "contact_name": {
+      "type": "string"
+    },
+    "contact_phone": {
+      "type": "string"
+    },
+    "partnership_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "active",
+        "suspended",
+        "terminated"
+      ],
+      "default": "pending"
+    },
+    "commission_rate": {
+      "type": "number",
+      "description": "Taux de commission en pourcentage",
+      "default": 10
+    },
+    "monthly_budget": {
+      "type": "number",
+      "description": "Budget mensuel en FCFA"
+    },
+    "sponsored_products": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs des produits sponsoris\u00e9s"
+    },
+    "sponsored_categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Cat\u00e9gories sponsoris\u00e9es"
+    },
+    "total_spent": {
+      "type": "number",
+      "default": 0
+    },
+    "total_sales_generated": {
+      "type": "number",
+      "default": 0
+    },
+    "total_commissions_paid": {
+      "type": "number",
+      "default": 0
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "brand_name",
+    "contact_email",
+    "commission_rate"
+  ]
+}

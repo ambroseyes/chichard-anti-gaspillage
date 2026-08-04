@@ -1,0 +1,29 @@
+{
+  "name": "Favorite",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "product_id": {
+      "type": "string"
+    },
+    "product_name": {
+      "type": "string"
+    },
+    "product_image": {
+      "type": "string"
+    },
+    "store_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_email",
+    "product_id"
+  ]
+}

@@ -2,6 +2,10 @@
   "name": "BasketReview",
   "type": "object",
   "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
     "reservation_id": {
       "type": "string"
     },
