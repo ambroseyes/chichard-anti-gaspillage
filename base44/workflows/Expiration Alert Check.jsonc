@@ -1,0 +1,44 @@
+{
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 9 * * *",
+      "one_time_date": null,
+      "timezone": "Africa/Douala",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "expiration_alert_check",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "check_expiration": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "checkExpirationAlerts"
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "V\u00e9rifier les dates limite",
+            "description": "Scan quotidien des produits"
+          }
+        }
+      }
+    ]
+  },
+  "description": "V\u00e9rifie quotidiennement les produits approchant de leur date limite et notifie les consommateurs et partenaires concern\u00e9s",
+  "name": "Expiration Alert Check"
+}

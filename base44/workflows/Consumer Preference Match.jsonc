@@ -1,0 +1,40 @@
+{
+  "name": "Consumer Preference Match",
+  "description": "Alerte les consommateurs quand un produit correspondant \u00e0 leurs pr\u00e9f\u00e9rences alimentaires est ajout\u00e9 en stock",
+  "trigger": {
+    "config": {
+      "trigger_type": "entity",
+      "entity_name": "Product",
+      "events": [
+        "create"
+      ]
+    },
+    "condition": "${ .trigger.data.status == \"active\" }"
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "consumer_preference_match",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "notify_users": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "matchProductToPreferences",
+            "args": {
+              "product_id": "${ .trigger.entity_id }"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Notifier les consommateurs",
+            "description": "Match produit \u2192 pr\u00e9f\u00e9rences"
+          }
+        }
+      }
+    ]
+  }
+}

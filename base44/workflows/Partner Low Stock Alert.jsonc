@@ -1,0 +1,41 @@
+{
+  "name": "Partner Low Stock Alert",
+  "description": "Notifie automatiquement le partenaire quand un produit atteint une quantit\u00e9 critique afin qu'il puisse ajuster ses prix ou r\u00e9approvisionner",
+  "trigger": {
+    "config": {
+      "trigger_type": "entity",
+      "entity_name": "Product",
+      "events": [
+        "create",
+        "update"
+      ]
+    },
+    "condition": "${ .trigger.data.quantity_available != null and .trigger.data.quantity_available <= 5 and (.trigger.event_type == \"create\" or ((.trigger.old_data.quantity_available // 999) > 5)) }"
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "partner_low_stock_alert",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "notify_partner": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "notifyPartnerLowStock",
+            "args": {
+              "product_id": "${ .trigger.entity_id }"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Notifier le partenaire",
+            "description": "Stock critique d\u00e9tect\u00e9"
+          }
+        }
+      }
+    ]
+  }
+}
