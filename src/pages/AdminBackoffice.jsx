@@ -1,25 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import React, { useState } from 'react';
+import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import BackofficeLayout from '@/components/backoffice/BackofficeLayout';
 import {
-  TrendingUp, TrendingDown, Users, Package, DollarSign, AlertTriangle,
-  Activity, ShoppingCart, ArrowUpRight, ArrowDownRight, Zap, Eye
+  TrendingUp, Users, Package, DollarSign, AlertTriangle,
+  Activity, ShoppingCart, ArrowUpRight, ArrowDownRight, Zap
 } from 'lucide-react';
 import {
-  AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+  AreaChart, Area, Line, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { format, subDays } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { formatShortDate, formatXAF } from '@/lib/format';
 import { motion } from 'framer-motion';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#3b82f6'];
 
 const KPICard = ({ title, value, unit, change, icon: KPIIcon, color, delay = 0 }) => {
+  // Une variation n'est affichée que si le serveur a pu la calculer : sans
+  // période de référence, la carte n'affiche pas de pourcentage.
+  const hasChange = typeof change === 'number' && Number.isFinite(change);
   const isPositive = change >= 0;
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }}>
@@ -28,10 +30,12 @@ const KPICard = ({ title, value, unit, change, icon: KPIIcon, color, delay = 0 }
           <div className={`p-2.5 rounded-lg ${color}`}>
             <KPIIcon className="w-5 h-5 text-white" />
           </div>
-          <div className={`flex items-center gap-1 text-xs font-semibold ${isPositive ? 'text-emerald-600' : 'text-red-500'}`}>
-            {isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-            {Math.abs(change)}%
-          </div>
+          {hasChange && (
+            <div className={`flex items-center gap-1 text-xs font-semibold ${isPositive ? 'text-emerald-600' : 'text-red-500'}`}>
+              {isPositive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+              {Math.abs(change).toFixed(1)} %
+            </div>
+          )}
         </div>
         <p className="text-2xl font-bold text-gray-900">{value} <span className="text-sm font-normal text-gray-400">{unit}</span></p>
         <p className="text-sm text-gray-500 mt-1">{title}</p>
@@ -41,71 +45,79 @@ const KPICard = ({ title, value, unit, change, icon: KPIIcon, color, delay = 0 }
 };
 
 export default function AdminBackoffice() {
-  const [user, setUser] = useState(null);
   const [period, setPeriod] = useState('30');
 
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => base44.auth.redirectToLogin());
-  }, []);
-
-  const { data: orders = [] } = useQuery({
-    queryKey: ['bo-orders'],
-    queryFn: () => base44.entities.Order.list('-created_date', 200)
+  /**
+   * Un seul appel agrégé, calculé en base sur la période choisie. L'écran ne
+   * télécharge plus les commandes, produits, magasins et comptes pour faire
+   * des additions dans le navigateur.
+   */
+  const { data: overview, isLoading } = useQuery({
+    queryKey: ['bo-overview', period],
+    queryFn: () => api.backoffice.overview(Number(period)),
+    placeholderData: (previous) => previous,
   });
 
-  const { data: products = [] } = useQuery({
-    queryKey: ['bo-products'],
-    queryFn: () => base44.entities.Product.list('-created_date', 100)
+  const totalRevenue = overview?.revenue ?? 0;
+  const revenueChange = overview?.revenue_change_pct ?? 0;
+  const ordersCount = overview?.orders ?? 0;
+  const ordersChange = overview?.orders_change_pct ?? 0;
+  const conversionRate = overview?.orders
+    ? (
+        ((overview.orders_by_status?.find((s) => s.status !== 'cancelled')?.count ?? overview.orders) /
+          overview.orders) *
+        100
+      ).toFixed(1)
+    : '0';
+  const activeProducts =
+    overview?.products_by_status?.find((s) => s.status === 'active')?.count ?? 0;
+  const verifiedStores = overview?.stores_by_status?.find((s) => s.status === 'verified')?.count ?? 0;
+  const usersCount = overview?.users_total ?? 0;
+
+  const trendData = (overview?.daily ?? []).map((d) => ({
+    date: formatShortDate(d.date),
+    commandes: d.orders,
+    revenus: d.revenue,
+  }));
+
+  // Répartition par statut, telle que comptée par le serveur.
+  const STATUS_COLORS = {
+    confirmed: '#10b981',
+    pending: '#f59e0b',
+    ready: '#3b82f6',
+    delivered: '#6366f1',
+    cancelled: '#ef4444',
+  };
+  const STATUS_LABELS = {
+    confirmed: 'Confirmées',
+    pending: 'En attente',
+    ready: 'Prêtes',
+    delivered: 'Livrées',
+    cancelled: 'Annulées',
+  };
+
+  const statusData = (overview?.orders_by_status ?? [])
+    .filter((s) => s.count > 0)
+    .map((s) => ({
+      name: STATUS_LABELS[s.status] ?? s.status,
+      value: s.count,
+      color: STATUS_COLORS[s.status] ?? '#94a3b8',
+    }));
+
+  const storesTotal = (overview?.stores_by_status ?? []).reduce((sum, s) => sum + s.count, 0);
+
+  // Deux listes courtes, servies paginées : le tableau de bord ne rapatrie plus
+  // la totalité des commandes et des magasins pour les recompter ici.
+  const { data: recentOrdersPage } = useQuery({
+    queryKey: ['bo-recent-orders'],
+    queryFn: () => api.backoffice.transactions({ limit: 8 }),
   });
+  const recentOrders = recentOrdersPage?.data ?? [];
 
-  const { data: stores = [] } = useQuery({
-    queryKey: ['bo-stores'],
-    queryFn: () => base44.entities.Store.list()
+  const { data: topStores = [] } = useQuery({
+    queryKey: ['bo-top-stores'],
+    queryFn: () => api.entities.Store.list('-total_products_saved', 8),
   });
-
-  const { data: users = [] } = useQuery({
-    queryKey: ['bo-users'],
-    queryFn: () => base44.entities.User.list()
-  });
-
-  // KPI calculations
-  const totalRevenue = orders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
-  const confirmedOrders = orders.filter(o => o.status !== 'cancelled');
-  const conversionRate = orders.length > 0 ? ((confirmedOrders.length / orders.length) * 100).toFixed(1) : 0;
-  const activeProducts = products.filter(p => p.status === 'active').length;
-  const verifiedStores = stores.filter(s => s.status === 'verified').length;
-
-  // Trend data (last N days)
-  const trendDays = parseInt(period);
-  const trendData = [...Array(Math.min(trendDays, 30))].map((_, i) => {
-    const date = subDays(new Date(), trendDays - 1 - i);
-    const dateStr = date.toISOString().split('T')[0];
-    const dayOrders = orders.filter(o => o.created_date?.startsWith(dateStr));
-    return {
-      date: format(date, 'dd MMM', { locale: fr }),
-      commandes: dayOrders.length,
-      revenue: Math.round(dayOrders.reduce((s, o) => s + (o.total_amount || 0), 0) / 1000)
-    };
-  });
-
-  // Category distribution
-  const categoryData = Object.entries(
-    products.reduce((acc, p) => {
-      acc[p.category] = (acc[p.category] || 0) + (p.quantity_sold || 0);
-      return acc;
-    }, {})
-  ).map(([name, value]) => ({ name: name.replace(/_/g, ' '), value })).slice(0, 6);
-
-  // Recent orders
-  const recentOrders = orders.slice(0, 8);
-
-  // Order status distribution
-  const statusData = [
-    { name: 'Confirmées', value: orders.filter(o => o.status === 'confirmed').length, color: '#10b981' },
-    { name: 'En attente', value: orders.filter(o => o.status === 'pending').length, color: '#f59e0b' },
-    { name: 'Livrées', value: orders.filter(o => o.status === 'delivered').length, color: '#6366f1' },
-    { name: 'Annulées', value: orders.filter(o => o.status === 'cancelled').length, color: '#ef4444' },
-  ].filter(d => d.value > 0);
 
   return (
     <BackofficeLayout currentPage="Tableau de bord">
@@ -114,7 +126,7 @@ export default function AdminBackoffice() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-xl font-bold text-gray-900">Tableau de bord</h1>
-            <p className="text-sm text-gray-500">Vue temps réel • {format(new Date(), 'EEEE d MMMM yyyy', { locale: fr })}</p>
+            <p className="text-sm text-gray-500">Période : {period} derniers jours</p>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-xs text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">
@@ -136,18 +148,18 @@ export default function AdminBackoffice() {
 
         {/* KPIs Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <KPICard title="Revenus totaux" value={(totalRevenue / 1000).toFixed(0)} unit="k FCFA" change={12.4} icon={DollarSign} color="bg-indigo-500" delay={0} />
-          <KPICard title="Commandes" value={orders.length} unit="total" change={8.2} icon={ShoppingCart} color="bg-purple-500" delay={0.05} />
-          <KPICard title="Taux de conversion" value={conversionRate} unit="%" change={-2.1} icon={TrendingUp} color="bg-pink-500" delay={0.1} />
-          <KPICard title="Magasins actifs" value={verifiedStores} unit={`/ ${stores.length}`} icon={Activity} color="bg-emerald-500" delay={0.15} />
+          <KPICard title="Revenus" value={formatXAF(totalRevenue)} change={revenueChange} icon={DollarSign} color="bg-indigo-500" delay={0} />
+          <KPICard title="Commandes" value={ordersCount} unit="sur la période" change={ordersChange} icon={ShoppingCart} color="bg-purple-500" delay={0.05} />
+          <KPICard title="Panier moyen" value={formatXAF(overview?.average_order_value ?? 0)} icon={TrendingUp} color="bg-pink-500" delay={0.1} />
+          <KPICard title="Magasins vérifiés" value={verifiedStores} unit={`sur ${storesTotal}`} icon={Activity} color="bg-emerald-500" delay={0.15} />
         </div>
 
         {/* Secondary KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <KPICard title="Produits actifs" value={activeProducts} unit="produits" change={5.6} icon={Package} color="bg-blue-500" delay={0.2} />
-          <KPICard title="Utilisateurs" value={users.length} unit="inscrits" change={14.8} icon={Users} color="bg-orange-500" delay={0.25} />
-          <KPICard title="Commandes livrées" value={orders.filter(o => o.status === 'delivered').length} unit="" change={19.2} icon={Zap} color="bg-teal-500" delay={0.3} />
-          <KPICard title="Alertes actives" value={products.filter(p => p.urgency_level === 'critical').length} unit="critiques" change={-4.3} icon={AlertTriangle} color="bg-red-500" delay={0.35} />
+          <KPICard title="Produits actifs" value={activeProducts} unit="produits" icon={Package} color="bg-blue-500" delay={0.2} />
+          <KPICard title="Utilisateurs" value={usersCount} unit="inscrits" icon={Users} color="bg-orange-500" delay={0.25} />
+          <KPICard title="Commandes livrées" value={overview?.orders_by_status?.find((s) => s.status === 'delivered')?.count ?? 0} icon={Zap} color="bg-teal-500" delay={0.3} />
+          <KPICard title="Économies générées" value={formatXAF(overview?.savings_generated ?? 0)} icon={AlertTriangle} color="bg-red-500" delay={0.35} />
         </div>
 
         {/* Charts Row 1 */}
@@ -204,20 +216,32 @@ export default function AdminBackoffice() {
         {/* Charts Row 2 */}
         <div className="grid md:grid-cols-2 gap-4">
           <Card className="p-5">
-            <h3 className="font-semibold text-gray-900 mb-4">Ventes par catégorie</h3>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={categoryData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 11 }} />
-                <YAxis dataKey="name" type="category" width={120} tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Bar dataKey="value" name="Qté vendue" radius={[0, 4, 4, 0]}>
-                  {categoryData.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <h3 className="font-semibold text-gray-900 mb-4">Impact sur la période</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-100">
+                <p className="text-xs text-emerald-700">CO₂ évité</p>
+                <p className="text-2xl font-bold text-emerald-800 mt-1">
+                  {(overview?.co2_saved_kg ?? 0).toFixed(1)} kg
+                </p>
+              </div>
+              <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-100">
+                <p className="text-xs text-indigo-700">Économies clients</p>
+                <p className="text-2xl font-bold text-indigo-800 mt-1">
+                  {formatXAF(overview?.savings_generated ?? 0)}
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 space-y-2">
+              {statusData.map((entry) => (
+                <div key={entry.name} className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-2 text-gray-600">
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ background: entry.color }} />
+                    {entry.name}
+                  </span>
+                  <span className="font-medium text-gray-900">{entry.value}</span>
+                </div>
+              ))}
+            </div>
           </Card>
 
           <Card className="p-5">
@@ -233,7 +257,7 @@ export default function AdminBackoffice() {
                     <p className="text-xs text-gray-400">{order.store_name} • {order.delivery_type}</p>
                   </div>
                   <div className="text-right ml-2">
-                    <p className="text-sm font-bold">{(order.total_amount || 0).toLocaleString()} F</p>
+                    <p className="text-sm font-bold">{formatXAF(order.total_amount)}</p>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                       order.status === 'delivered' ? 'bg-emerald-100 text-emerald-700' :
                       order.status === 'confirmed' ? 'bg-blue-100 text-blue-700' :
@@ -262,7 +286,7 @@ export default function AdminBackoffice() {
                 </tr>
               </thead>
               <tbody>
-                {stores.slice(0, 8).map((store) => (
+                {topStores.map((store) => (
                   <tr key={store.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                     <td className="py-3 font-medium">{store.name}</td>
                     <td className="py-3">

@@ -1,234 +1,114 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
-import { QrCode, CheckCircle, X, Shield, AlertTriangle, Camera } from 'lucide-react';
+import { Camera, Keyboard, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
-import { base44 } from '@/api/base44Client';
+import { useMutation } from '@tanstack/react-query';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { api } from '@/api';
 
+/**
+ * Validation d'une remise.
+ *
+ * Le scanner ne décide rien : il transmet le jeton lu (ou le code saisi) au
+ * serveur, seul à détenir le secret de signature. Un code fabriqué à partir de
+ * l'identifiant de commande est rejeté.
+ */
 export default function EnhancedQRScanner({ open, onClose, order, onSuccess }) {
   const [manualCode, setManualCode] = useState('');
-  const [scanning, setScanning] = useState(true);
-  const [verifying, setVerifying] = useState(false);
-  const [scanAttempts, setScanAttempts] = useState(0);
+  const [mode, setMode] = useState('camera');
   const scannerRef = useRef(null);
 
+  const validate = useMutation({
+    mutationFn: (payload) => api.orders.fulfil(order.id, payload),
+    onSuccess: (updated) => {
+      toast.success('Remise validée');
+      scannerRef.current?.clear().catch(() => {});
+      onSuccess?.(updated);
+      onClose();
+    },
+    onError: (error) => toast.error(error.message ?? 'Code de retrait invalide'),
+  });
+
   useEffect(() => {
-    if (open && scanning) {
-      const scanner = new Html5QrcodeScanner(
-        "qr-reader-enhanced",
-        { 
-          fps: 10, 
-          qrbox: { width: 250, height: 250 },
-          aspectRatio: 1.0,
-          formatsToSupport: ['QR_CODE']
-        },
-        false
-      );
+    if (!open || mode !== 'camera') return undefined;
 
-      scanner.render(onScanSuccess, onScanError);
-      scannerRef.current = scanner;
+    const scanner = new Html5QrcodeScanner(
+      'qr-reader',
+      { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1, formatsToSupport: [0] },
+      false,
+    );
+    scanner.render(
+      (decoded) => validate.mutate({ token: decoded }),
+      () => {
+        // Absence de code dans l'image : c'est le cas nominal entre deux lectures.
+      },
+    );
+    scannerRef.current = scanner;
 
-      return () => {
-        if (scannerRef.current) {
-          scannerRef.current.clear().catch(console.error);
-        }
-      };
-    }
-  }, [open, scanning]);
-
-  const verifyQRCode = async (code) => {
-    setVerifying(true);
-    
-    try {
-      // Format attendu: ORDER_${orderId}_${timestamp}_${securityHash}
-      const parts = code.split('_');
-      
-      if (parts[0] !== 'ORDER' || parts.length < 2) {
-        throw new Error('Format invalide');
-      }
-      
-      const scannedOrderId = parts[1];
-      
-      // Vérifier que le code correspond à la commande
-      if (scannedOrderId !== order.id) {
-        setScanAttempts(prev => prev + 1);
-        throw new Error('Ce QR code ne correspond pas à cette commande');
-      }
-
-      // Vérifier que la commande existe et est valide
-      const orderData = await base44.entities.Order.filter({ id: order.id });
-      if (!orderData || orderData.length === 0) {
-        throw new Error('Commande introuvable');
-      }
-
-      // Log de la vérification
-      await base44.entities.Order.update(order.id, {
-        qr_scanned_at: new Date().toISOString(),
-        qr_scan_attempts: scanAttempts + 1
-      });
-
-      setVerifying(false);
-      toast.success('✅ QR Code vérifié avec succès !');
-      onSuccess(code);
-      
-      if (scannerRef.current) {
-        scannerRef.current.clear();
-      }
-    } catch (error) {
-      setVerifying(false);
-      toast.error(error.message || 'QR Code invalide');
-      
-      if (scanAttempts >= 2) {
-        toast.warning('Trop de tentatives. Utilisez la saisie manuelle.', {
-          duration: 5000
-        });
-        setScanning(false);
-      }
-    }
-  };
-
-  const onScanSuccess = (decodedText) => {
-    verifyQRCode(decodedText);
-  };
-
-  const onScanError = (error) => {
-    // Erreurs de scan normales, on ne les affiche pas
-  };
-
-  const handleManualSubmit = () => {
-    if (!manualCode) {
-      toast.error('Veuillez entrer un code');
-      return;
-    }
-    verifyQRCode(manualCode);
-  };
-
-  const handleClose = () => {
-    if (scannerRef.current) {
-      scannerRef.current.clear().catch(console.error);
-    }
-    setScanAttempts(0);
-    onClose();
-  };
+    return () => {
+      scanner.clear().catch(() => {});
+      scannerRef.current = null;
+    };
+    // `validate` est stable pour une commande donnée.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, mode, order?.id]);
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-blue-600" />
-            Confirmation sécurisée de livraison
+            <ShieldCheck className="w-5 h-5 text-emerald-500" />
+            Valider la remise
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Order Info */}
-          <Card className="p-3 bg-blue-50 border-blue-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-blue-900">Commande</p>
-                <p className="text-xs text-blue-700">{order.customer_name}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-bold text-blue-900">{order.total_amount?.toLocaleString()} FCFA</p>
-                <p className="text-xs text-blue-700">{order.items?.length || 0} article(s)</p>
-              </div>
-            </div>
-          </Card>
-
-          {scanning ? (
-            <>
-              <div className="relative">
-                <div id="qr-reader-enhanced" className="rounded-lg overflow-hidden"></div>
-                {verifying && (
-                  <div className="absolute inset-0 bg-white/90 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-2"></div>
-                      <p className="text-sm font-medium">Vérification...</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex items-center gap-2 text-xs text-gray-600">
-                <Camera className="w-4 h-4" />
-                <span>Positionnez le QR code dans le cadre</span>
-              </div>
-
-              {scanAttempts > 0 && (
-                <div className="flex items-center gap-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">
-                  <AlertTriangle className="w-4 h-4 text-amber-600" />
-                  <p className="text-xs text-amber-800">
-                    Tentative {scanAttempts}/3 - Assurez-vous de scanner le bon QR code
-                  </p>
-                </div>
-              )}
-
-              <Button 
-                variant="outline" 
-                className="w-full"
-                onClick={() => setScanning(false)}
-              >
-                Saisie manuelle du code
-              </Button>
-            </>
-          ) : (
-            <>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Code de livraison</label>
-                <Input
-                  placeholder={`ORDER_${order.id}_...`}
-                  value={manualCode}
-                  onChange={(e) => setManualCode(e.target.value)}
-                  disabled={verifying}
-                />
-                <p className="text-xs text-gray-500">
-                  Format: ORDER_[ID]_[TIMESTAMP]_[HASH]
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={() => setScanning(true)}
-                  disabled={verifying}
-                >
-                  <QrCode className="w-4 h-4 mr-2" />
-                  Scanner
-                </Button>
-                <Button 
-                  className="flex-1 bg-emerald-500 hover:bg-emerald-600"
-                  onClick={handleManualSubmit}
-                  disabled={!manualCode || verifying}
-                >
-                  {verifying ? (
-                    <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-                  ) : (
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                  )}
-                  Valider
-                </Button>
-              </div>
-            </>
-          )}
-
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-            <div className="flex items-start gap-2">
-              <Shield className="w-4 h-4 text-green-600 mt-0.5" />
-              <div className="text-xs text-green-800">
-                <p className="font-medium mb-1">Sécurité renforcée</p>
-                <ul className="space-y-1 list-disc list-inside">
-                  <li>Chaque QR code est unique et sécurisé</li>
-                  <li>Validation automatique de la commande</li>
-                  <li>Traçabilité complète de la livraison</li>
-                </ul>
-              </div>
-            </div>
-          </div>
+        <div className="flex gap-2 mb-4">
+          <Button
+            variant={mode === 'camera' ? 'default' : 'outline'}
+            size="sm"
+            className="flex-1"
+            onClick={() => setMode('camera')}
+          >
+            <Camera className="w-4 h-4 mr-1.5" />
+            Scanner
+          </Button>
+          <Button
+            variant={mode === 'manual' ? 'default' : 'outline'}
+            size="sm"
+            className="flex-1"
+            onClick={() => setMode('manual')}
+          >
+            <Keyboard className="w-4 h-4 mr-1.5" />
+            Saisir le code
+          </Button>
         </div>
+
+        {mode === 'camera' ? (
+          <div id="qr-reader" className="rounded-lg overflow-hidden" />
+        ) : (
+          <div className="space-y-3">
+            <Input
+              value={manualCode}
+              onChange={(e) => setManualCode(e.target.value.toUpperCase())}
+              placeholder="XXXX-XXXX"
+              className="text-center text-lg font-mono tracking-widest"
+              autoFocus
+            />
+            <Button
+              className="w-full bg-emerald-500 hover:bg-emerald-600"
+              disabled={!manualCode || validate.isPending}
+              onClick={() => validate.mutate({ code: manualCode })}
+            >
+              {validate.isPending ? 'Vérification…' : 'Valider'}
+            </Button>
+            <p className="text-xs text-gray-400 text-center">
+              Le code figure sur la confirmation du client.
+            </p>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

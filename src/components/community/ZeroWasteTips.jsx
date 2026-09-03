@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { 
   Lightbulb, Heart, Bookmark, Plus, Leaf, ShoppingBag,
-  ChefHat, Recycle, Trash2, MoreHorizontal
+  ChefHat, Recycle
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -31,11 +31,11 @@ export default function ZeroWasteTips({ user }) {
 
   const { data: tips = [] } = useQuery({
     queryKey: ['zero-waste-tips'],
-    queryFn: () => base44.entities.ZeroWasteTip.list('-created_date', 50),
+    queryFn: () => api.entities.ZeroWasteTip.list('-created_date', 50),
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.ZeroWasteTip.create({
+    mutationFn: (data) => api.entities.ZeroWasteTip.create({
       ...data,
       author_email: user.email,
       author_name: user.full_name
@@ -51,7 +51,7 @@ export default function ZeroWasteTips({ user }) {
   const likeMutation = useMutation({
     mutationFn: async (tip) => {
       const liked = tip.liked_by?.includes(user.email);
-      await base44.entities.ZeroWasteTip.update(tip.id, {
+      await api.entities.ZeroWasteTip.update(tip.id, {
         likes_count: (tip.likes_count || 0) + (liked ? -1 : 1),
         liked_by: liked 
           ? tip.liked_by.filter(e => e !== user.email)

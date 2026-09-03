@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
 import { 
-  Target, Zap, TrendingUp, Calendar, Check, Plus,
+  Target, Zap, TrendingUp, Check, Plus,
   Flame, Award
 } from 'lucide-react';
 import { Card } from "@/components/ui/card";
@@ -11,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { toast } from 'sonner';
@@ -39,7 +37,7 @@ export default function PersonalGoals({ user, userChallenges = [] }) {
       const endDate = new Date();
       endDate.setDate(endDate.getDate() + parseInt(duration));
 
-      const challenge = await base44.entities.Challenge.create({
+      const challenge = await api.entities.Challenge.create({
         title: `${template.label} ${goalValue[0].toLocaleString()} ${template.unit}`,
         description: `Objectif personnel en ${duration} jours`,
         challenge_type: 'personal',
@@ -52,7 +50,7 @@ export default function PersonalGoals({ user, userChallenges = [] }) {
         participants_count: 1
       });
 
-      await base44.entities.UserChallenge.create({
+      await api.entities.UserChallenge.create({
         user_email: user.email,
         challenge_id: challenge.id,
         current_progress: 0,

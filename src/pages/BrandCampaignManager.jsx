@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import React, { useState } from 'react';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,6 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 const COLORS = ['#8b5cf6', '#ec4899', '#3b82f6', '#10b981'];
 
 export default function BrandCampaignManager() {
-  const [user, setUser] = useState(null);
   const [brand, setBrand] = useState(null);
   const [showCampaignDialog, setShowCampaignDialog] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState(null);
@@ -37,39 +36,25 @@ export default function BrandCampaignManager() {
   });
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-        const brands = await base44.entities.BrandPartnership.filter({ contact_email: userData.email });
-        setBrand(brands[0]);
-      } catch (e) {
-        base44.auth.redirectToLogin();
-      }
-    };
-    loadUser();
-  }, []);
-
   const { data: campaigns = [] } = useQuery({
     queryKey: ['brand-campaigns', brand?.id],
-    queryFn: () => base44.entities.SponsoredCampaign.filter({ brand_id: brand.id }, '-created_date'),
+    queryFn: () => api.entities.SponsoredCampaign.filter({ brand_id: brand.id }, '-created_date'),
     enabled: !!brand
   });
 
   const { data: commissions = [] } = useQuery({
     queryKey: ['brand-commissions', brand?.id],
-    queryFn: () => base44.entities.CommissionTransaction.filter({ brand_id: brand.id }, '-created_date'),
+    queryFn: () => api.entities.CommissionTransaction.filter({ brand_id: brand.id }, '-created_date'),
     enabled: !!brand
   });
 
   const { data: products = [] } = useQuery({
     queryKey: ['products-for-sponsorship'],
-    queryFn: () => base44.entities.Product.filter({ status: 'active' })
+    queryFn: () => api.entities.Product.filter({ status: 'active' })
   });
 
   const createCampaignMutation = useMutation({
-    mutationFn: (data) => base44.entities.SponsoredCampaign.create(data),
+    mutationFn: (data) => api.entities.SponsoredCampaign.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['brand-campaigns'] });
       toast.success('Campagne créée');
@@ -79,7 +64,7 @@ export default function BrandCampaignManager() {
   });
 
   const updateCampaignMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.SponsoredCampaign.update(id, data),
+    mutationFn: ({ id, data }) => api.entities.SponsoredCampaign.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['brand-campaigns'] });
       toast.success('Campagne mise à jour');

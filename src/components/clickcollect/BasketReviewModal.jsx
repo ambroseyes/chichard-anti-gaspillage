@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Star, ThumbsUp } from 'lucide-react';
+import { Star } from 'lucide-react';
 
 const CRITERIA = [
   { key: 'rating_quality', label: 'Qualité', emoji: '🌟' },
@@ -50,7 +50,7 @@ export default function BasketReviewModal({ reservation, user, open, onClose }) 
   );
 
   const { mutate: submitReview, isPending } = useMutation({
-    mutationFn: () => base44.entities.BasketReview.create({
+    mutationFn: () => api.entities.BasketReview.create({
       reservation_id: reservation.id,
       basket_id: reservation.basket_id,
       basket_name: reservation.basket_name,

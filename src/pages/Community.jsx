@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import React, { useState } from 'react';
+import { api } from '@/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { 
-  Plus, Trophy, Users, Flame, TrendingUp, Filter,
+  Plus, Trophy, Users, Flame,
   Sparkles, MessageCircle, Lightbulb, Mail
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -17,32 +17,23 @@ import EnhancedDirectMessages from '@/components/community/EnhancedDirectMessage
 import ContentSubmissionModal from '@/components/community/ContentSubmissionModal';
 import ForumSection from '@/components/community/ForumSection';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function Community() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [showSubmissionModal, setShowSubmissionModal] = useState(false);
   const [activeTab, setActiveTab] = useState('feed');
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      } catch (e) {}
-    };
-    loadUser();
-  }, []);
-
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.filter({ is_active: true }),
+    queryFn: () => api.entities.Challenge.filter({ is_active: true }),
   });
 
   const { data: userChallenges = [] } = useQuery({
     queryKey: ['user-challenges', user?.email],
-    queryFn: () => base44.entities.UserChallenge.filter({ user_email: user.email }),
+    queryFn: () => api.entities.UserChallenge.filter({ user_email: user.email }),
     enabled: !!user,
   });
 
@@ -52,14 +43,14 @@ export default function Community() {
       return;
     }
 
-    await base44.entities.UserChallenge.create({
+    await api.entities.UserChallenge.create({
       user_email: user.email,
       challenge_id: challenge.id,
       current_progress: 0,
       is_completed: false,
     });
 
-    await base44.entities.Challenge.update(challenge.id, {
+    await api.entities.Challenge.update(challenge.id, {
       participants_count: (challenge.participants_count || 0) + 1
     });
 

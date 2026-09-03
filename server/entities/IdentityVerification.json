@@ -1,0 +1,58 @@
+{
+  "name": "IdentityVerification",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email de l'utilisateur"
+    },
+    "verification_type": {
+      "type": "string",
+      "enum": [
+        "id_card",
+        "passport",
+        "business_license",
+        "phone_verification"
+      ],
+      "description": "Type de vérification"
+    },
+    "document_url": {
+      "type": "string",
+      "description": "URL du document uploadé"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "expired"
+      ],
+      "default": "pending"
+    },
+    "verified_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "reviewer_notes": {
+      "type": "string"
+    },
+    "verification_level": {
+      "type": "string",
+      "enum": [
+        "basic",
+        "advanced",
+        "premium"
+      ],
+      "default": "basic"
+    }
+  },
+  "required": [
+    "user_email",
+    "verification_type"
+  ]
+}

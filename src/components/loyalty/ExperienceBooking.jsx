@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
   Ticket, Calendar, Clock, MapPin, Users, Crown,
-  Loader2, Check, Star
+  Loader2, Check
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -39,7 +39,7 @@ export default function ExperienceBookingSection({ user, userPoints = 0, userTie
   const { data: experiences = [], isLoading } = useQuery({
     queryKey: ['available-experiences'],
     queryFn: async () => {
-      const exps = await base44.entities.Experience.filter({ is_active: true });
+      const exps = await api.entities.Experience.filter({ is_active: true });
       return exps.filter(e => 
         new Date(e.event_date) >= new Date() &&
         e.current_participants < e.max_participants
@@ -49,19 +49,15 @@ export default function ExperienceBookingSection({ user, userPoints = 0, userTie
 
   const { data: myBookings = [] } = useQuery({
     queryKey: ['my-bookings', user?.email],
-    queryFn: () => base44.entities.ExperienceBooking.filter({ user_email: user?.email }),
+    queryFn: () => api.entities.ExperienceBooking.filter({ user_email: user?.email }),
     enabled: !!user,
   });
 
   const bookMutation = useMutation({
     mutationFn: async (experience) => {
       // Deduct points
-      await base44.auth.updateMe({
-        loyalty_points: userPoints - experience.points_required
-      });
-
       // Create booking
-      await base44.entities.ExperienceBooking.create({
+      await api.entities.ExperienceBooking.create({
         experience_id: experience.id,
         experience_title: experience.title,
         user_email: user.email,
@@ -75,12 +71,12 @@ export default function ExperienceBookingSection({ user, userPoints = 0, userTie
       });
 
       // Update participant count
-      await base44.entities.Experience.update(experience.id, {
+      await api.entities.Experience.update(experience.id, {
         current_participants: (experience.current_participants || 0) + 1
       });
 
       // Create loyalty transaction
-      await base44.entities.LoyaltyTransaction.create({
+      await api.entities.LoyaltyTransaction.create({
         user_email: user.email,
         type: 'redeem',
         points: experience.points_required,
@@ -89,11 +85,7 @@ export default function ExperienceBookingSection({ user, userPoints = 0, userTie
       });
 
       // Send confirmation email
-      await base44.integrations.Core.SendEmail({
-        to: user.email,
-        subject: `Réservation en attente - ${experience.title}`,
-        body: `Votre demande de réservation pour "${experience.title}" le ${format(new Date(experience.event_date), 'd MMMM yyyy', { locale: fr })} a été envoyée. Vous recevrez une confirmation sous peu.`
-      });
+      
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['available-experiences'] });

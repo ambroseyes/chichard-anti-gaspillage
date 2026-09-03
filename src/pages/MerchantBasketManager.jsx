@@ -1,33 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import React, { useState } from 'react';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import {
-  ShoppingBag, Plus, Package, TrendingUp, Users, Clock,
-  CheckCircle2, AlertTriangle, RefreshCw, BarChart2, Leaf
+  ShoppingBag, Plus, Package, TrendingUp, Users, Clock, RefreshCw
 } from 'lucide-react';
 import BasketEditorModal from '@/components/merchant/BasketEditorModal';
 import BasketRowCard from '@/components/merchant/BasketRowCard';
 import ReservationsList from '@/components/merchant/ReservationsList';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function MerchantBasketManager() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [editingBasket, setEditingBasket] = useState(null);
   const [showEditor, setShowEditor] = useState(false);
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
-
   const { data: baskets = [], isLoading, refetch } = useQuery({
     queryKey: ['merchant-baskets', user?.email],
-    queryFn: () => base44.entities.ClickCollectBasket.filter(
+    queryFn: () => api.entities.ClickCollectBasket.filter(
       { store_id: user.email },
       '-created_date',
       100
@@ -38,7 +33,7 @@ export default function MerchantBasketManager() {
 
   const { data: reservations = [] } = useQuery({
     queryKey: ['merchant-reservations', user?.email],
-    queryFn: () => base44.entities.ClickCollectReservation.filter(
+    queryFn: () => api.entities.ClickCollectReservation.filter(
       { store_id: user.email },
       '-created_date',
       100
@@ -48,7 +43,7 @@ export default function MerchantBasketManager() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.ClickCollectBasket.delete(id),
+    mutationFn: (id) => api.entities.ClickCollectBasket.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['merchant-baskets'] });
       toast.success('Panier supprimé');
@@ -56,7 +51,7 @@ export default function MerchantBasketManager() {
   });
 
   const toggleStatusMutation = useMutation({
-    mutationFn: ({ id, status }) => base44.entities.ClickCollectBasket.update(id, { status }),
+    mutationFn: ({ id, status }) => api.entities.ClickCollectBasket.update(id, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['merchant-baskets'] });
       toast.success('Statut mis à jour');
@@ -98,7 +93,7 @@ export default function MerchantBasketManager() {
           <ShoppingBag className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold mb-2">Espace commerçant</h2>
           <p className="text-gray-500 mb-4">Connectez-vous pour gérer vos paniers</p>
-          <Button onClick={() => base44.auth.redirectToLogin(window.location.pathname)}
+          <Button onClick={() => goToLogin()}
             className="bg-emerald-500 hover:bg-emerald-600">
             Se connecter
           </Button>

@@ -1,0 +1,129 @@
+{
+  "name": "Store",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nom du magasin"
+    },
+    "address": {
+      "type": "string",
+      "description": "Adresse complète"
+    },
+    "city": {
+      "type": "string",
+      "description": "Ville"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Numéro de téléphone"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email du magasin"
+    },
+    "logo_url": {
+      "type": "string",
+      "description": "Logo du magasin"
+    },
+    "is_partner": {
+      "type": "boolean",
+      "default": true
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "verified",
+        "rejected",
+        "suspended"
+      ],
+      "default": "pending",
+      "description": "Statut de vérification"
+    },
+    "rating": {
+      "type": "number",
+      "description": "Note moyenne"
+    },
+    "total_products_saved": {
+      "type": "number",
+      "default": 0,
+      "description": "Nombre de produits sauvés du gaspillage"
+    },
+    "total_revenue_recovered": {
+      "type": "number",
+      "default": 0,
+      "description": "Revenus récupérés grâce à CHICHARD"
+    },
+    "total_savings_generated": {
+      "type": "number",
+      "default": 0,
+      "description": "Économies générées pour les clients"
+    },
+    "owner_email": {
+      "type": "string",
+      "description": "Email du propriétaire"
+    },
+    "opening_hours": {
+      "type": "string",
+      "description": "Horaires d'ouverture"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description du magasin"
+    },
+    "latitude": {
+      "type": "number"
+    },
+    "longitude": {
+      "type": "number"
+    },
+    "employee_emails": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Emails des employés autorisés"
+    },
+    "employee_roles": {
+      "type": "object",
+      "description": "Rôles des employés"
+    },
+    "stock_alert_settings": {
+      "type": "object",
+      "properties": {
+        "low_stock_threshold": {
+          "type": "number",
+          "default": 5
+        },
+        "expiration_warning_days": {
+          "type": "number",
+          "default": 5
+        },
+        "critical_expiration_days": {
+          "type": "number",
+          "default": 2
+        },
+        "enable_email_alerts": {
+          "type": "boolean",
+          "default": true
+        },
+        "last_alert_date": {
+          "type": "string"
+        }
+      }
+    },
+    "email_verified": {
+      "type": "boolean",
+      "default": false
+    },
+    "verification_token": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "address",
+    "city"
+  ]
+}

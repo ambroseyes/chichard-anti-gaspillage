@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ShoppingCart, X, Plus, Minus, Trash2, ArrowRight } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ export default function FloatingCart({ userEmail }) {
 
   const { data: cartItems = [] } = useQuery({
     queryKey: ['cart', userEmail],
-    queryFn: () => base44.entities.CartItem.filter({ user_email: userEmail }),
+    queryFn: () => api.entities.CartItem.filter({ user_email: userEmail }),
     enabled: !!userEmail,
     refetchInterval: 5000,
   });
@@ -21,8 +21,8 @@ export default function FloatingCart({ userEmail }) {
   const updateQty = useMutation({
     mutationFn: ({ id, quantity }) =>
       quantity <= 0
-        ? base44.entities.CartItem.delete(id)
-        : base44.entities.CartItem.update(id, { quantity }),
+        ? api.entities.CartItem.delete(id)
+        : api.entities.CartItem.update(id, { quantity }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cart', userEmail] }),
   });
 

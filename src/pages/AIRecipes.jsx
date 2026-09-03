@@ -1,40 +1,37 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { api } from '@/api';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChefHat, Sparkles, Clock, Users, Leaf, ShoppingCart, Plus, Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
+import { ChefHat, Sparkles, Clock, Users, Leaf, ShoppingCart, Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function AIRecipes() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [recipes, setRecipes] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [expandedRecipe, setExpandedRecipe] = useState(null);
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => base44.auth.redirectToLogin());
-  }, []);
-
   // Fetch recent orders to extract products
   const { data: recentOrders = [] } = useQuery({
     queryKey: ['recent-orders-recipes', user?.email],
-    queryFn: () => base44.entities.Order.filter({ customer_email: user.email }, '-created_date', 20),
+    queryFn: () => api.entities.Order.filter({ customer_email: user.email }, '-created_date', 20),
     enabled: !!user?.email,
   });
 
   const { data: favorites = [] } = useQuery({
     queryKey: ['favorites-recipes', user?.email],
-    queryFn: () => base44.entities.Favorite.filter({ user_email: user.email }),
+    queryFn: () => api.entities.Favorite.filter({ user_email: user.email }),
     enabled: !!user?.email,
   });
 
   const { data: allProducts = [] } = useQuery({
     queryKey: ['products-for-recipes'],
-    queryFn: () => base44.entities.Product.list('-expiration_date', 100),
+    queryFn: () => api.entities.Product.list('-expiration_date', 100),
     enabled: !!user,
   });
 
@@ -69,61 +66,30 @@ export default function AIRecipes() {
     setIsGenerating(true);
     setRecipes([]);
     const ctx = buildContext();
+    const ingredients = [...ctx.urgent, ...ctx.recent].filter(Boolean).slice(0, 20);
 
-    const prompt = `Tu es un chef cuisinier spécialisé anti-gaspi. Génère 5 recettes créatives basées sur les produits disponibles, en priorisant les produits qui expirent bientôt.
+    if (!ingredients.length) {
+      toast.error("Ajoutez des produits à votre panier ou passez une commande pour obtenir des idées.");
+      setIsGenerating(false);
+      return;
+    }
 
-Produits prioritaires (proches DLC) : ${ctx.urgent.join(', ') || 'aucun'}
-Achats récents disponibles : ${ctx.recent.join(', ') || 'non précisé'}
-Régimes alimentaires : ${ctx.dietary.join(', ') || 'aucun'}
-Allergènes à EXCLURE absolument : ${ctx.allergens.join(', ') || 'aucun'}
-
-Pour chaque recette, fournis :
-- title : nom de la recette
-- time_minutes : temps de préparation
-- difficulty : facile/moyen/difficile
-- servings : nombre de portions
-- anti_waste_score : 1-10 (priorité DLC)
-- why_anti_waste : courte explication (ex: "utilise 2 produits qui expirent dans 2 jours")
-- ingredients_available : liste des ingrédients utilisés depuis les produits disponibles
-- ingredients_missing : liste des ingrédients manquants avec quantités approximatives
-- steps : tableau de 4-6 étapes courtes`;
-
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          recipes: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                title: { type: 'string' },
-                time_minutes: { type: 'number' },
-                difficulty: { type: 'string' },
-                servings: { type: 'number' },
-                anti_waste_score: { type: 'number' },
-                why_anti_waste: { type: 'string' },
-                ingredients_available: { type: 'array', items: { type: 'string' } },
-                ingredients_missing: { type: 'array', items: { type: 'string' } },
-                steps: { type: 'array', items: { type: 'string' } },
-              }
-            }
-          }
-        }
-      }
-    });
-
-    setRecipes(result.recipes || []);
-    setIsGenerating(false);
+    try {
+      const recipe = await api.ai.recipeFromIngredients(ingredients);
+      setRecipes([recipe]);
+    } catch (error) {
+      toast.error(error.message ?? "La génération n'a pas abouti");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const addToShoppingList = async (recipe) => {
     if (!recipe.ingredients_missing?.length) return;
-    const existing = await base44.entities.ShoppingList.filter({ user_email: user.email, status: 'active' });
+    const existing = await api.entities.ShoppingList.filter({ user_email: user.email, status: 'active' });
     let list = existing[0];
     if (!list) {
-      list = await base44.entities.ShoppingList.create({ user_email: user.email, name: 'Ma liste de courses', status: 'active', items: [] });
+      list = await api.entities.ShoppingList.create({ user_email: user.email, name: 'Ma liste de courses', status: 'active', items: [] });
     }
     const existingItems = list.items || [];
     const existingNames = new Set(existingItems.map(i => i.product_name?.toLowerCase()));
@@ -135,7 +101,7 @@ Pour chaque recette, fournis :
       toast.info('Tous les ingrédients sont déjà dans votre liste');
       return;
     }
-    await base44.entities.ShoppingList.update(list.id, { items: [...existingItems, ...newItems] });
+    await api.entities.ShoppingList.update(list.id, { items: [...existingItems, ...newItems] });
     queryClient.invalidateQueries({ queryKey: ['shopping-list'] });
     toast.success(`${newItems.length} ingrédient(s) ajouté(s) à votre liste de courses`);
   };

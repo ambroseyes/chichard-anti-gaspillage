@@ -1,73 +1,54 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import React, { useState } from 'react';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Truck, Package, MapPin, Clock, CheckCircle, Store, QrCode, Calendar } from 'lucide-react';
+import { Truck, Package, MapPin, Clock, CheckCircle, Store, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import QRCode from 'qrcode';
 import RouteOptimizer from '@/components/logistics/RouteOptimizer';
 import TimeSlotManager from '@/components/logistics/TimeSlotManager';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function DeliveryManagement() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [deliveryType, setDeliveryType] = useState('delivery');
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      } catch (e) {
-        base44.auth.redirectToLogin();
-      }
-    };
-    loadUser();
-  }, []);
-
   const { data: orders = [] } = useQuery({
     queryKey: ['pending-orders'],
-    queryFn: () => base44.entities.Order.filter({ status: 'pending' }, '-created_date'),
+    queryFn: () => api.entities.Order.filter({ status: 'pending' }, '-created_date'),
     enabled: !!user
   });
 
   const { data: pickupRequests = [] } = useQuery({
     queryKey: ['pickup-requests'],
-    queryFn: () => base44.entities.PickupRequest.filter({}, '-created_date'),
+    queryFn: () => api.entities.PickupRequest.filter({}, '-created_date'),
     enabled: !!user
   });
 
   const { data: deliveryRoutes = [] } = useQuery({
     queryKey: ['delivery-routes'],
-    queryFn: () => base44.entities.DeliveryRoute.list('-created_date'),
+    queryFn: () => api.entities.DeliveryRoute.list('-created_date'),
     enabled: !!user
   });
 
   const createPickupMutation = useMutation({
     mutationFn: async (orderData) => {
-      // Generate confirmation code
-      const confirmationCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-      
-      // Generate QR code
-      const qrData = JSON.stringify({
-        order_id: orderData.order_id,
-        code: confirmationCode,
-        type: 'pickup'
-      });
-      const qrCodeUrl = await QRCode.toDataURL(qrData);
+      // Le code de retrait est celui émis à la commande, côté serveur : on ne
+      // fabrique pas un second code, qui divergerait de celui du client.
+      const qrCodeUrl = await QRCode.toDataURL(
+        JSON.stringify({ order_id: orderData.order_id, type: 'pickup' }),
+      );
 
-      return base44.entities.PickupRequest.create({
+      return api.entities.PickupRequest.create({
         ...orderData,
-        confirmation_code: confirmationCode,
         qr_code_url: qrCodeUrl,
-        status: 'confirmed'
       });
     },
     onSuccess: () => {
@@ -77,7 +58,7 @@ export default function DeliveryManagement() {
   });
 
   const updatePickupStatusMutation = useMutation({
-    mutationFn: ({ id, status }) => base44.entities.PickupRequest.update(id, { 
+    mutationFn: ({ id, status }) => api.entities.PickupRequest.update(id, { 
       status,
       ...(status === 'picked_up' ? { picked_up_at: new Date().toISOString() } : {}),
       ...(status === 'ready' ? { ready_at: new Date().toISOString() } : {})
@@ -100,7 +81,7 @@ export default function DeliveryManagement() {
         completed: false
       }));
 
-      return base44.entities.DeliveryRoute.create({
+      return api.entities.DeliveryRoute.create({
         driver_email: driverEmail,
         driver_name: 'Livreur', // TODO: Get from user
         route_name: `Route ${new Date().toLocaleDateString()}`,
@@ -169,7 +150,7 @@ export default function DeliveryManagement() {
             <RouteOptimizer
               orders={orders.filter(o => o.delivery_type === 'delivery')}
               onRouteCreated={(route, recommendations) => {
-                base44.entities.DeliveryRoute.create(route).then(() => {
+                api.entities.DeliveryRoute.create(route).then(() => {
                   queryClient.invalidateQueries({ queryKey: ['delivery-routes'] });
                   if (recommendations?.length > 0) {
                     toast.info(

@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import React, { useState } from 'react';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import BackofficeLayout from '@/components/backoffice/BackofficeLayout';
@@ -24,7 +23,6 @@ const STATUS_CONFIG = {
 };
 
 export default function BackofficeTransactions() {
-  const [user, setUser] = useState(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -32,18 +30,14 @@ export default function BackofficeTransactions() {
   const PAGE_SIZE = 20;
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => base44.auth.redirectToLogin());
-  }, []);
-
   const { data: orders = [], isLoading, refetch, isFetching } = useQuery({
     queryKey: ['bo-transactions'],
-    queryFn: () => base44.entities.Order.list('-created_date', 200),
+    queryFn: () => api.backoffice.transactions({ limit: 100 }).then((r) => r.data),
     refetchInterval: 20000
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, status }) => base44.entities.Order.update(id, { status }),
+    mutationFn: ({ id, status }) => api.entities.Order.update(id, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bo-transactions'] });
       toast.success('Statut mis à jour');

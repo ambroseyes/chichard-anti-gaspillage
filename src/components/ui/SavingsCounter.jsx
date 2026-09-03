@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, Leaf, Award, Zap } from 'lucide-react';
+import { TrendingUp, Leaf, Zap } from 'lucide-react';
 
 const ecoLevels = {
   debutant: { name: 'Débutant', color: 'text-gray-500', next: 5000, icon: '🌱' },

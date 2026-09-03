@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { motion } from 'framer-motion';
-import { Camera, X, TrendingUp, Leaf, Send, Image } from 'lucide-react';
+import { api } from '@/api';
+import { X, TrendingUp, Leaf, Send, Image } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -24,7 +23,7 @@ export default function CreatePostModal({ open, onClose, user, onSuccess }) {
     if (!file) return;
 
     setIsUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    const { file_url } = await api.uploads.file(file);
     setImageUrl(file_url);
     setIsUploading(false);
   };
@@ -37,7 +36,7 @@ export default function CreatePostModal({ open, onClose, user, onSuccess }) {
 
     setIsPosting(true);
 
-    await base44.entities.SocialPost.create({
+    await api.entities.SocialPost.create({
       author_email: user.email,
       author_name: user.full_name,
       author_avatar: user.avatar_url,
@@ -53,10 +52,6 @@ export default function CreatePostModal({ open, onClose, user, onSuccess }) {
     });
 
     // Update user eco points
-    await base44.auth.updateMe({
-      eco_points: (user.eco_points || 0) + 10
-    });
-
     setIsPosting(false);
     toast.success('Post publié !');
     

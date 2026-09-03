@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { 
         Home, 
@@ -16,9 +17,6 @@ import {
         LogOut,
         Leaf,
         Users,
-        ChefHat,
-        TrendingUp,
-        Crown,
         Flame,
         Ticket,
         MessageCircle,
@@ -31,38 +29,26 @@ import FloatingCart from '@/components/cart/FloatingCart';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from 'framer-motion';
+import { goToLogin } from '@/lib/navigation';
 
 export default function Layout({ children, currentPageName }) {
-  const navigate = useNavigate();
-  const [user, setUser] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      } catch (e) {
-        // User not logged in
-      }
-      };
-      loadUser();
-
-
-      }, [user]);
+  // L'identité vient du contexte partagé : aucune page ne recharge l'utilisateur
+  // pour son propre compte.
+  const { user, logout } = useAuth();
 
   const { data: cartItems = [] } = useQuery({
     queryKey: ['cart', user?.email],
-    queryFn: () => user ? base44.entities.CartItem.filter({ user_email: user.email }) : [],
-    enabled: !!user,
+    queryFn: () => api.entities.CartItem.filter({ user_email: user.email }, '-created_date', 100),
+    enabled: Boolean(user),
   });
 
   const { data: notifications = [] } = useQuery({
-    queryKey: ['notifications-count', user?.email],
-    queryFn: () => user ? base44.entities.Notification.filter({ user_email: user.email, is_read: false }) : [],
-    enabled: !!user,
-    refetchInterval: 10000,
+    queryKey: ['notifications', 'unread', user?.email],
+    queryFn: () => api.entities.Notification.filter({ user_email: user.email, is_read: false }, '-created_date', 50),
+    enabled: Boolean(user),
+    refetchInterval: 60_000,
   });
 
   const cartCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
@@ -186,7 +172,7 @@ export default function Layout({ children, currentPageName }) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => base44.auth.logout()}
+                    onClick={logout}
                     className="text-gray-500"
                   >
                     <LogOut className="w-4 h-4 mr-2" />
@@ -195,7 +181,7 @@ export default function Layout({ children, currentPageName }) {
                 </>
               ) : (
                 <Button
-                  onClick={() => base44.auth.redirectToLogin()}
+                  onClick={() => goToLogin()}
                   className="bg-emerald-500 hover:bg-emerald-600"
                 >
                   Connexion
@@ -288,7 +274,7 @@ export default function Layout({ children, currentPageName }) {
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => base44.auth.logout()}
+                    onClick={logout}
                   >
                     <LogOut className="w-4 h-4 mr-2" />
                     Déconnexion

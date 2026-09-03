@@ -1,0 +1,88 @@
+{
+  "name": "UserPreference",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email de l'utilisateur"
+    },
+    "favorite_categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Catégories préférées"
+    },
+    "budget_monthly": {
+      "type": "number",
+      "description": "Budget mensuel estimé en FCFA"
+    },
+    "max_distance_km": {
+      "type": "number",
+      "default": 10,
+      "description": "Distance maximale pour les magasins (km)"
+    },
+    "preferred_stores": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs des magasins préférés"
+    },
+    "notification_preferences": {
+      "type": "object",
+      "properties": {
+        "favorite_products_promo": {
+          "type": "boolean",
+          "default": true
+        },
+        "dlc_alerts": {
+          "type": "boolean",
+          "default": true
+        },
+        "price_drop_alerts": {
+          "type": "boolean",
+          "default": true
+        },
+        "new_stores_nearby": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "location": {
+      "type": "object",
+      "properties": {
+        "latitude": {
+          "type": "number"
+        },
+        "longitude": {
+          "type": "number"
+        },
+        "city": {
+          "type": "string"
+        },
+        "last_updated": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "allergens_to_avoid": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "dietary_preferences": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Végétarien, vegan, halal, etc."
+    }
+  },
+  "required": [
+    "user_email"
+  ]
+}

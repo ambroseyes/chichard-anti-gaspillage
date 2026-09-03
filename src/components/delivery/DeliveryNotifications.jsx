@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { toast } from 'sonner';
 import { Package, Truck, CheckCircle } from 'lucide-react';
 
@@ -8,7 +8,7 @@ export default function DeliveryNotifications({ userEmail, onNewOrder }) {
     if (!userEmail) return;
 
     // Subscribe to order changes
-    const unsubscribe = base44.entities.Order.subscribe((event) => {
+    const unsubscribe = api.subscribe('Order', (event) => {
       const order = event.data;
       
       // Notifier seulement les livraisons

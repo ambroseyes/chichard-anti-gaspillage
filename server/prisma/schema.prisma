@@ -1,0 +1,1664 @@
+// ⚠️  FICHIER GÉNÉRÉ — ne pas éditer à la main.
+// Source de vérité : server/entities/*.json
+// Régénérer avec :  npm run schema:generate
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Modèles d'infrastructure (hors modèle métier généré)
+// ---------------------------------------------------------------------------
+
+model RefreshToken {
+  id           String    @id @default(cuid())
+  token_hash   String    @unique
+  user_email   String
+  user_agent   String?
+  ip           String?
+  expires_at   DateTime
+  revoked_at   DateTime?
+  created_date DateTime  @default(now())
+
+  @@index([user_email])
+  @@index([expires_at])
+}
+
+/// Journal d'audit réel : une ligne écrite par le serveur à chaque action
+/// sensible. Remplace le journal reconstitué côté client.
+model AuditLog {
+  id           String   @id @default(cuid())
+  actor_email  String?
+  actor_role   String?
+  action       String
+  module       String
+  entity_name  String?
+  entity_id    String?
+  description  String?
+  ip           String?
+  user_agent   String?
+  success      Boolean  @default(true)
+  metadata     Json?
+  created_date DateTime @default(now())
+
+  @@index([actor_email])
+  @@index([module])
+  @@index([created_date])
+}
+
+/// Intention de paiement : trace serveur du dialogue avec l'opérateur mobile.
+/// Aucune commande n'est marquée payée sans une ligne `succeeded` ici.
+model PaymentIntent {
+  id             String   @id @default(cuid())
+  reference      String   @unique
+  provider       String
+  target_type    String
+  target_id      String
+  amount         Float
+  currency       String   @default("XAF")
+  status         String   @default("pending")
+  customer_email String
+  customer_phone String?
+  provider_ref   String?
+  failure_reason String?
+  raw_callback   Json?
+  created_date   DateTime @default(now())
+  updated_date   DateTime @updatedAt
+
+  @@index([target_type, target_id])
+  @@index([customer_email])
+  @@index([status])
+}
+
+/// Verrou applicatif utilisé par l'ordonnanceur pour qu'un job planifié ne
+/// s'exécute qu'une fois même avec plusieurs instances du serveur.
+model JobLock {
+  name         String    @id
+  locked_until DateTime
+  last_run_at  DateTime?
+  last_result  Json?
+}
+
+model BasketReview {
+  id               String   @id @default(cuid())
+  reservation_id   String
+  basket_id        String?
+  basket_name      String?
+  store_id         String
+  store_name       String?
+  customer_email   String
+  customer_name    String?
+  rating_overall   Float
+  rating_quality   Float?
+  rating_freshness Float?
+  rating_quantity  Int?
+  comment          String?
+  tags             String[]
+  would_recommend  Boolean?
+  created_date     DateTime @default(now())
+  updated_date     DateTime @updatedAt
+
+  @@index([reservation_id])
+  @@index([basket_id])
+  @@index([store_id])
+  @@index([customer_email])
+}
+
+model BrandPartnership {
+  id                     String                            @id @default(cuid())
+  brand_name             String
+  brand_logo_url         String?
+  contact_email          String
+  contact_name           String?
+  contact_phone          String?
+  partnership_status     BrandPartnershipPartnershipStatus @default(pending)
+  commission_rate        Float                             @default(10)
+  monthly_budget         Float?
+  sponsored_products     String[]
+  sponsored_categories   String[]
+  total_spent            Float                             @default(0)
+  total_sales_generated  Float                             @default(0)
+  total_commissions_paid Float                             @default(0)
+  start_date             DateTime?
+  end_date               DateTime?
+  created_date           DateTime                          @default(now())
+  updated_date           DateTime                          @updatedAt
+
+  @@index([contact_email])
+}
+
+model CampaignMetrics {
+  id                  String    @id @default(cuid())
+  store_id            String
+  campaign_id         String?
+  campaign_name       String
+  start_date          DateTime?
+  end_date            DateTime?
+  impressions         Int       @default(0)
+  clicks              Int       @default(0)
+  conversions         Int       @default(0)
+  revenue             Float     @default(0)
+  cost                Float     @default(0)
+  roi                 Float     @default(0)
+  conversion_rate     Float     @default(0)
+  average_order_value Float     @default(0)
+  products_sold       Float     @default(0)
+  customer_segments   Json?
+  created_date        DateTime  @default(now())
+  updated_date        DateTime  @updatedAt
+
+  @@index([store_id])
+  @@index([campaign_id])
+}
+
+model CartItem {
+  id              String    @id @default(cuid())
+  user_email      String
+  product_id      String
+  product_name    String?
+  product_image   String?
+  quantity        Int       @default(1)
+  unit_price      Float
+  original_price  Float?
+  store_name      String?
+  expiration_date DateTime?
+  created_date    DateTime  @default(now())
+  updated_date    DateTime  @updatedAt
+
+  @@index([user_email])
+  @@index([product_id])
+  @@index([expiration_date])
+}
+
+model Challenge {
+  id                 String                 @id @default(cuid())
+  title              String
+  description        String?
+  image_url          String?
+  challenge_type     ChallengeChallengeType @default(weekly)
+  goal_type          ChallengeGoalType
+  goal_value         Float
+  reward_badge       String?
+  reward_points      Int?
+  start_date         DateTime?
+  end_date           DateTime
+  participants_count Int                    @default(0)
+  is_active          Boolean                @default(true)
+  created_date       DateTime               @default(now())
+  updated_date       DateTime               @updatedAt
+}
+
+model ChatMessage {
+  id             String                 @id @default(cuid())
+  room_id        String
+  sender_email   String
+  sender_name    String?
+  sender_avatar  String?
+  content        String
+  message_type   ChatMessageMessageType @default(text)
+  attachment_url String?
+  reactions      Json?
+  is_pinned      Boolean                @default(false)
+  created_date   DateTime               @default(now())
+  updated_date   DateTime               @updatedAt
+
+  @@index([room_id])
+  @@index([sender_email])
+}
+
+model ChatRoom {
+  id                String           @id @default(cuid())
+  name              String
+  description       String?
+  type              ChatRoomType     @default(public)
+  category          ChatRoomCategory @default(general)
+  icon              String?
+  members_count     Int              @default(0)
+  last_message      String?
+  last_message_date DateTime?
+  is_active         Boolean          @default(true)
+  created_date      DateTime         @default(now())
+  updated_date      DateTime         @updatedAt
+
+  @@index([category])
+}
+
+model ClickCollectBasket {
+  id                 String                       @id @default(cuid())
+  store_id           String
+  store_name         String
+  store_address      String?
+  basket_type        ClickCollectBasketBasketType
+  name               String
+  description        String?
+  image_url          String?
+  original_price     Float
+  discounted_price   Float
+  quantity_available Int                          @default(0)
+  quantity_reserved  Int                          @default(0)
+  products           Json[]
+  pickup_date        DateTime
+  pickup_slots       String[]
+  category           String?
+  allergens          String[]
+  weight_kg          Float?
+  co2_saved_kg       Float?
+  status             ClickCollectBasketStatus     @default(active)
+  created_date       DateTime                     @default(now())
+  updated_date       DateTime                     @updatedAt
+
+  @@index([store_id])
+  @@index([pickup_date])
+  @@index([category])
+  @@index([status])
+}
+
+model ClickCollectReservation {
+  id                     String                               @id @default(cuid())
+  customer_email         String
+  customer_name          String?
+  customer_phone         String?
+  basket_id              String
+  basket_name            String?
+  store_id               String
+  store_name             String?
+  store_address          String?
+  pickup_date            DateTime
+  pickup_slot            String
+  quantity               Int                                  @default(1)
+  unit_price             Float?
+  total_amount           Float
+  savings_amount         Float?
+  payment_method         ClickCollectReservationPaymentMethod
+  payment_status         ClickCollectReservationPaymentStatus @default(pending)
+  status                 ClickCollectReservationStatus        @default(reserved)
+  qr_code_url            String?
+  notes                  String?
+  co2_saved_kg           Float?
+  confirmation_code_hash String?
+  payment_reference      String?
+  collected_at           DateTime?
+  created_date           DateTime                             @default(now())
+  updated_date           DateTime                             @updatedAt
+
+  @@index([customer_email])
+  @@index([basket_id])
+  @@index([store_id])
+  @@index([pickup_date])
+  @@index([status])
+}
+
+model Comment {
+  id           String   @id @default(cuid())
+  post_id      String
+  author_email String
+  author_name  String?
+  content      String
+  likes_count  Int      @default(0)
+  created_date DateTime @default(now())
+  updated_date DateTime @updatedAt
+
+  @@index([post_id])
+  @@index([author_email])
+}
+
+model CommissionTransaction {
+  id                String                      @id @default(cuid())
+  brand_id          String
+  brand_name        String?
+  campaign_id       String?
+  order_id          String
+  product_id        String?
+  product_name      String?
+  sale_amount       Float
+  commission_rate   Float
+  commission_amount Float?
+  status            CommissionTransactionStatus @default(pending)
+  transaction_date  DateTime?
+  payment_date      DateTime?
+  customer_email    String?
+  created_date      DateTime                    @default(now())
+  updated_date      DateTime                    @updatedAt
+
+  @@index([brand_id])
+  @@index([campaign_id])
+  @@index([order_id])
+  @@index([product_id])
+  @@index([status])
+  @@index([customer_email])
+}
+
+model Coupon {
+  id                String       @id @default(cuid())
+  code              String
+  user_email        String
+  type              CouponType   @default(FIXED)
+  value             Float
+  min_cart_amount   Float        @default(0)
+  valid_from        DateTime?
+  valid_to          DateTime?
+  points_cost       Int?
+  status            CouponStatus @default(ACTIVE)
+  redeemed_order_id String?
+  created_date      DateTime     @default(now())
+  updated_date      DateTime     @updatedAt
+
+  @@index([code])
+  @@index([user_email])
+  @@index([status])
+  @@index([redeemed_order_id])
+}
+
+model CustomerSegment {
+  id                       String                           @id @default(cuid())
+  user_email               String
+  segment_type             CustomerSegmentSegmentType
+  total_orders             Int                              @default(0)
+  total_spent              Float                            @default(0)
+  average_order_value      Float                            @default(0)
+  last_purchase_date       DateTime?
+  days_since_last_purchase Int                              @default(0)
+  favorite_categories      String[]
+  preferred_stores         String[]
+  price_sensitivity        CustomerSegmentPriceSensitivity?
+  engagement_score         Float                            @default(0)
+  churn_risk               Float                            @default(0)
+  lifetime_value           Float                            @default(0)
+  recommended_offers       String[]
+  created_date             DateTime                         @default(now())
+  updated_date             DateTime                         @updatedAt
+
+  @@index([user_email])
+}
+
+model DashboardPreference {
+  id                String                           @id @default(cuid())
+  user_email        String
+  dashboard_type    DashboardPreferenceDashboardType
+  visible_widgets   String[]
+  widget_order      Json[]
+  alerts_config     Json?
+  chart_preferences Json?
+  created_date      DateTime                         @default(now())
+  updated_date      DateTime                         @updatedAt
+
+  @@index([user_email])
+}
+
+model DeliveryAddress {
+  id            String   @id @default(cuid())
+  user_email    String
+  label         String?
+  full_name     String
+  phone         String
+  address_line1 String
+  address_line2 String?
+  city          String
+  postal_code   String?
+  country       String   @default("Cameroun")
+  is_default    Boolean  @default(false)
+  is_billing    Boolean  @default(false)
+  created_date  DateTime @default(now())
+  updated_date  DateTime @updatedAt
+
+  @@index([user_email])
+}
+
+model DeliveryRoute {
+  id                         String              @id @default(cuid())
+  driver_email               String
+  driver_name                String?
+  route_name                 String?
+  order_ids                  String[]
+  stops                      Json[]
+  total_distance_km          Float?
+  estimated_duration_minutes Int?
+  status                     DeliveryRouteStatus @default(planned)
+  start_time                 String?
+  end_time                   String?
+  optimization_score         Float?
+  created_date               DateTime            @default(now())
+  updated_date               DateTime            @updatedAt
+
+  @@index([driver_email])
+  @@index([status])
+}
+
+model DigitalReceipt {
+  id                String                       @id @default(cuid())
+  user_email        String
+  store_id          String?
+  store_name        String
+  receipt_number    String?
+  receipt_image_url String?
+  purchase_date     DateTime
+  items             Json[]
+  total_amount      Float
+  payment_method    String?
+  cashback_earned   Float                        @default(0)
+  points_earned     Int                          @default(0)
+  verified          Boolean                      @default(false)
+  cashback_status   DigitalReceiptCashbackStatus @default(pending)
+  created_date      DateTime                     @default(now())
+  updated_date      DateTime                     @updatedAt
+
+  @@index([user_email])
+  @@index([store_id])
+}
+
+model Experience {
+  id                   String                   @id @default(cuid())
+  store_id             String
+  store_name           String?
+  title                String
+  description          String?
+  image_url            String?
+  experience_type      ExperienceExperienceType @default(workshop)
+  points_required      Int
+  duration_minutes     Int?
+  max_participants     Int
+  current_participants Int                      @default(0)
+  event_date           DateTime
+  event_time           String?
+  location             String?
+  is_active            Boolean                  @default(true)
+  tier_required        ExperienceTierRequired   @default(bronze)
+  created_date         DateTime                 @default(now())
+  updated_date         DateTime                 @updatedAt
+
+  @@index([store_id])
+}
+
+model ExperienceBooking {
+  id                String                  @id @default(cuid())
+  experience_id     String
+  experience_title  String?
+  user_email        String
+  user_name         String?
+  user_phone        String?
+  status            ExperienceBookingStatus @default(pending)
+  points_spent      Int
+  event_date        DateTime?
+  event_time        String?
+  store_name        String?
+  reminder_sent     Boolean                 @default(false)
+  confirmation_sent Boolean                 @default(false)
+  created_date      DateTime                @default(now())
+  updated_date      DateTime                @updatedAt
+
+  @@index([experience_id])
+  @@index([user_email])
+  @@index([status])
+}
+
+model Favorite {
+  id            String   @id @default(cuid())
+  user_email    String
+  product_id    String
+  product_name  String?
+  product_image String?
+  store_name    String?
+  created_date  DateTime @default(now())
+  updated_date  DateTime @updatedAt
+
+  @@index([user_email])
+  @@index([product_id])
+}
+
+model IdentityVerification {
+  id                 String                                @id @default(cuid())
+  user_email         String
+  verification_type  IdentityVerificationVerificationType
+  document_url       String?
+  status             IdentityVerificationStatus            @default(pending)
+  verified_at        DateTime?
+  expires_at         DateTime?
+  reviewer_notes     String?
+  verification_level IdentityVerificationVerificationLevel @default(basic)
+  created_date       DateTime                              @default(now())
+  updated_date       DateTime                              @updatedAt
+
+  @@index([user_email])
+  @@index([status])
+}
+
+model LoyaltyReward {
+  id              String                    @id @default(cuid())
+  title           String
+  description     String?
+  points_required Int
+  reward_type     LoyaltyRewardRewardType
+  reward_value    Float?
+  image_url       String?
+  is_active       Boolean                   @default(true)
+  tier_required   LoyaltyRewardTierRequired @default(bronze)
+  stock           Int?
+  created_date    DateTime                  @default(now())
+  updated_date    DateTime                  @updatedAt
+}
+
+model LoyaltyTransaction {
+  id           String                   @id @default(cuid())
+  user_email   String
+  type         LoyaltyTransactionType
+  points       Int
+  source       LoyaltyTransactionSource
+  description  String?
+  order_id     String?
+  created_date DateTime                 @default(now())
+  updated_date DateTime                 @updatedAt
+
+  @@index([user_email])
+  @@index([order_id])
+}
+
+model Message {
+  id              String   @id @default(cuid())
+  sender_email    String
+  sender_name     String?
+  recipient_email String
+  recipient_name  String?
+  content         String
+  is_read         Boolean  @default(false)
+  conversation_id String?
+  created_date    DateTime @default(now())
+  updated_date    DateTime @updatedAt
+
+  @@index([sender_email])
+  @@index([recipient_email])
+  @@index([is_read])
+  @@index([conversation_id])
+}
+
+model Notification {
+  id           String           @id @default(cuid())
+  user_email   String
+  title        String
+  message      String
+  type         NotificationType @default(system)
+  is_read      Boolean          @default(false)
+  action_url   String?
+  image_url    String?
+  data         Json?
+  created_date DateTime         @default(now())
+  updated_date DateTime         @updatedAt
+
+  @@index([user_email])
+  @@index([is_read])
+}
+
+model Order {
+  id                String              @id @default(cuid())
+  customer_email    String
+  customer_name     String?
+  customer_phone    String?
+  items             Json[]
+  total_amount      Float
+  total_savings     Float?
+  status            OrderStatus         @default(pending)
+  payment_method    OrderPaymentMethod?
+  delivery_type     OrderDeliveryType   @default(pickup)
+  delivery_address  String?
+  store_id          String?
+  store_name        String?
+  qr_scanned_at     DateTime?
+  qr_scan_attempts  Int                 @default(0)
+  delivery_proof    Json?
+  delivered_at      DateTime?
+  delivered_by      String?
+  order_number      String?
+  subtotal_amount   Float               @default(0)
+  delivery_fee      Float               @default(0)
+  discount_amount   Float               @default(0)
+  coupon_code       String?
+  payment_status    OrderPaymentStatus  @default(pending)
+  payment_reference String?
+  pickup_token_hash String?
+  co2_saved_kg      Float               @default(0)
+  cancelled_at      DateTime?
+  cancel_reason     String?
+  created_date      DateTime            @default(now())
+  updated_date      DateTime            @updatedAt
+
+  @@index([customer_email])
+  @@index([status])
+  @@index([store_id])
+}
+
+model PartnerChallenge {
+  id                      String                     @id @default(cuid())
+  store_id                String
+  store_name              String?
+  title                   String
+  description             String?
+  image_url               String?
+  goal_type               PartnerChallengeGoalType   @default(purchases)
+  goal_value              Float
+  reward_type             PartnerChallengeRewardType @default(points)
+  reward_value            Float?
+  reward_description      String?
+  start_date              DateTime?
+  end_date                DateTime
+  is_active               Boolean                    @default(true)
+  participants_count      Int                        @default(0)
+  completions_count       Int                        @default(0)
+  total_revenue_generated Float                      @default(0)
+  created_date            DateTime                   @default(now())
+  updated_date            DateTime                   @updatedAt
+
+  @@index([store_id])
+}
+
+model PartnerStatusHistory {
+  id              String                             @id @default(cuid())
+  store_id        String
+  store_name      String?
+  previous_status PartnerStatusHistoryPreviousStatus
+  new_status      PartnerStatusHistoryNewStatus
+  changed_by      String
+  changed_by_name String?
+  notes           String?
+  metadata        Json?
+  created_date    DateTime                           @default(now())
+  updated_date    DateTime                           @updatedAt
+
+  @@index([store_id])
+}
+
+model PickupRequest {
+  id                   String              @id @default(cuid())
+  order_id             String
+  customer_email       String
+  customer_name        String?
+  store_id             String
+  store_name           String?
+  store_address        String?
+  pickup_time_slot     String?
+  pickup_date          DateTime
+  status               PickupRequestStatus @default(requested)
+  confirmation_code    String?
+  items                Json[]
+  total_amount         Float?
+  special_instructions String?
+  ready_at             DateTime?
+  picked_up_at         DateTime?
+  qr_code_url          String?
+  created_date         DateTime            @default(now())
+  updated_date         DateTime            @updatedAt
+
+  @@index([order_id])
+  @@index([customer_email])
+  @@index([store_id])
+  @@index([pickup_date])
+  @@index([status])
+}
+
+model PriceComparison {
+  id            String    @id @default(cuid())
+  product_name  String
+  barcode       String?
+  brand         String?
+  stores_prices Json[]
+  best_deal     Json?
+  category      String?
+  last_updated  DateTime?
+  created_date  DateTime  @default(now())
+  updated_date  DateTime  @updatedAt
+
+  @@index([category])
+}
+
+model Product {
+  id                 String              @id @default(cuid())
+  name               String
+  description        String?
+  original_price     Float
+  discounted_price   Float
+  ai_suggested_price Float?
+  category           ProductCategory
+  expiration_date    DateTime
+  quantity_available Int                 @default(0)
+  quantity_sold      Int                 @default(0)
+  image_url          String?
+  images             String[]
+  store_id           String?
+  store_name         String
+  store_location     String?
+  is_verified        Boolean             @default(true)
+  status             ProductStatus       @default(active)
+  urgency_level      ProductUrgencyLevel @default(normal)
+  freshness_score    Float?
+  weight             Float?
+  weight_unit        ProductWeightUnit?
+  brand              String?
+  barcode            String?
+  nutritional_info   Json?
+  allergens          String[]
+  tags               String[]
+  views_count        Int                 @default(0)
+  favorites_count    Int                 @default(0)
+  avg_rating         Float               @default(0)
+  reviews_count      Int                 @default(0)
+  is_bundle          Boolean             @default(false)
+  bundle_products    String[]
+  co2_saved          Float?
+  created_date       DateTime            @default(now())
+  updated_date       DateTime            @updatedAt
+
+  @@index([category])
+  @@index([expiration_date])
+  @@index([store_id])
+  @@index([status])
+}
+
+model ProductBatch {
+  id              String             @id @default(cuid())
+  product_id      String
+  product_name    String?
+  store_id        String?
+  batch_number    String?
+  quantity        Int
+  quantity_sold   Int                @default(0)
+  expiration_date DateTime
+  purchase_price  Float?
+  status          ProductBatchStatus @default(active)
+  created_date    DateTime           @default(now())
+  updated_date    DateTime           @updatedAt
+
+  @@index([product_id])
+  @@index([store_id])
+  @@index([expiration_date])
+  @@index([status])
+}
+
+model ProductVariant {
+  id                 String   @id @default(cuid())
+  description        String?
+  product_id         String
+  product_name       String?
+  variant_name       String
+  attributes         Json?
+  sku                String?
+  price_adjustment   Float    @default(0)
+  quantity_available Int      @default(0)
+  image_url          String?
+  is_active          Boolean  @default(true)
+  created_date       DateTime @default(now())
+  updated_date       DateTime @updatedAt
+
+  @@index([product_id])
+}
+
+model Promotion {
+  id                  String                @id @default(cuid())
+  store_id            String
+  title               String
+  description         String?
+  discount_type       PromotionDiscountType @default(percentage)
+  discount_value      Float
+  start_date          DateTime
+  end_date            DateTime
+  is_active           Boolean               @default(true)
+  applicable_products String[]
+  usage_count         Int                   @default(0)
+  created_date        DateTime              @default(now())
+  updated_date        DateTime              @updatedAt
+
+  @@index([store_id])
+}
+
+model PromotionRule {
+  id                String                   @id @default(cuid())
+  store_id          String
+  rule_name         String
+  is_active         Boolean                  @default(true)
+  trigger_type      PromotionRuleTriggerType
+  conditions        Json?
+  discount_action   Json?
+  priority          Int                      @default(1)
+  applies_to        PromotionRuleAppliesTo   @default(all_products)
+  target_products   String[]
+  target_categories String[]
+  execution_count   Int                      @default(0)
+  last_executed     DateTime?
+  created_date      DateTime                 @default(now())
+  updated_date      DateTime                 @updatedAt
+
+  @@index([store_id])
+}
+
+model Recipe {
+  id                String            @id @default(cuid())
+  title             String
+  description       String?
+  image_url         String?
+  ingredients       Json[]
+  steps             String[]
+  prep_time         Float?
+  cook_time         Float?
+  servings          Int?
+  difficulty        RecipeDifficulty?
+  estimated_cost    Float?
+  savings_potential Float?
+  category          RecipeCategory?
+  tags              String[]
+  is_ai_generated   Boolean           @default(false)
+  likes_count       Int               @default(0)
+  saves_count       Int               @default(0)
+  status            RecipeStatus      @default(pending)
+  author_email      String?
+  author_name       String?
+  created_date      DateTime          @default(now())
+  updated_date      DateTime          @updatedAt
+
+  @@index([category])
+  @@index([status])
+  @@index([author_email])
+}
+
+model RecipeRating {
+  id            String   @id @default(cuid())
+  recipe_id     String
+  user_email    String
+  user_name     String?
+  rating        Float
+  comment       String?
+  image_url     String?
+  helpful_count Int      @default(0)
+  created_date  DateTime @default(now())
+  updated_date  DateTime @updatedAt
+
+  @@index([recipe_id])
+  @@index([user_email])
+}
+
+model Review {
+  id                   String   @id @default(cuid())
+  product_id           String
+  user_email           String
+  user_name            String?
+  rating               Float
+  comment              String?
+  image_url            String?
+  is_verified_purchase Boolean  @default(false)
+  helpful_count        Int      @default(0)
+  created_date         DateTime @default(now())
+  updated_date         DateTime @updatedAt
+
+  @@index([product_id])
+  @@index([user_email])
+}
+
+model SavedSearch {
+  id           String    @id @default(cuid())
+  user_email   String
+  search_name  String
+  search_query String
+  filters      Json?
+  entity_types String[]
+  usage_count  Int       @default(0)
+  last_used    DateTime?
+  created_date DateTime  @default(now())
+  updated_date DateTime  @updatedAt
+
+  @@index([user_email])
+}
+
+model ScamReport {
+  id                   String                       @id @default(cuid())
+  reporter_email       String
+  reported_entity_type ScamReportReportedEntityType
+  reported_entity_id   String
+  reason               ScamReportReason
+  description          String?
+  status               ScamReportStatus             @default(pending)
+  evidence_url         String?
+  created_date         DateTime                     @default(now())
+  updated_date         DateTime                     @updatedAt
+
+  @@index([reporter_email])
+  @@index([reported_entity_id])
+  @@index([status])
+}
+
+model ShoppingList {
+  id                String                        @id @default(cuid())
+  description       String?
+  user_email        String
+  name              String
+  items             Json[]
+  estimated_budget  Float?
+  actual_cost       Float                         @default(0)
+  stores_suggested  String[]
+  savings_potential Float                         @default(0)
+  status            ShoppingListStatus            @default(active)
+  is_recurring      Boolean                       @default(false)
+  recurrence_period ShoppingListRecurrencePeriod?
+  created_date      DateTime                      @default(now())
+  updated_date      DateTime                      @updatedAt
+
+  @@index([user_email])
+  @@index([status])
+}
+
+model SocialPost {
+  id               String             @id @default(cuid())
+  author_email     String
+  author_name      String?
+  author_avatar    String?
+  author_eco_level String?
+  content          String
+  image_url        String?
+  post_type        SocialPostPostType @default(savings)
+  savings_amount   Float?
+  waste_avoided_kg Float?
+  likes_count      Int                @default(0)
+  comments_count   Int                @default(0)
+  shares_count     Int                @default(0)
+  liked_by         String[]
+  is_featured      Boolean            @default(false)
+  related_products String[]
+  store_id         String?
+  created_date     DateTime           @default(now())
+  updated_date     DateTime           @updatedAt
+
+  @@index([author_email])
+  @@index([store_id])
+}
+
+model SponsoredCampaign {
+  id                String                        @id @default(cuid())
+  description       String?
+  brand_id          String
+  brand_name        String?
+  campaign_name     String
+  campaign_type     SponsoredCampaignCampaignType @default(product_sponsorship)
+  target_products   String[]
+  target_categories String[]
+  target_audience   Json?
+  budget            Float
+  spent             Float                         @default(0)
+  start_date        DateTime?
+  end_date          DateTime?
+  status            SponsoredCampaignStatus       @default(draft)
+  ad_creative       Json?
+  impressions       Int                           @default(0)
+  clicks            Int                           @default(0)
+  conversions       Int                           @default(0)
+  revenue_generated Float                         @default(0)
+  roi               Float                         @default(0)
+  ctr               Float                         @default(0)
+  conversion_rate   Float                         @default(0)
+  created_date      DateTime                      @default(now())
+  updated_date      DateTime                      @updatedAt
+
+  @@index([brand_id])
+  @@index([status])
+}
+
+model StockMovement {
+  id                String                    @id @default(cuid())
+  product_id        String
+  store_id          String?
+  variant_id        String?
+  movement_type     StockMovementMovementType
+  quantity          Int
+  reason            String?
+  reference         String?
+  user_email        String?
+  notes             String?
+  previous_quantity Int?
+  new_quantity      Int?
+  created_date      DateTime                  @default(now())
+  updated_date      DateTime                  @updatedAt
+
+  @@index([product_id])
+  @@index([store_id])
+  @@index([variant_id])
+  @@index([user_email])
+}
+
+model Store {
+  id                      String      @id @default(cuid())
+  name                    String
+  address                 String
+  city                    String
+  phone                   String?
+  email                   String?
+  logo_url                String?
+  is_partner              Boolean     @default(true)
+  status                  StoreStatus @default(pending)
+  rating                  Float?
+  total_products_saved    Float       @default(0)
+  total_revenue_recovered Float       @default(0)
+  total_savings_generated Float       @default(0)
+  owner_email             String?
+  opening_hours           String?
+  description             String?
+  latitude                Float?
+  longitude               Float?
+  employee_emails         String[]
+  employee_roles          Json?
+  stock_alert_settings    Json?
+  email_verified          Boolean     @default(false)
+  verification_token      String?
+  created_date            DateTime    @default(now())
+  updated_date            DateTime    @updatedAt
+
+  @@index([status])
+  @@index([owner_email])
+}
+
+model User {
+  id                      String                 @id @default(cuid())
+  email                   String                 @unique
+  full_name               String?
+  password_hash           String?
+  avatar_url              String?
+  role                    UserRole               @default(user)
+  backoffice_role         UserBackofficeRole     @default(none)
+  is_active               Boolean                @default(true)
+  last_login_at           DateTime?
+  phone                   String?
+  city                    String?
+  address                 String?
+  is_partner              Boolean                @default(false)
+  is_delivery_driver      Boolean                @default(false)
+  store_id                String?
+  total_savings           Float                  @default(0)
+  waste_avoided_kg        Float                  @default(0)
+  eco_level               UserEcoLevel           @default(debutant)
+  eco_points              Int                    @default(0)
+  badges                  String[]
+  featured_badge          String?
+  loyalty_points          Int                    @default(0)
+  loyalty_tier            UserLoyaltyTier        @default(bronze)
+  preferences             Json?
+  trust_score             Float                  @default(50)
+  verification_status     UserVerificationStatus @default(unverified)
+  reports_received        Int                    @default(0)
+  reports_submitted       Int                    @default(0)
+  successful_transactions Int                    @default(0)
+  account_age_days        Int                    @default(0)
+  total_orders            Int                    @default(0)
+  referral_code           String?
+  referrals_count         Int                    @default(0)
+  is_premium              Boolean                @default(false)
+  is_public_profile       Boolean                @default(true)
+  allow_messages          Boolean                @default(true)
+  dietary_preferences     String[]
+  allergens_to_avoid      String[]
+  favorite_stores         String[]
+  community_badges        String[]
+  created_date            DateTime               @default(now())
+  updated_date            DateTime               @updatedAt
+
+  @@index([store_id])
+}
+
+model UserChallenge {
+  id               String    @id @default(cuid())
+  user_email       String
+  challenge_id     String
+  current_progress Float     @default(0)
+  is_completed     Boolean   @default(false)
+  completed_date   DateTime?
+  created_date     DateTime  @default(now())
+  updated_date     DateTime  @updatedAt
+
+  @@index([user_email])
+  @@index([challenge_id])
+}
+
+model UserInteraction {
+  id               String                         @id @default(cuid())
+  user_email       String
+  item_type        UserInteractionItemType
+  item_id          String
+  interaction_type UserInteractionInteractionType
+  category         String?
+  metadata         Json?
+  created_date     DateTime                       @default(now())
+  updated_date     DateTime                       @updatedAt
+
+  @@index([user_email])
+  @@index([item_id])
+  @@index([category])
+}
+
+model UserPreference {
+  id                       String   @id @default(cuid())
+  user_email               String
+  favorite_categories      String[]
+  budget_monthly           Float?
+  max_distance_km          Float    @default(10)
+  preferred_stores         String[]
+  notification_preferences Json?
+  location                 Json?
+  allergens_to_avoid       String[]
+  dietary_preferences      String[]
+  created_date             DateTime @default(now())
+  updated_date             DateTime @updatedAt
+
+  @@index([user_email])
+}
+
+model ZeroWasteTip {
+  id           String               @id @default(cuid())
+  author_email String
+  author_name  String?
+  title        String
+  content      String
+  category     ZeroWasteTipCategory @default(autre)
+  image_url    String?
+  likes_count  Int                  @default(0)
+  saves_count  Int                  @default(0)
+  liked_by     String[]
+  status       ZeroWasteTipStatus   @default(pending)
+  created_date DateTime             @default(now())
+  updated_date DateTime             @updatedAt
+
+  @@index([author_email])
+  @@index([category])
+  @@index([status])
+}
+
+enum BrandPartnershipPartnershipStatus {
+  pending
+  active
+  suspended
+  terminated
+}
+
+enum ChallengeChallengeType {
+  weekly
+  monthly
+  special
+}
+
+enum ChallengeGoalType {
+  savings
+  orders
+  waste_avoided
+  products_saved
+  referrals
+}
+
+enum ChatMessageMessageType {
+  text
+  image
+  link
+  product
+}
+
+enum ChatRoomCategory {
+  recettes
+  astuces
+  defis
+  bons_plans
+  general
+}
+
+enum ChatRoomType {
+  public
+  private
+}
+
+enum ClickCollectBasketBasketType {
+  surprise_basket
+  specific_products
+}
+
+enum ClickCollectBasketStatus {
+  active
+  sold_out
+  expired
+}
+
+enum ClickCollectReservationPaymentMethod {
+  orange_money
+  mtn_money
+  card
+  cash_on_pickup
+}
+
+enum ClickCollectReservationPaymentStatus {
+  pending
+  paid
+  refunded
+  failed
+}
+
+enum ClickCollectReservationStatus {
+  reserved
+  confirmed
+  ready
+  collected
+  cancelled
+  no_show
+}
+
+enum CommissionTransactionStatus {
+  pending
+  approved
+  paid
+  cancelled
+}
+
+enum CouponStatus {
+  ACTIVE
+  USED
+  EXPIRED
+}
+
+enum CouponType {
+  PERCENT
+  FIXED
+}
+
+enum CustomerSegmentPriceSensitivity {
+  low
+  medium
+  high
+}
+
+enum CustomerSegmentSegmentType {
+  new
+  regular
+  vip
+  at_risk
+  dormant
+}
+
+enum DashboardPreferenceDashboardType {
+  partner
+  driver
+}
+
+enum DeliveryRouteStatus {
+  planned
+  in_progress
+  completed
+  cancelled
+}
+
+enum DigitalReceiptCashbackStatus {
+  pending
+  approved
+  paid
+}
+
+enum ExperienceBookingStatus {
+  pending
+  confirmed
+  cancelled
+  completed
+  no_show
+}
+
+enum ExperienceExperienceType {
+  workshop
+  visit
+  tasting
+  class
+  event
+}
+
+enum ExperienceTierRequired {
+  bronze
+  silver
+  gold
+  platinum
+  diamond
+}
+
+enum IdentityVerificationStatus {
+  pending
+  approved
+  rejected
+  expired
+}
+
+enum IdentityVerificationVerificationLevel {
+  basic
+  advanced
+  premium
+}
+
+enum IdentityVerificationVerificationType {
+  id_card
+  passport
+  business_license
+  phone_verification
+}
+
+enum LoyaltyRewardRewardType {
+  discount
+  free_delivery
+  exclusive_product
+  badge
+  experience
+}
+
+enum LoyaltyRewardTierRequired {
+  bronze
+  silver
+  gold
+  platinum
+}
+
+enum LoyaltyTransactionSource {
+  purchase
+  challenge
+  referral
+  bonus
+  redemption
+}
+
+enum LoyaltyTransactionType {
+  earn
+  redeem
+}
+
+enum NotificationType {
+  order
+  deal
+  expiration
+  badge
+  challenge
+  social
+  system
+}
+
+enum OrderDeliveryType {
+  pickup
+  delivery
+}
+
+enum OrderPaymentMethod {
+  orange_money
+  mtn_money
+  cash
+  card
+}
+
+enum OrderPaymentStatus {
+  pending
+  authorized
+  paid
+  failed
+  refunded
+}
+
+enum OrderStatus {
+  pending
+  confirmed
+  ready
+  delivered
+  cancelled
+}
+
+enum PartnerChallengeGoalType {
+  purchases
+  amount
+  products
+  visits
+}
+
+enum PartnerChallengeRewardType {
+  discount
+  points
+  free_product
+  badge
+}
+
+enum PartnerStatusHistoryNewStatus {
+  pending
+  verified
+  rejected
+  suspended
+}
+
+enum PartnerStatusHistoryPreviousStatus {
+  pending
+  verified
+  rejected
+  suspended
+}
+
+enum PickupRequestStatus {
+  requested
+  confirmed
+  ready
+  picked_up
+  cancelled
+}
+
+enum ProductBatchStatus {
+  active
+  low_stock
+  expired
+  sold_out
+}
+
+enum ProductCategory {
+  fruits_legumes
+  produits_laitiers
+  viandes_poissons
+  boulangerie
+  epicerie
+  boissons
+  surgeles
+  hygiene
+  conserves
+  condiments
+}
+
+enum ProductStatus {
+  active
+  sold_out
+  expired
+  reserved
+  pending_review
+  flagged
+}
+
+enum ProductUrgencyLevel {
+  normal
+  soon
+  urgent
+  critical
+}
+
+enum ProductWeightUnit {
+  g
+  kg
+  L
+  mL
+  piece
+}
+
+enum PromotionDiscountType {
+  percentage
+  fixed_amount
+}
+
+enum PromotionRuleAppliesTo {
+  all_products
+  specific_category
+  specific_products
+}
+
+enum PromotionRuleTriggerType {
+  dlc_based
+  stock_based
+  time_based
+  manual
+}
+
+enum RecipeCategory {
+  petit_dejeuner
+  dejeuner
+  diner
+  dessert
+  snack
+  boisson
+}
+
+enum RecipeDifficulty {
+  facile
+  moyen
+  difficile
+}
+
+enum RecipeStatus {
+  pending
+  approved
+  rejected
+}
+
+enum ScamReportReason {
+  fraud
+  fake_product
+  harassment
+  suspicious_behavior
+  other
+}
+
+enum ScamReportReportedEntityType {
+  product
+  store
+  user
+  message
+}
+
+enum ScamReportStatus {
+  pending
+  investigating
+  resolved
+  dismissed
+}
+
+enum ShoppingListRecurrencePeriod {
+  weekly
+  biweekly
+  monthly
+}
+
+enum ShoppingListStatus {
+  draft
+  active
+  completed
+}
+
+enum SocialPostPostType {
+  savings
+  recipe
+  tip
+  challenge
+  deal
+  achievement
+  question
+}
+
+enum SponsoredCampaignCampaignType {
+  product_sponsorship
+  category_sponsorship
+  banner_ad
+  promoted_post
+}
+
+enum SponsoredCampaignStatus {
+  draft
+  active
+  paused
+  completed
+  cancelled
+}
+
+enum StockMovementMovementType {
+  in
+  out
+  adjustment
+  return
+  waste
+}
+
+enum StoreStatus {
+  pending
+  verified
+  rejected
+  suspended
+}
+
+enum UserBackofficeRole {
+  none
+  operator
+  admin
+  super_admin
+}
+
+enum UserEcoLevel {
+  debutant
+  engage
+  expert
+  ambassadeur
+  heros
+}
+
+enum UserInteractionInteractionType {
+  view
+  like
+  share
+  save
+  purchase
+  click
+}
+
+enum UserInteractionItemType {
+  product
+  recipe
+  tip
+  challenge
+  post
+}
+
+enum UserLoyaltyTier {
+  bronze
+  silver
+  gold
+  platinum
+  diamond
+}
+
+enum UserRole {
+  user
+  admin
+}
+
+enum UserVerificationStatus {
+  unverified
+  pending
+  verified
+  premium_verified
+}
+
+enum ZeroWasteTipCategory {
+  conservation
+  cuisine
+  achat
+  compost
+  reutilisation
+  autre
+}
+
+enum ZeroWasteTipStatus {
+  pending
+  approved
+  rejected
+}

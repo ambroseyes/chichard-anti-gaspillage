@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Edit2, Trash2, X } from 'lucide-react';
+import { Plus, Edit2, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,12 +25,12 @@ export default function ProductVariantManager({ product }) {
 
   const { data: variants = [] } = useQuery({
     queryKey: ['variants', product.id],
-    queryFn: () => base44.entities.ProductVariant.filter({ product_id: product.id }),
+    queryFn: () => api.entities.ProductVariant.filter({ product_id: product.id }),
     enabled: !!product.id
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.ProductVariant.create({
+    mutationFn: (data) => api.entities.ProductVariant.create({
       ...data,
       product_id: product.id,
       product_name: product.name
@@ -43,7 +43,7 @@ export default function ProductVariantManager({ product }) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.ProductVariant.update(id, data),
+    mutationFn: ({ id, data }) => api.entities.ProductVariant.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['variants'] });
       toast.success('Variante mise à jour');
@@ -52,7 +52,7 @@ export default function ProductVariantManager({ product }) {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.ProductVariant.delete(id),
+    mutationFn: (id) => api.entities.ProductVariant.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['variants'] });
       toast.success('Variante supprimée');

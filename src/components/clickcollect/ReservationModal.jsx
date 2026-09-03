@@ -3,8 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { ShoppingBag, Clock, MapPin, CreditCard, CheckCircle2, Leaf } from 'lucide-react';
@@ -18,10 +17,6 @@ const PAYMENT_METHODS = [
   { id: 'cash_on_pickup', label: 'Espèces au retrait', icon: '💵', color: 'border-gray-300 bg-gray-50' },
 ];
 
-function generateCode() {
-  return 'CC-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-}
-
 export default function ReservationModal({ basket, user, open, onClose, onSuccess }) {
   const [step, setStep] = useState(1);
   const [selectedSlot, setSelectedSlot] = useState('');
@@ -34,43 +29,30 @@ export default function ReservationModal({ basket, user, open, onClose, onSucces
   const totalAmount = (basket?.discounted_price || 0) * quantity;
   const savings = ((basket?.original_price || 0) - (basket?.discounted_price || 0)) * quantity;
 
+  const [confirmationCode, setConfirmationCode] = useState(null);
+
+  /**
+   * Le serveur réserve le panier de façon atomique, fixe le prix, ouvre le
+   * paiement et renvoie le code de retrait — qu'il ne conserve ensuite que sous
+   * forme de condensat. C'est la seule fois où ce code est visible.
+   */
   const { mutate: createReservation, isPending } = useMutation({
-    mutationFn: async () => {
-      const code = generateCode();
-      const reservation = await base44.entities.ClickCollectReservation.create({
-        customer_email: user.email,
-        customer_name: user.full_name,
-        customer_phone: phone,
+    mutationFn: () =>
+      api.reservations.create({
         basket_id: basket.id,
-        basket_name: basket.name,
-        store_id: basket.store_id,
-        store_name: basket.store_name,
-        store_address: basket.store_address,
-        pickup_date: basket.pickup_date,
         pickup_slot: selectedSlot,
         quantity,
-        unit_price: basket.discounted_price,
-        total_amount: totalAmount,
-        savings_amount: savings,
         payment_method: paymentMethod,
-        payment_status: paymentMethod === 'cash_on_pickup' ? 'pending' : 'paid',
-        confirmation_code: code,
-        status: 'confirmed',
-        co2_saved_kg: (basket.co2_saved_kg || 0) * quantity,
-      });
-      // Update reserved quantity
-      await base44.entities.ClickCollectBasket.update(basket.id, {
-        quantity_reserved: (basket.quantity_reserved || 0) + quantity,
-      });
-      return { ...reservation, code };
-    },
+        customer_phone: phone,
+      }),
     onSuccess: (data) => {
+      setConfirmationCode(data.confirmation_code);
       qc.invalidateQueries({ queryKey: ['cc-baskets'] });
       qc.invalidateQueries({ queryKey: ['my-reservations'] });
       setStep(3);
-      if (onSuccess) onSuccess(data);
+      onSuccess?.(data);
     },
-    onError: () => toast.error('Erreur lors de la réservation, veuillez réessayer.'),
+    onError: (error) => toast.error(error.message ?? "La réservation n'a pas abouti"),
   });
 
   const handleClose = () => {
@@ -78,6 +60,7 @@ export default function ReservationModal({ basket, user, open, onClose, onSucces
     setSelectedSlot('');
     setQuantity(1);
     setPaymentMethod('');
+    setConfirmationCode(null);
     onClose();
   };
 
@@ -275,7 +258,9 @@ export default function ReservationModal({ basket, user, open, onClose, onSucces
             </p>
             <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200">
               <p className="text-xs text-gray-500 mb-1">Code de confirmation</p>
-              <p className="text-3xl font-mono font-bold text-emerald-700 tracking-widest">{/* shown via onSuccess */}✔</p>
+              <p className="text-3xl font-mono font-bold text-emerald-700 tracking-widest">
+                {confirmationCode ?? '—'}
+              </p>
             </div>
             <div className="text-sm text-gray-600 space-y-1">
               <p>📅 {format(new Date(basket.pickup_date), 'dd MMMM yyyy', { locale: fr })} · {selectedSlot}</p>

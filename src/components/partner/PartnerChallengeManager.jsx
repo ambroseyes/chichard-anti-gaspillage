@@ -1,11 +1,8 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import {
-  Flame, Plus, Edit, Trash2, Users, TrendingUp, Target,
-  Calendar, Gift, Loader2, BarChart3, Eye
+  Flame, Plus, Edit, Trash2, Users, Target, Loader2, BarChart3
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -40,12 +37,12 @@ export default function PartnerChallengeManager({ user }) {
 
   const { data: challenges = [], isLoading } = useQuery({
     queryKey: ['partner-challenges', user?.store_id],
-    queryFn: () => base44.entities.PartnerChallenge.filter({ store_id: user?.store_id }),
+    queryFn: () => api.entities.PartnerChallenge.filter({ store_id: user?.store_id }),
     enabled: !!user?.store_id,
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.PartnerChallenge.create({
+    mutationFn: (data) => api.entities.PartnerChallenge.create({
       ...data,
       store_id: user.store_id,
       store_name: user.store_name || user.full_name,
@@ -58,7 +55,7 @@ export default function PartnerChallengeManager({ user }) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.PartnerChallenge.update(id, data),
+    mutationFn: ({ id, data }) => api.entities.PartnerChallenge.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['partner-challenges'] });
       setShowForm(false);
@@ -68,7 +65,7 @@ export default function PartnerChallengeManager({ user }) {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.PartnerChallenge.delete(id),
+    mutationFn: (id) => api.entities.PartnerChallenge.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['partner-challenges'] });
       toast.success('Défi supprimé');

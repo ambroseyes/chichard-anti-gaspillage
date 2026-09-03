@@ -1,84 +1,44 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import React from 'react';
+import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Sparkles, ChevronRight, Loader2 } from 'lucide-react';
+import { Sparkles, Loader2 } from 'lucide-react';
 import { Card } from "@/components/ui/card";
 import ProductCard from '@/components/ui/ProductCard';
 
 export default function AIProductRecommendations({ user, onAddToCart }) {
-  const [recommendations, setRecommendations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [reason, setReason] = useState('');
-
-  const { data: orders = [] } = useQuery({
-    queryKey: ['user-orders', user?.email],
-    queryFn: () => base44.entities.Order.filter({ customer_email: user?.email }, '-created_date', 10),
-    enabled: !!user,
-  });
-
+  // Le profil, l'historique et le catalogue sont assemblés côté serveur :
+  // le navigateur n'envoie ni prompt ni données d'autres utilisateurs.
   const { data: products = [] } = useQuery({
-    queryKey: ['all-products'],
-    queryFn: () => base44.entities.Product.filter({ status: 'active' }, '-created_date', 100),
+    queryKey: ['products', 'active'],
+    queryFn: () => api.entities.Product.filter({ status: 'active' }, '-expiration_date', 60),
   });
 
-  useEffect(() => {
-    const generateRecommendations = async () => {
-      if (!products.length) return;
-      
-      setLoading(true);
-      
-      // Build user context
-      const purchaseHistory = orders.flatMap(o => o.items?.map(i => i.product_name) || []);
-      const preferences = user?.dietary_preferences || [];
-      const allergens = user?.allergens || [];
-      
-      const prompt = `Tu es un système de recommandation pour CHICHARD, une app anti-gaspillage au Cameroun.
+  const {
+    data: suggestion,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ['ai-product-recommendations', user?.email],
+    queryFn: () => api.ai.productRecommendations(6),
+    enabled: Boolean(user) && products.length > 0,
+    staleTime: 10 * 60 * 1000,
+    retry: false,
+  });
 
-HISTORIQUE UTILISATEUR:
-- Achats précédents: ${purchaseHistory.slice(0, 10).join(', ') || 'Nouvel utilisateur'}
-- Préférences: ${preferences.join(', ') || 'Non spécifiées'}
-- Allergènes à éviter: ${allergens.join(', ') || 'Aucun'}
+  const byId = new Map(products.map((p) => [p.id, p]));
+  const recommendations = isError
+    ? products.slice(0, 6)
+    : (suggestion?.recommendations ?? [])
+        .map((r) => byId.get(r.product_id))
+        .filter(Boolean)
+        .slice(0, 6);
 
-PRODUITS DISPONIBLES:
-${products.slice(0, 30).map(p => `- ${p.name} (${p.category}, ${p.discounted_price} FCFA, expire dans ${Math.ceil((new Date(p.expiration_date) - new Date()) / 86400000)}j)`).join('\n')}
+  const reason = isError
+    ? 'Produits les plus urgents du moment'
+    : (suggestion?.recommendations?.[0]?.reason ?? 'Sélection personnalisée');
 
-Recommande les 6 meilleurs produits pour cet utilisateur. Retourne un JSON avec:
-- product_names: tableau des noms exacts des produits recommandés
-- reason: courte explication personnalisée (max 50 mots)`;
-
-      try {
-        const result = await base44.integrations.Core.InvokeLLM({
-          prompt,
-          response_json_schema: {
-            type: "object",
-            properties: {
-              product_names: { type: "array", items: { type: "string" } },
-              reason: { type: "string" }
-            }
-          }
-        });
-
-        const recommendedProducts = products.filter(p => 
-          result.product_names?.some(name => 
-            p.name.toLowerCase().includes(name.toLowerCase()) || 
-            name.toLowerCase().includes(p.name.toLowerCase())
-          )
-        ).slice(0, 6);
-
-        setRecommendations(recommendedProducts.length > 0 ? recommendedProducts : products.slice(0, 6));
-        setReason(result.reason || 'Sélection personnalisée selon vos goûts');
-      } catch (e) {
-        // Fallback to popular products
-        setRecommendations(products.slice(0, 6));
-        setReason('Produits populaires du moment');
-      }
-      
-      setLoading(false);
-    };
-
-    generateRecommendations();
-  }, [products, orders, user]);
+  const loading = isLoading && !isError;
 
   if (loading) {
     return (

@@ -1,18 +1,17 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
   Heart, MessageCircle, Share2, Award, Leaf, TrendingUp,
-  MoreHorizontal, Camera, Send
+  MoreHorizontal
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from 'sonner';
 
 const ecoLevelConfig = {
@@ -38,7 +37,7 @@ export default function SocialFeed({ user, compact = false }) {
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ['social-posts'],
-    queryFn: () => base44.entities.SocialPost.list('-created_date', 50),
+    queryFn: () => api.entities.SocialPost.list('-created_date', 50),
   });
 
   const likeMutation = useMutation({
@@ -48,7 +47,7 @@ export default function SocialFeed({ user, compact = false }) {
         ? post.liked_by.filter(e => e !== user.email)
         : [...(post.liked_by || []), user.email];
       
-      await base44.entities.SocialPost.update(post.id, {
+      await api.entities.SocialPost.update(post.id, {
         liked_by: newLikedBy,
         likes_count: newLikedBy.length
       });

@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import React from 'react';
+import { api } from '@/api';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import {
-  Crown, Gift, Star, TrendingUp, Zap, Truck, Percent,
-  Award, ChevronRight, Lock, Check, Sparkles, ShoppingBag, ChefHat
+import { Gift, Star, TrendingUp, Zap, Truck, Percent,
+  Award, Lock, Sparkles, ShoppingBag, ChefHat
 } from 'lucide-react';
 import ExperienceBookingSection from '@/components/loyalty/ExperienceBooking';
 import { Button } from "@/components/ui/button";
@@ -15,13 +13,15 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from 'sonner';
+import { goToLogin } from '@/lib/navigation';
 
+/** Clés alignées sur celles du serveur (server/src/domain/loyalty.js). */
 const ECO_LEVELS = [
-  { id: 1, label: 'Débutant 🌱',        minKg: 0,  maxKg: 5,  color: 'from-gray-400 to-gray-500' },
-  { id: 2, label: 'Éco-Citoyen 🌿',    minKg: 5,  maxKg: 15, color: 'from-emerald-400 to-emerald-500' },
-  { id: 3, label: 'Éco-Héros 🌳',      minKg: 15, maxKg: 30, color: 'from-teal-400 to-teal-600' },
-  { id: 4, label: 'Éco-Champion 🌲',   minKg: 30, maxKg: 60, color: 'from-blue-400 to-blue-600' },
-  { id: 5, label: 'Éco-Légende 🌍',    minKg: 60, maxKg: 999, color: 'from-purple-500 to-indigo-600' },
+  { key: 'debutant',    label: 'Débutant',    minKg: 0,   icon: '🌱' },
+  { key: 'engage',      label: 'Engagé',      minKg: 10,  icon: '🌿' },
+  { key: 'expert',      label: 'Expert',      minKg: 50,  icon: '🍃' },
+  { key: 'ambassadeur', label: 'Ambassadeur', minKg: 150, icon: '🌳' },
+  { key: 'heros',       label: 'Héros',       minKg: 500, icon: '🌍' },
 ];
 
 const BADGES = [
@@ -57,85 +57,75 @@ const defaultRewards = [
 ];
 
 export default function LoyaltyProgram() {
-  const [user, setUser] = useState(null);
   const queryClient = useQueryClient();
+  const { user, reload } = useAuth();
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      } catch (e) {}
-    };
-    loadUser();
-  }, []);
+  /**
+   * Paliers, niveau écologique et progression sont calculés par le serveur :
+   * les seuils ne sont plus dupliqués entre l'interface et le back.
+   */
+  const { data: summary } = useQuery({
+    queryKey: ['loyalty-summary', user?.email],
+    queryFn: () => api.loyalty.summary(),
+    enabled: Boolean(user),
+  });
 
   const { data: transactions = [] } = useQuery({
     queryKey: ['loyalty-transactions', user?.email],
-    queryFn: () => base44.entities.LoyaltyTransaction.filter({ user_email: user.email }, '-created_date', 50),
+    queryFn: () => api.entities.LoyaltyTransaction.filter({ user_email: user.email }, '-created_date', 50),
     enabled: !!user,
   });
 
   const { data: rewards = [] } = useQuery({
     queryKey: ['loyalty-rewards'],
-    queryFn: () => base44.entities.LoyaltyReward.filter({ is_active: true }),
+    queryFn: () => api.entities.LoyaltyReward.filter({ is_active: true }),
   });
 
   const displayRewards = rewards.length > 0 ? rewards : defaultRewards;
 
-  const userPoints = user?.loyalty_points || 0;
-  const currentTier = [...tiers].reverse().find(t => userPoints >= t.minPoints) || tiers[0];
-  const nextTier = tiers[tiers.indexOf(currentTier) + 1];
-  const progressToNext = nextTier 
-    ? ((userPoints - currentTier.minPoints) / (nextTier.minPoints - currentTier.minPoints)) * 100
+  const userPoints = summary?.loyalty_points ?? user?.loyalty_points ?? 0;
+  const currentTier = tiers.find((t) => t.id === summary?.tier?.key) ?? tiers[0];
+  const nextTier = summary?.next_tier ? tiers.find((t) => t.id === summary.next_tier.key) : null;
+  const progressToNext = nextTier
+    ? ((userPoints - (summary?.tier?.minPoints ?? 0)) /
+        Math.max(1, summary.next_tier.minPoints - (summary?.tier?.minPoints ?? 0))) * 100
     : 100;
 
-  const kgSaved = user?.kg_saved || 0;
-  const ecoLevel = [...ECO_LEVELS].reverse().find(l => kgSaved >= l.minKg) || ECO_LEVELS[0];
-  const nextEcoLevel = ECO_LEVELS[ECO_LEVELS.indexOf(ecoLevel) + 1];
+  // Le modèle nomme ce champ `waste_avoided_kg` ; l'interface lisait `kg_saved`,
+  // qui n'a jamais existé — le compteur restait donc à zéro.
+  const kgSaved = summary?.waste_avoided_kg ?? user?.waste_avoided_kg ?? 0;
+  const ecoLevel = ECO_LEVELS.find((l) => l.key === summary?.eco_level?.key) ?? ECO_LEVELS[0];
+  const nextEcoLevel = summary?.next_eco_level
+    ? ECO_LEVELS.find((l) => l.key === summary.next_eco_level.key)
+    : null;
   const ecoProgress = nextEcoLevel
-    ? ((kgSaved - ecoLevel.minKg) / (nextEcoLevel.minKg - ecoLevel.minKg)) * 100
+    ? ((kgSaved - (summary?.eco_level?.minKg ?? 0)) /
+        Math.max(1, summary.next_eco_level.minKg - (summary?.eco_level?.minKg ?? 0))) * 100
     : 100;
   const unlockedBadges = new Set(BADGES.filter(b => kgSaved >= b.rule.minKg).map(b => b.code));
 
-  const redeemCouponMutation = useMutation({
-    mutationFn: async (reward) => {
-      if (userPoints < reward.points) throw new Error('Points insuffisants');
-      const code = `ECO-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2,5).toUpperCase()}`;
-      const validTo = new Date(Date.now() + 30 * 86400000).toISOString();
-      await base44.entities.Coupon.create({
-        code, user_email: user.email, type: reward.type, value: reward.value,
-        points_cost: reward.points, valid_from: new Date().toISOString(), valid_to: validTo,
-        status: 'ACTIVE',
-      });
-      await base44.auth.updateMe({ loyalty_points: userPoints - reward.points });
+  /**
+   * L'échange débite les points côté serveur, sous condition SQL : ni le solde
+   * ni la valeur du coupon ne sont décidés par le navigateur.
+   */
+  const redeemMutation = useMutation({
+    mutationFn: (reward) => api.loyalty.redeem(reward.id),
+    onSuccess: ({ coupon, remaining_points: remaining }) => {
+      queryClient.invalidateQueries({ queryKey: ['loyalty-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['loyalty-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['user-coupons'] });
+      reload();
+      toast.success(
+        coupon
+          ? `Coupon ${coupon.code} généré — retrouvez-le dans votre panier`
+          : `Récompense échangée. Solde : ${remaining} points`,
+      );
     },
-    onSuccess: () => { queryClient.invalidateQueries(); toast.success('Coupon généré ! Retrouvez-le dans votre panier 🎟️'); },
-    onError: (e) => toast.error(e.message),
+    onError: (error) => toast.error(error.message ?? "L'échange n'a pas abouti"),
   });
 
-  const redeemMutation = useMutation({
-    mutationFn: async (reward) => {
-      if (userPoints < reward.points_required) {
-        throw new Error('Points insuffisants');
-      }
-      await base44.entities.LoyaltyTransaction.create({
-        user_email: user.email,
-        type: 'redeem',
-        points: -reward.points_required,
-        source: 'redemption',
-        description: `Échange: ${reward.title}`
-      });
-      await base44.auth.updateMe({
-        loyalty_points: userPoints - reward.points_required
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['loyalty-transactions'] });
-      toast.success('Récompense échangée ! 🎁');
-    },
-    onError: (e) => toast.error(e.message)
-  });
+  // Une seule voie d'échange : l'ancien doublon créait deux journaux divergents.
+  const redeemCouponMutation = redeemMutation;
 
   const rewardIcons = {
     discount: Percent,
@@ -152,7 +142,7 @@ export default function LoyaltyProgram() {
           <Lock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h2 className="text-xl font-bold mb-2">Programme de Fidélité</h2>
           <p className="text-gray-500 mb-4">Connectez-vous pour accéder à vos avantages</p>
-          <Button onClick={() => base44.auth.redirectToLogin()}>
+          <Button onClick={() => goToLogin()}>
             Se connecter
           </Button>
         </Card>

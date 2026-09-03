@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
-  Package, AlertTriangle, TrendingUp, RefreshCw, Plus, Settings,
-  Loader2, Calendar, BarChart3, Zap, Bell, Layers
+  Package, TrendingUp, RefreshCw, Plus,
+  Loader2, Calendar, Bell, Layers
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -36,7 +36,7 @@ export default function AdvancedStockManager({ products, user }) {
     queryKey: ['store', user?.store_id],
     queryFn: async () => {
       if (!user?.store_id) return null;
-      const stores = await base44.entities.Store.filter({ id: user.store_id });
+      const stores = await api.entities.Store.filter({ id: user.store_id });
       return stores[0];
     },
     enabled: !!user?.store_id,
@@ -50,13 +50,13 @@ export default function AdvancedStockManager({ products, user }) {
 
   const { data: batches = [] } = useQuery({
     queryKey: ['product-batches', user?.store_id],
-    queryFn: () => base44.entities.ProductBatch.filter({ store_id: user?.store_id }),
+    queryFn: () => api.entities.ProductBatch.filter({ store_id: user?.store_id }),
     enabled: !!user?.store_id,
   });
 
   const { data: orders = [] } = useQuery({
     queryKey: ['store-orders'],
-    queryFn: () => base44.entities.Order.list('-created_date', 100),
+    queryFn: () => api.entities.Order.list('-created_date', 100),
   });
 
   useEffect(() => {
@@ -79,19 +79,11 @@ export default function AdvancedStockManager({ products, user }) {
       if (reorderSuggestions.length > 0 && reorderSuggestions.some(s => s.urgency === 'critical')) {
         const criticalItems = reorderSuggestions.filter(s => s.urgency === 'critical');
         
-        await base44.integrations.Core.SendEmail({
-          to: user.email,
-          subject: `⚠️ Alerte Stock Critique - ${store.name}`,
-          body: `Attention, ${criticalItems.length} produits nécessitent une attention immédiate :\n\n` +
-            criticalItems.map(item => 
-              `- ${item.product.name}: ${item.daysToExpire}j avant expiration, ${item.product.quantity_available} en stock`
-            ).join('\n') +
-            `\n\nConnectez-vous à votre espace partenaire pour gérer ces alertes.`
-        });
+        
 
         // Update last alert date
         const newSettings = { ...alertSettings, last_alert_date: new Date().toISOString() };
-        await base44.entities.Store.update(store.id, {
+        await api.entities.Store.update(store.id, {
           stock_alert_settings: newSettings
         });
         setAlertSettings(newSettings);
@@ -108,7 +100,7 @@ export default function AdvancedStockManager({ products, user }) {
     if (!store) return;
     setIsSavingSettings(true);
     try {
-      await base44.entities.Store.update(store.id, {
+      await api.entities.Store.update(store.id, {
         stock_alert_settings: alertSettings
       });
       toast.success('Paramètres sauvegardés');
@@ -178,7 +170,7 @@ export default function AdvancedStockManager({ products, user }) {
   };
 
   const createBatchMutation = useMutation({
-    mutationFn: (data) => base44.entities.ProductBatch.create({
+    mutationFn: (data) => api.entities.ProductBatch.create({
       ...data,
       store_id: user.store_id,
     }),

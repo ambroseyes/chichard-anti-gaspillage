@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
 import { 
-  Users, Trophy, Plus, Target, Crown, UserPlus,
-  Check, ChevronRight, Zap
+  Users, Trophy, Plus, UserPlus
 } from 'lucide-react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,12 +21,12 @@ export default function TeamChallenges({ user }) {
 
   const { data: teamChallenges = [] } = useQuery({
     queryKey: ['team-challenges'],
-    queryFn: () => base44.entities.Challenge.filter({ challenge_type: 'team' }),
+    queryFn: () => api.entities.Challenge.filter({ challenge_type: 'team' }),
   });
 
   const createTeamMutation = useMutation({
     mutationFn: async (data) => {
-      const challenge = await base44.entities.Challenge.create({
+      const challenge = await api.entities.Challenge.create({
         title: `Défi Équipe: ${data.teamName}`,
         description: 'Défi collaboratif entre amis',
         challenge_type: 'team',
@@ -42,7 +40,7 @@ export default function TeamChallenges({ user }) {
         participants_count: 1
       });
 
-      await base44.entities.UserChallenge.create({
+      await api.entities.UserChallenge.create({
         user_email: user.email,
         challenge_id: challenge.id,
         current_progress: 0,
@@ -59,18 +57,30 @@ export default function TeamChallenges({ user }) {
     }
   });
 
+  /**
+   * L'invitation se fait par lien partageable plutôt que par courriel : rien ne
+   * part vers une adresse tierce depuis le navigateur, et le destinataire
+   * choisit son canal (WhatsApp, SMS, e-mail).
+   */
   const inviteMutation = useMutation({
-    mutationFn: async ({ challengeId, email }) => {
-      await base44.integrations.Core.SendEmail({
-        to: email,
-        subject: `${user.full_name} vous invite à un défi CHICHARD !`,
-        body: `Rejoignez le défi équipe sur CHICHARD et économisez ensemble ! Connectez-vous pour participer.`
-      });
+    mutationFn: async ({ challengeId }) => {
+      const link = `${window.location.origin}/WeeklyChallenges?rejoindre=${challengeId}`;
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Rejoignez mon défi Chichard',
+          text: `${user.full_name} vous invite à un défi anti-gaspillage.`,
+          url: link,
+        });
+        return { shared: true };
+      }
+      await navigator.clipboard.writeText(link);
+      return { shared: false };
     },
-    onSuccess: () => {
+    onSuccess: ({ shared }) => {
       setInviteEmail('');
-      toast.success('Invitation envoyée !');
-    }
+      toast.success(shared ? 'Invitation partagée' : "Lien d'invitation copié");
+    },
+    onError: () => toast.error("Le partage n'a pas abouti"),
   });
 
   return (

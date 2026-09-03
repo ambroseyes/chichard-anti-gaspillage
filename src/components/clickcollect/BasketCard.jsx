@@ -2,7 +2,7 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ShoppingBag, Clock, Leaf, Star } from 'lucide-react';
+import { ShoppingBag, Clock, Leaf } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import StoreRatingBadge from './StoreRatingBadge';

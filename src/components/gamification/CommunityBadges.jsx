@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Award, Star, Heart, MessageCircle, ChefHat, Lightbulb,
-  Users, Trophy, Flame, Crown, Sparkles, Shield
+  Award, Star, Heart, ChefHat, Lightbulb,
+  Users, Trophy, Flame, Crown, Sparkles
 } from 'lucide-react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

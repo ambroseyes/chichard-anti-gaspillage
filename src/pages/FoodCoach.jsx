@@ -1,13 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
+import React, { useState } from 'react';
+import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
-import ReactMarkdown from 'react-markdown';
+import { motion } from 'framer-motion';
 import {
-  ChefHat, Clock, Users, Sparkles, Refrigerator, AlertTriangle,
-  BookOpen, Heart, Share2, ShoppingCart, Loader2, ArrowRight,
+  ChefHat, Clock, Users, Sparkles, Refrigerator,
+  BookOpen, Heart, Share2, Loader2,
   Calendar, Search
 } from 'lucide-react';
 import MealPlanner from '@/components/ai/MealPlanner';
@@ -17,32 +14,23 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function FoodCoach() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedRecipe, setGeneratedRecipe] = useState(null);
   const [activeTab, setActiveTab] = useState('suggestions');
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      } catch (e) {}
-    };
-    loadUser();
-  }, []);
-
   const { data: cartItems = [] } = useQuery({
     queryKey: ['cart', user?.email],
-    queryFn: () => user ? base44.entities.CartItem.filter({ user_email: user.email }) : [],
+    queryFn: () => user ? api.entities.CartItem.filter({ user_email: user.email }) : [],
     enabled: !!user,
   });
 
   const { data: recipes = [] } = useQuery({
     queryKey: ['recipes'],
-    queryFn: () => base44.entities.Recipe.list('-created_date', 20),
+    queryFn: () => api.entities.Recipe.list('-created_date', 20),
   });
 
   // Find items expiring soon
@@ -61,42 +49,7 @@ export default function FoodCoach() {
 
     const ingredients = cartItems.map(item => item.product_name).join(', ');
 
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Tu es un chef cuisinier expert en cuisine africaine et anti-gaspillage. 
-      
-Génère une recette délicieuse et facile avec ces ingrédients: ${ingredients}
-
-La recette doit:
-- Être adaptée à la cuisine camerounaise/africaine
-- Utiliser un maximum d'ingrédients de la liste
-- Être facile à réaliser (moins de 45 min)
-- Éviter le gaspillage
-
-Réponds en français avec ce format JSON exact:`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          title: { type: 'string' },
-          description: { type: 'string' },
-          prep_time: { type: 'number' },
-          cook_time: { type: 'number' },
-          servings: { type: 'number' },
-          difficulty: { type: 'string' },
-          ingredients: { 
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                name: { type: 'string' },
-                quantity: { type: 'string' }
-              }
-            }
-          },
-          steps: { type: 'array', items: { type: 'string' } },
-          tips: { type: 'string' }
-        }
-      }
-    });
+    const result = await api.ai.recipeFromIngredients(ingredients.split(/[,\n]/).map((s) => s.trim()).filter(Boolean));
 
     setGeneratedRecipe(result);
     setIsGenerating(false);

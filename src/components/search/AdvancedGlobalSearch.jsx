@@ -1,17 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import React, { useState } from 'react';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { 
-  Search, X, Filter, Save, Clock, TrendingUp, 
-  Package, ShoppingCart, Store, Users, Star
+  Search, X, Filter, Save, Clock, 
+  Package, ShoppingCart, Store, Users
 } from 'lucide-react';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -53,13 +52,13 @@ export default function AdvancedGlobalSearch({ isOpen, onClose, userRole = 'user
 
   const { data: user } = useQuery({
     queryKey: ['current-user'],
-    queryFn: () => base44.auth.me(),
+    queryFn: () => api.auth.me(),
     enabled: isOpen
   });
 
   const { data: savedSearches = [] } = useQuery({
     queryKey: ['saved-searches', user?.email],
-    queryFn: () => base44.entities.SavedSearch.filter({ user_email: user.email }, '-last_used'),
+    queryFn: () => api.entities.SavedSearch.filter({ user_email: user.email }, '-last_used'),
     enabled: !!user && isOpen
   });
 
@@ -72,7 +71,7 @@ export default function AdvancedGlobalSearch({ isOpen, onClose, userRole = 'user
       
       for (const entityType of selectedEntities) {
         try {
-          const entityData = await base44.entities[entityType].list('-created_date', 20);
+          const entityData = await api.entities[entityType].list('-created_date', 20);
           const config = entityConfig[entityType];
           
           const filtered = entityData.filter(item => {
@@ -93,7 +92,7 @@ export default function AdvancedGlobalSearch({ isOpen, onClose, userRole = 'user
   });
 
   const saveSearchMutation = useMutation({
-    mutationFn: (data) => base44.entities.SavedSearch.create(data),
+    mutationFn: (data) => api.entities.SavedSearch.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['saved-searches'] });
       toast.success('Recherche sauvegardée');
@@ -103,7 +102,7 @@ export default function AdvancedGlobalSearch({ isOpen, onClose, userRole = 'user
   });
 
   const useSavedSearchMutation = useMutation({
-    mutationFn: (searchId) => base44.entities.SavedSearch.update(searchId, {
+    mutationFn: (searchId) => api.entities.SavedSearch.update(searchId, {
       usage_count: savedSearches.find(s => s.id === searchId).usage_count + 1,
       last_used: new Date().toISOString()
     }),

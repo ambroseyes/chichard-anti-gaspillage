@@ -1,0 +1,72 @@
+// ---------------------------------------------------------------------------
+// Modèles d'infrastructure (hors modèle métier généré)
+// ---------------------------------------------------------------------------
+
+model RefreshToken {
+  id            String   @id @default(cuid())
+  token_hash    String   @unique
+  user_email    String
+  user_agent    String?
+  ip            String?
+  expires_at    DateTime
+  revoked_at    DateTime?
+  created_date  DateTime @default(now())
+
+  @@index([user_email])
+  @@index([expires_at])
+}
+
+/// Journal d'audit réel : une ligne écrite par le serveur à chaque action
+/// sensible. Remplace le journal reconstitué côté client.
+model AuditLog {
+  id            String   @id @default(cuid())
+  actor_email   String?
+  actor_role    String?
+  action        String
+  module        String
+  entity_name   String?
+  entity_id     String?
+  description   String?
+  ip            String?
+  user_agent    String?
+  success       Boolean  @default(true)
+  metadata      Json?
+  created_date  DateTime @default(now())
+
+  @@index([actor_email])
+  @@index([module])
+  @@index([created_date])
+}
+
+/// Intention de paiement : trace serveur du dialogue avec l'opérateur mobile.
+/// Aucune commande n'est marquée payée sans une ligne `succeeded` ici.
+model PaymentIntent {
+  id              String   @id @default(cuid())
+  reference       String   @unique
+  provider        String
+  target_type     String
+  target_id       String
+  amount          Float
+  currency        String   @default("XAF")
+  status          String   @default("pending")
+  customer_email  String
+  customer_phone  String?
+  provider_ref    String?
+  failure_reason  String?
+  raw_callback    Json?
+  created_date    DateTime @default(now())
+  updated_date    DateTime @updatedAt
+
+  @@index([target_type, target_id])
+  @@index([customer_email])
+  @@index([status])
+}
+
+/// Verrou applicatif utilisé par l'ordonnanceur pour qu'un job planifié ne
+/// s'exécute qu'une fois même avec plusieurs instances du serveur.
+model JobLock {
+  name          String   @id
+  locked_until  DateTime
+  last_run_at   DateTime?
+  last_result   Json?
+}

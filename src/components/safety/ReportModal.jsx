@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, Flag, ShieldAlert } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { toast } from 'sonner';
 
 export default function ReportModal({ entityType, entityId, trigger, entityName }) {
@@ -22,8 +22,8 @@ export default function ReportModal({ entityType, entityId, trigger, entityName 
 
     setLoading(true);
     try {
-      const user = await base44.auth.me();
-      await base44.entities.ScamReport.create({
+      const user = await api.auth.me();
+      await api.entities.ScamReport.create({
         reporter_email: user.email,
         reported_entity_type: entityType,
         reported_entity_id: entityId,

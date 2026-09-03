@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import React, { useState } from 'react';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import ProductVariantManager from '@/components/products/ProductVariantManager';
@@ -7,10 +7,9 @@ import StockHistoryViewer from '@/components/products/StockHistoryViewer';
 import ProductCloner from '@/components/products/ProductCloner';
 import PartnerChatbot from '@/components/partner/PartnerChatbot';
 import RestockAdvisor from '@/components/partner/RestockAdvisor';
-import { format } from 'date-fns';
 import {
-  Plus, Search, Edit2, Trash2, Clock, Package,
-  AlertTriangle, CheckCircle, X, Upload, Sparkles
+  Plus, Search, Edit2, Trash2, Package,
+  AlertTriangle, X, Upload
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -21,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 const categories = [
   { id: 'fruits_legumes', label: 'Fruits & Légumes', emoji: '🥬' },
@@ -45,7 +45,7 @@ const emptyProduct = {
 };
 
 export default function PartnerProducts() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [showDialog, setShowDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -56,26 +56,14 @@ export default function PartnerProducts() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      } catch (e) {
-        base44.auth.redirectToLogin();
-      }
-    };
-    loadUser();
-  }, []);
-
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['partner-products', user?.email],
-    queryFn: () => base44.entities.Product.filter({ created_by: user?.email }, '-created_date'),
+    queryFn: () => api.entities.Product.filter({ created_by: user?.email }, '-created_date'),
     enabled: !!user,
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Product.create(data),
+    mutationFn: (data) => api.entities.Product.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['partner-products'] });
       toast.success('Produit ajouté');
@@ -84,7 +72,7 @@ export default function PartnerProducts() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Product.update(id, data),
+    mutationFn: ({ id, data }) => api.entities.Product.update(id, data),
     onSuccess: async (_, { id, data }) => {
       queryClient.invalidateQueries({ queryKey: ['partner-products'] });
       toast.success('Produit mis à jour');
@@ -99,7 +87,7 @@ export default function PartnerProducts() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Product.delete(id),
+    mutationFn: (id) => api.entities.Product.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['partner-products'] });
       toast.success('Produit supprimé');
@@ -138,7 +126,7 @@ export default function PartnerProducts() {
     if (!file) return;
 
     setIsUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    const { file_url } = await api.uploads.file(file);
     setFormData({ ...formData, image_url: file_url });
     setIsUploading(false);
   };
@@ -172,24 +160,10 @@ export default function PartnerProducts() {
   const sendLowStockAlert = async (product) => {
     try {
       // Send email to partner
-      await base44.integrations.Core.SendEmail({
-        to: user.email,
-        subject: `⚠️ Stock faible - ${product.name}`,
-        body: `
-          <h2>Alerte stock faible</h2>
-          <p>Bonjour,</p>
-          <p>Le stock du produit <strong>${product.name}</strong> est faible.</p>
-          <p><strong>Quantité restante:</strong> ${product.quantity_available} unités</p>
-          <p>Pensez à réapprovisionner pour éviter les ruptures de stock.</p>
-          <br>
-          <a href="${window.location.origin}/PartnerProducts" style="display: inline-block; padding: 12px 24px; background-color: #10B981; color: white; text-decoration: none; border-radius: 8px;">
-            Voir mes produits
-          </a>
-        `
-      });
+      
 
       // Create notification
-      await base44.entities.Notification.create({
+      await api.entities.Notification.create({
         user_email: user.email,
         title: 'Stock faible',
         message: `Le produit "${product.name}" n'a plus que ${product.quantity_available} unités en stock`,

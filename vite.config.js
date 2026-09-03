@@ -1,16 +1,34 @@
-import base44 from "@base44/vite-plugin"
-import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
+import { fileURLToPath, URL } from 'node:url';
 
-// https://vite.dev/config/
 export default defineConfig({
-  logLevel: 'error', // Suppress warnings, only show errors
-  plugins: [
-    base44({
-      // Support for legacy code that imports the base44 SDK with @/integrations, @/entities, etc.
-      // can be removed if the code has been updated to use the new SDK imports from @base44/sdk
-      legacySDKImports: process.env.BASE44_LEGACY_SDK_IMPORTS === 'true'
-    }),
-    react(),
-  ]
+  plugins: [react()],
+  resolve: {
+    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+  },
+  server: {
+    port: 5173,
+    // Le front appelle l'API par le proxy en développement : une seule origine,
+    // donc pas de préflight CORS ni de cookie tiers.
+    proxy: {
+      '/api': { target: process.env.VITE_API_URL ?? 'http://localhost:4000', changeOrigin: true },
+      '/uploads': { target: process.env.VITE_API_URL ?? 'http://localhost:4000', changeOrigin: true },
+    },
+  },
+  build: {
+    target: 'es2020',
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        // Seul le socle React est épinglé : il change rarement et reste donc
+        // en cache entre deux déploiements. Le reste (graphiques, cartes,
+        // scanner) suit les imports dynamiques des pages, et n'est téléchargé
+        // que par ceux qui ouvrent l'écran concerné.
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+        },
+      },
+    },
+  },
 });

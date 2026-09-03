@@ -1,0 +1,40 @@
+{
+  "name": "SavedSearch",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string"
+    },
+    "search_name": {
+      "type": "string",
+      "description": "Nom de la recherche sauvegardée"
+    },
+    "search_query": {
+      "type": "string"
+    },
+    "filters": {
+      "type": "object",
+      "description": "Filtres appliqués"
+    },
+    "entity_types": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Types d'entités recherchées"
+    },
+    "usage_count": {
+      "type": "number",
+      "default": 0
+    },
+    "last_used": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_email",
+    "search_name",
+    "search_query"
+  ]
+}

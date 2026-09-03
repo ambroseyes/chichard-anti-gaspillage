@@ -1,0 +1,76 @@
+{
+  "name": "PickupRequest",
+  "type": "object",
+  "properties": {
+    "order_id": {
+      "type": "string"
+    },
+    "customer_email": {
+      "type": "string"
+    },
+    "customer_name": {
+      "type": "string"
+    },
+    "store_id": {
+      "type": "string"
+    },
+    "store_name": {
+      "type": "string"
+    },
+    "store_address": {
+      "type": "string"
+    },
+    "pickup_time_slot": {
+      "type": "string",
+      "description": "Créneau de retrait souhaité"
+    },
+    "pickup_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "requested",
+        "confirmed",
+        "ready",
+        "picked_up",
+        "cancelled"
+      ],
+      "default": "requested"
+    },
+    "confirmation_code": {
+      "type": "string",
+      "description": "Code de confirmation pour retrait"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "total_amount": {
+      "type": "number"
+    },
+    "special_instructions": {
+      "type": "string"
+    },
+    "ready_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "picked_up_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "qr_code_url": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "order_id",
+    "customer_email",
+    "store_id",
+    "pickup_date"
+  ]
+}

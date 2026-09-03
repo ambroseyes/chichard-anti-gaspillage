@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import React, { useState } from 'react';
+import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,9 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  BarChart3, TrendingUp, Users, Package, DollarSign, Download,
-  Calendar as CalendarIcon, Filter, Eye
+import { TrendingUp, Users, Package, DollarSign, Download,
+  Calendar as CalendarIcon
 } from 'lucide-react';
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
@@ -22,7 +21,6 @@ import { fr } from 'date-fns/locale';
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 export default function PartnerAnalytics() {
-  const [user, setUser] = useState(null);
   const [store, setStore] = useState(null);
   const [dateRange, setDateRange] = useState({
     from: subDays(new Date(), 30),
@@ -30,41 +28,27 @@ export default function PartnerAnalytics() {
   });
   const [selectedCampaign, setSelectedCampaign] = useState('all');
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-        const stores = await base44.entities.Store.filter({ owner_email: userData.email });
-        setStore(stores[0]);
-      } catch (e) {
-        base44.auth.redirectToLogin();
-      }
-    };
-    loadUser();
-  }, []);
-
   const { data: campaigns = [] } = useQuery({
     queryKey: ['campaign-metrics', store?.id],
-    queryFn: () => base44.entities.CampaignMetrics.filter({ store_id: store.id }, '-created_date'),
+    queryFn: () => api.entities.CampaignMetrics.filter({ store_id: store.id }, '-created_date'),
     enabled: !!store
   });
 
   const { data: products = [] } = useQuery({
     queryKey: ['store-products-analytics', store?.id],
-    queryFn: () => base44.entities.Product.filter({ store_id: store.id }),
+    queryFn: () => api.entities.Product.filter({ store_id: store.id }),
     enabled: !!store
   });
 
   const { data: orders = [] } = useQuery({
     queryKey: ['store-orders-analytics', store?.id],
-    queryFn: () => base44.entities.Order.filter({ store_id: store.id }, '-created_date', 200),
+    queryFn: () => api.entities.Order.filter({ store_id: store.id }, '-created_date', 200),
     enabled: !!store
   });
 
   const { data: segments = [] } = useQuery({
     queryKey: ['customer-segments'],
-    queryFn: () => base44.entities.CustomerSegment.list(),
+    queryFn: () => api.entities.CustomerSegment.list(),
     enabled: !!store
   });
 

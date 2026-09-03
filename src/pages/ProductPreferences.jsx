@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { CheckCircle2, Sparkles, ArrowRight, Leaf } from 'lucide-react';
+import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 const CATEGORIES = [
   { id: 'fruits_legumes', label: 'Fruits & Légumes', emoji: '🥦', color: 'bg-green-50 border-green-200 text-green-800', active: 'bg-green-500 text-white border-green-500' },
@@ -32,21 +34,20 @@ const DIETARY = [
 ];
 
 export default function ProductPreferences() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedDietary, setSelectedDietary] = useState([]);
   const [saved, setSaved] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    base44.auth.me().then(u => {
-      setUser(u);
+    api.auth.me().then(u => {
     }).catch(() => {});
   }, []);
 
   const { data: prefs } = useQuery({
     queryKey: ['user-prefs', user?.email],
-    queryFn: () => base44.entities.UserPreference.filter({ user_email: user.email }),
+    queryFn: () => api.entities.UserPreference.filter({ user_email: user.email }),
     enabled: !!user?.email,
     onSuccess: (data) => {
       if (data?.[0]) {
@@ -73,9 +74,9 @@ export default function ProductPreferences() {
         dietary_preferences: selectedDietary,
       };
       if (existing?.id) {
-        return base44.entities.UserPreference.update(existing.id, payload);
+        return api.entities.UserPreference.update(existing.id, payload);
       } else {
-        return base44.entities.UserPreference.create(payload);
+        return api.entities.UserPreference.create(payload);
       }
     },
     onSuccess: () => {
@@ -99,7 +100,7 @@ export default function ProductPreferences() {
           <Sparkles className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold mb-2">Connectez-vous</h2>
           <p className="text-gray-500 mb-4">Pour personnaliser vos suggestions</p>
-          <Button onClick={() => base44.auth.redirectToLogin(window.location.pathname)}
+          <Button onClick={() => goToLogin()}
             className="bg-emerald-500 hover:bg-emerald-600">
             Se connecter
           </Button>

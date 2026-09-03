@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { Loader2, Sparkles, ArrowRight, AlertCircle, CheckCircle2, Search } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -18,43 +18,7 @@ export default function RecipeAnalyzer() {
     if (!input.trim()) return;
     setLoading(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `
-          Analyse cette recette et suggère des améliorations pour la rendre plus saine et plus économique, tout en gardant l'esprit du plat.
-          Recette: "${input}"
-          
-          Format JSON attendu:
-          {
-            "health_score": 8,
-            "cost_score": 6,
-            "health_improvements": ["..."],
-            "cost_improvements": ["..."],
-            "suggestions": [
-              { "original": "...", "replacement": "...", "reason": "..." }
-            ]
-          }
-        `,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            health_score: { type: "number" },
-            cost_score: { type: "number" },
-            health_improvements: { type: "array", items: { type: "string" } },
-            cost_improvements: { type: "array", items: { type: "string" } },
-            suggestions: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  original: { type: "string" },
-                  replacement: { type: "string" },
-                  reason: { type: "string" }
-                }
-              }
-            }
-          }
-        }
-      });
+      const result = await api.ai.recipeAnalysis(input);
       setAnalysis(result);
     } catch (e) {
       console.error(e);
@@ -67,37 +31,7 @@ export default function RecipeAnalyzer() {
     if (!ingredientSearch.trim()) return;
     setLoading(true);
     try {
-        const result = await base44.integrations.Core.InvokeLLM({
-            prompt: `
-              Suggère des alternatives pour l'ingrédient "${ingredientSearch}" qui sont:
-              1. Plus économiques
-              2. Plus saines
-              3. Disponibles localement (contexte Afrique/Cameroun si pertinent)
-              
-              Format JSON:
-              {
-                "alternatives": [
-                  { "name": "...", "category": "economique|sante|local", "description": "..." }
-                ]
-              }
-            `,
-            response_json_schema: {
-              type: "object",
-              properties: {
-                alternatives: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      name: { type: "string" },
-                      category: { type: "string" },
-                      description: { type: "string" }
-                    }
-                  }
-                }
-              }
-            }
-          });
+        const result = await api.ai.ingredientAlternatives(ingredientSearch);
           setAlternatives(result.alternatives);
     } catch (e) {
         console.error(e);

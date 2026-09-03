@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  web:
+    name: Interface web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - name: Vérifier le poids du chargement initial
+        # Cible mobile en 3G : au-delà, le premier affichage devient trop lent.
+        run: |
+          BUDGET_KB=250
+          TOTAL=$(node -e "
+            const fs=require('fs'),zlib=require('zlib'),path=require('path');
+            const html=fs.readFileSync('dist/index.html','utf8');
+            const files=[...new Set([...html.matchAll(/\/assets\/([^\"']+)/g)].map(m=>m[1]))];
+            let total=0;
+            for (const f of files) {
+              const p=path.join('dist/assets',f);
+              if (fs.existsSync(p)) total+=zlib.gzipSync(fs.readFileSync(p),{level:9}).length;
+            }
+            console.log(Math.round(total/1024));
+          ")
+          echo \"Chargement initial : \${TOTAL} Ko gzip (budget \${BUDGET_KB} Ko)\"
+          if [ \"\$TOTAL\" -gt \"\$BUDGET_KB\" ]; then
+            echo \"::error::Le chargement initial dépasse le budget\"
+            exit 1
+          fi
+
+  server:
+    name: Serveur
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: chichard
+          POSTGRES_PASSWORD: chichard
+          POSTGRES_DB: chichard_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U chichard"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://chichard:chichard@localhost:5432/chichard_test
+      JWT_SECRET: valeur_de_test_uniquement_0123456789abcdefghij
+      PICKUP_TOKEN_SECRET: valeur_de_test_uniquement_abcdefghij0123456789
+      NODE_ENV: test
+      ENABLE_SCHEDULER: 'false'
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Vérifier que le schéma dérive bien des entités
+        # Le schéma Prisma est généré : s'il diverge, c'est qu'on l'a édité à la main.
+        run: |
+          npm run schema:generate
+          git diff --exit-code prisma/schema.prisma
+      - run: npx prisma migrate deploy
+      - run: npm run lint
+      - run: npm test

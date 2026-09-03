@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { Bell, Clock, Tag, Leaf, Save, ChevronLeft } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 const DIETARY_OPTIONS = ['Végétarien', 'Vegan', 'Halal', 'Sans gluten', 'Sans lactose', 'Kasher', 'Bio uniquement'];
 const CATEGORIES = ['fruits_legumes', 'produits_laitiers', 'viandes_poissons', 'boulangerie', 'epicerie', 'boissons'];
@@ -17,7 +18,7 @@ const CATEGORIES_LABELS = {
 };
 
 export default function NotificationSettings() {
-  const [user, setUser] = useState(null);
+  const { user, updateProfile } = useAuth();
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState({
     dlc_alert_days: 2,
@@ -27,15 +28,14 @@ export default function NotificationSettings() {
   });
 
   useEffect(() => {
-    base44.auth.me().then(u => {
-      setUser(u);
+    api.auth.me().then(u => {
       setSettings({
         dlc_alert_days: u.dlc_alert_days || 2,
         push_notifications_enabled: u.push_notifications_enabled || false,
         offer_categories: u.offer_categories || [],
         dietary_preferences: u.dietary_preferences || [],
       });
-    }).catch(() => base44.auth.redirectToLogin());
+    }).catch(() => goToLogin());
   }, []);
 
   const toggleArr = (key, value) => {
@@ -56,7 +56,8 @@ export default function NotificationSettings() {
 
   const save = async () => {
     setSaving(true);
-    await base44.auth.updateMe(settings);
+    // Les préférences vivent dans `preferences`, seul objet libre du profil.
+    await updateProfile({ preferences: { ...(user?.preferences ?? {}), notifications: settings } });
     setSaving(false);
     toast.success('Paramètres enregistrés');
   };

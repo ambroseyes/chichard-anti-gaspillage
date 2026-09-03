@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
 import { CheckCircle, Package, MapPin, Clock, QrCode } from 'lucide-react';
 import { Card } from "@/components/ui/card";
@@ -11,30 +11,19 @@ import QRCodeGenerator from '@/components/delivery/QRCodeGenerator';
 import { motion } from 'framer-motion';
 
 export default function OrderConfirmation() {
-  const [user, setUser] = useState(null);
   const navigate = useNavigate();
-  const urlParams = new URLSearchParams(window.location.search);
-  const orderId = urlParams.get('id');
+  const [searchParams] = useSearchParams();
+  const orderId = searchParams.get('commande') ?? searchParams.get('id');
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      } catch (e) {
-        base44.auth.redirectToLogin();
-      }
-    };
-    loadUser();
-  }, []);
+  // Le code de retrait n'est affiché qu'ici, au retour du paiement : le serveur
+  // ne le conserve que sous forme de condensat et ne le renverra plus jamais.
+  const confirmationCode = searchParams.get('code');
+  const pickupToken = searchParams.get('jeton');
 
   const { data: order, isLoading } = useQuery({
     queryKey: ['order', orderId],
-    queryFn: async () => {
-      const orders = await base44.entities.Order.filter({ id: orderId });
-      return orders[0];
-    },
-    enabled: !!orderId
+    queryFn: () => api.entities.Order.get(orderId),
+    enabled: Boolean(orderId),
   });
 
   if (isLoading || !order) {
@@ -109,21 +98,22 @@ export default function OrderConfirmation() {
           <Card className="p-6 mb-6">
             <div className="flex items-center gap-2 mb-4">
               <QrCode className="w-5 h-5 text-blue-600" />
-              <h2 className="font-semibold">QR Code de livraison</h2>
+              <h2 className="font-semibold">Code de retrait</h2>
             </div>
             <p className="text-sm text-gray-600 mb-4">
-              Présentez ce QR code au livreur pour confirmer la réception de votre commande.
+              Présentez ce code au livreur ou au magasin au moment de la remise.
             </p>
             <div className="flex justify-center">
-              <QRCodeGenerator 
-                orderId={order.id} 
-                orderData={order}
+              <QRCodeGenerator
+                pickupToken={pickupToken}
+                confirmationCode={confirmationCode}
+                orderNumber={order.order_number}
               />
             </div>
             <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
               <p className="text-xs text-blue-800">
-                💡 <strong>Important:</strong> Ce QR code est unique et sécurisé. 
-                Ne le partagez avec personne d'autre que votre livreur CHICHARD.
+                Ce code est signé et vérifié par nos serveurs. Ne le communiquez qu'à la
+                personne qui vous remet la commande.
               </p>
             </div>
           </Card>

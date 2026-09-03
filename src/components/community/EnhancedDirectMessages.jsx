@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { motion } from 'framer-motion';
 import {
-  MessageCircle, Send, Search, ArrowLeft, User, Bell,
+  MessageCircle, Send, Search, ArrowLeft,
   Check, CheckCheck, Loader2, Plus
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -28,7 +27,7 @@ export default function EnhancedDirectMessages({ user }) {
 
   const { data: messages = [], refetch } = useQuery({
     queryKey: ['direct-messages', user?.email],
-    queryFn: () => base44.entities.Message.filter({ 
+    queryFn: () => api.entities.Message.filter({ 
       $or: [
         { sender_email: user?.email },
         { recipient_email: user?.email }
@@ -69,7 +68,7 @@ export default function EnhancedDirectMessages({ user }) {
 
   const sendMessageMutation = useMutation({
     mutationFn: async (content) => {
-      await base44.entities.Message.create({
+      await api.entities.Message.create({
         sender_email: user.email,
         sender_name: user.full_name,
         recipient_email: selectedConversation.email,
@@ -79,7 +78,7 @@ export default function EnhancedDirectMessages({ user }) {
       });
 
       // Create notification
-      await base44.entities.Notification.create({
+      await api.entities.Notification.create({
         user_email: selectedConversation.email,
         title: 'Nouveau message',
         message: `${user.full_name}: ${content.substring(0, 50)}...`,
@@ -94,7 +93,7 @@ export default function EnhancedDirectMessages({ user }) {
 
   const startNewChatMutation = useMutation({
     mutationFn: async () => {
-      const users = await base44.entities.User.filter({ email: newChatEmail });
+      const users = await api.entities.User.filter({ email: newChatEmail });
       if (users.length === 0) {
         throw new Error('Utilisateur non trouvé');
       }
@@ -121,7 +120,7 @@ export default function EnhancedDirectMessages({ user }) {
              !m.is_read
       );
       unreadMessages.forEach(m => {
-        base44.entities.Message.update(m.id, { is_read: true });
+        api.entities.Message.update(m.id, { is_read: true });
       });
     }
   }, [selectedConversation, messages]);

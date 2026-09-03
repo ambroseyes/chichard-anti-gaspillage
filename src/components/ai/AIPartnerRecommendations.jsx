@@ -1,90 +1,69 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import React from 'react';
+import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Store, MapPin, Star, Sparkles, Loader2, ChevronRight } from 'lucide-react';
+import { Store, MapPin, Star, Sparkles, Loader2 } from 'lucide-react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-export default function AIPartnerRecommendations({ user }) {
-  const [recommendations, setRecommendations] = useState([]);
-  const [loading, setLoading] = useState(true);
+/**
+ * Classe les magasins partenaires par pertinence : même ville que
+ * l'utilisateur, magasins déjà fréquentés, favoris, puis note et volume de
+ * produits sauvés. Un score explicite, lisible et reproductible — là où un
+ * modèle de langage coûterait un appel réseau pour un tri.
+ */
+function scoreStore(store, { city, visited, favorites }) {
+  let score = 0;
+  const reasons = [];
 
-  const { data: stores = [] } = useQuery({
-    queryKey: ['stores'],
-    queryFn: () => base44.entities.Store.filter({ is_partner: true, status: 'verified' }),
+  if (favorites.includes(store.id)) {
+    score += 50;
+    reasons.push('Dans vos favoris');
+  }
+  if (visited.includes(store.name)) {
+    score += 30;
+    reasons.push('Vous y avez déjà commandé');
+  }
+  if (city && store.city?.toLowerCase() === city.toLowerCase()) {
+    score += 25;
+    reasons.push(`À ${store.city}`);
+  }
+  score += (store.rating ?? 0) * 4;
+  score += Math.min(20, (store.total_products_saved ?? 0) / 50);
+
+  if (!reasons.length && store.rating >= 4) reasons.push(`Noté ${store.rating}/5`);
+  if (!reasons.length && store.total_products_saved > 0) {
+    reasons.push(`${store.total_products_saved} produits sauvés`);
+  }
+
+  return { score, reason: reasons[0] ?? 'Partenaire vérifié' };
+}
+
+export default function AIPartnerRecommendations({ user }) {
+  const { data: stores = [], isLoading } = useQuery({
+    queryKey: ['stores', 'verified'],
+    queryFn: () => api.entities.Store.filter({ is_partner: true, status: 'verified' }, '-rating', 50),
   });
 
   const { data: orders = [] } = useQuery({
-    queryKey: ['user-orders', user?.email],
-    queryFn: () => base44.entities.Order.filter({ customer_email: user?.email }, '-created_date', 20),
-    enabled: !!user,
+    queryKey: ['orders', 'mine', user?.email],
+    queryFn: () => api.entities.Order.filter({ customer_email: user?.email }, '-created_date', 20),
+    enabled: Boolean(user),
   });
 
-  useEffect(() => {
-    const generateRecommendations = async () => {
-      if (!stores.length) {
-        setLoading(false);
-        return;
-      }
-      
-      setLoading(true);
-      
-      const userCity = user?.city || 'Douala';
-      const purchasedStores = orders.map(o => o.store_name).filter(Boolean);
-      const favoriteStores = user?.favorite_stores || [];
+  const context = {
+    city: user?.city ?? '',
+    visited: orders.map((o) => o.store_name).filter(Boolean),
+    favorites: user?.favorite_stores ?? [],
+  };
 
-      const prompt = `Tu es un système de recommandation de magasins pour CHICHARD au Cameroun.
+  const recommendations = stores
+    .map((store) => ({ ...store, ...scoreStore(store, context) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 4)
+    .map((store) => ({ ...store, aiReason: store.reason }));
 
-CONTEXTE UTILISATEUR:
-- Ville: ${userCity}
-- Magasins fréquentés: ${purchasedStores.slice(0, 5).join(', ') || 'Aucun'}
-- Favoris: ${favoriteStores.join(', ') || 'Aucun'}
-
-MAGASINS DISPONIBLES:
-${stores.slice(0, 15).map(s => `- ${s.name} (${s.city}, note: ${s.rating || 4.5}/5, ${s.total_products_saved || 0} produits sauvés)`).join('\n')}
-
-Recommande les 4 meilleurs magasins. Retourne un JSON:
-{
-  "store_names": ["nom1", "nom2", ...],
-  "reasons": {
-    "nom1": "raison courte",
-    "nom2": "raison courte"
-  }
-}`;
-
-      try {
-        const result = await base44.integrations.Core.InvokeLLM({
-          prompt,
-          response_json_schema: {
-            type: "object",
-            properties: {
-              store_names: { type: "array", items: { type: "string" } },
-              reasons: { type: "object" }
-            }
-          }
-        });
-
-        const recommendedStores = stores
-          .filter(s => result.store_names?.some(name => 
-            s.name.toLowerCase().includes(name.toLowerCase())
-          ))
-          .map(s => ({
-            ...s,
-            aiReason: result.reasons?.[s.name] || 'Recommandé pour vous'
-          }))
-          .slice(0, 4);
-
-        setRecommendations(recommendedStores.length > 0 ? recommendedStores : stores.slice(0, 4));
-      } catch (e) {
-        setRecommendations(stores.slice(0, 4));
-      }
-      
-      setLoading(false);
-    };
-
-    generateRecommendations();
-  }, [stores, orders, user]);
+  const loading = isLoading;
 
   if (loading) {
     return (

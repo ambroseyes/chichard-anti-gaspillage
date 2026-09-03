@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { toast } from 'sonner';
 import { Package, Truck, CheckCircle, Clock } from 'lucide-react';
 
@@ -8,7 +8,7 @@ export default function OrderNotifications({ userEmail, onOrderUpdate }) {
     if (!userEmail) return;
 
     // Subscribe to order updates
-    const unsubscribe = base44.entities.Order.subscribe((event) => {
+    const unsubscribe = api.subscribe('Order', (event) => {
       // Only show notifications for this user's orders
       if (event.data.customer_email !== userEmail) return;
 
@@ -109,7 +109,7 @@ export default function OrderNotifications({ userEmail, onOrderUpdate }) {
   useEffect(() => {
     if (!userEmail) return;
 
-    const unsubscribe = base44.entities.PickupRequest.subscribe((event) => {
+    const unsubscribe = api.subscribe('PickupRequest', (event) => {
       if (event.data.customer_email !== userEmail) return;
 
       const pickup = event.data;

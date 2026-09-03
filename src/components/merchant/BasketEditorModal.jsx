@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -38,9 +38,9 @@ export default function BasketEditorModal({ open, basket, user, onClose }) {
   const saveMutation = useMutation({
     mutationFn: (data) => {
       if (basket?.id) {
-        return base44.entities.ClickCollectBasket.update(basket.id, data);
+        return api.entities.ClickCollectBasket.update(basket.id, data);
       } else {
-        return base44.entities.ClickCollectBasket.create(data);
+        return api.entities.ClickCollectBasket.create(data);
       }
     },
     onSuccess: () => {

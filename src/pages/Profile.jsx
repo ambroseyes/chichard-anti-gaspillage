@@ -1,13 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { 
-  User, Mail, Phone, MapPin, Edit2, Save, LogOut,
-  Package, TrendingUp, Leaf, Award, ChevronRight,
-  Store, Settings, HelpCircle, Users, ChefHat, Trophy, Flame, Crown,
+import { Edit2, Save, LogOut, TrendingUp, Award, ChevronRight,
+  Store, Users, ChefHat, Trophy, Flame, Crown,
   ShoppingBag, Recycle, Star, Heart, Lightbulb, Check
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -20,6 +18,8 @@ import { toast } from 'sonner';
 import SavingsCounter from '@/components/ui/SavingsCounter';
 import BadgeDisplay from '@/components/gamification/BadgeDisplay';
 import ReferralSystem from '@/components/gamification/ReferralSystem';
+import { logout } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 const DIETARY_OPTIONS = [
   'Végétarien', 'Vegan', 'Halal', 'Sans gluten', 'Sans lactose', 'Kasher', 'Bio uniquement', 'Sans fruits de mer'
@@ -50,34 +50,16 @@ const ecoLevels = {
 };
 
 export default function Profile() {
-  const [user, setUser] = useState(null);
+  const { user, updateProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({ phone: '', city: '', address: '' });
   const [prefData, setPrefData] = useState({ dietary: [], allergens: [] });
   const [isSavingPrefs, setIsSavingPrefs] = useState(false);
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-        setFormData({ phone: userData.phone || '', city: userData.city || '', address: userData.address || '' });
-        setPrefData({
-          dietary: userData.dietary_preferences || [],
-          allergens: userData.allergens_to_avoid || []
-        });
-      } catch (e) {
-        base44.auth.redirectToLogin();
-      }
-    };
-    loadUser();
-  }, []);
-
   const handleSave = async () => {
     setIsSaving(true);
-    await base44.auth.updateMe(formData);
-    setUser({ ...user, ...formData });
+    await updateProfile(formData);
     setIsEditing(false);
     setIsSaving(false);
     toast.success('Profil mis à jour');
@@ -85,8 +67,7 @@ export default function Profile() {
 
   const handleSavePrefs = async () => {
     setIsSavingPrefs(true);
-    await base44.auth.updateMe({ dietary_preferences: prefData.dietary, allergens_to_avoid: prefData.allergens });
-    setUser({ ...user, dietary_preferences: prefData.dietary, allergens_to_avoid: prefData.allergens });
+    await updateProfile({ dietary_preferences: prefData.dietary, allergens_to_avoid: prefData.allergens });
     setIsSavingPrefs(false);
     toast.success('Préférences enregistrées');
   };
@@ -100,7 +81,7 @@ export default function Profile() {
 
   const { data: orders = [] } = useQuery({
     queryKey: ['profile-orders', user?.email],
-    queryFn: () => base44.entities.Order.filter({ customer_email: user.email }, '-created_date', 50),
+    queryFn: () => api.entities.Order.filter({ customer_email: user.email }, '-created_date', 50),
     enabled: !!user?.email,
   });
 
@@ -206,7 +187,7 @@ export default function Profile() {
               </Link>
             </Card>
 
-            <Button variant="outline" className="w-full text-red-600 border-red-200 hover:bg-red-50" onClick={() => base44.auth.logout()}>
+            <Button variant="outline" className="w-full text-red-600 border-red-200 hover:bg-red-50" onClick={() => logout()}>
               <LogOut className="w-4 h-4 mr-2" />Déconnexion
             </Button>
           </TabsContent>

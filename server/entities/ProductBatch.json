@@ -1,0 +1,47 @@
+{
+  "name": "ProductBatch",
+  "type": "object",
+  "properties": {
+    "product_id": {
+      "type": "string"
+    },
+    "product_name": {
+      "type": "string"
+    },
+    "store_id": {
+      "type": "string"
+    },
+    "batch_number": {
+      "type": "string"
+    },
+    "quantity": {
+      "type": "number"
+    },
+    "quantity_sold": {
+      "type": "number",
+      "default": 0
+    },
+    "expiration_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "purchase_price": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "low_stock",
+        "expired",
+        "sold_out"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "product_id",
+    "quantity",
+    "expiration_date"
+  ]
+}

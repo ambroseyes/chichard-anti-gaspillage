@@ -1,78 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import React, { useState } from 'react';
+import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import {
-  Truck, MapPin, Clock, Route, Package, Check, Play,
-  Navigation, Phone, Camera, CheckCircle, AlertTriangle,
-  Zap, Users, TrendingUp
+  Truck, MapPin, Clock, Route, Package,
+  Navigation, Phone, CheckCircle,
+  Zap
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function DeliveryOptimization() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [optimizedRoute, setOptimizedRoute] = useState(null);
   const [isOptimizing, setIsOptimizing] = useState(false);
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      } catch (e) {
-        base44.auth.redirectToLogin();
-      }
-    };
-    loadUser();
-  }, []);
-
   const { data: orders = [] } = useQuery({
     queryKey: ['delivery-orders'],
-    queryFn: () => base44.entities.Order.filter({ status: 'ready', delivery_type: 'delivery' }),
+    queryFn: () => api.entities.Order.filter({ status: 'ready', delivery_type: 'delivery' }),
   });
 
   const optimizeRoute = async () => {
     setIsOptimizing(true);
     
     // Simulate AI optimization
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Tu es un algorithme d'optimisation de tournées de livraison.
-      
-Voici les commandes à livrer avec leurs adresses:
-${orders.map((o, i) => `${i + 1}. ${o.delivery_address || 'Adresse non spécifiée'} - Commande #${o.id?.slice(-6)}`).join('\n')}
-
-Optimise la tournée pour minimiser le temps et la distance.
-Regroupe par zone géographique.
-Estime le temps de livraison pour chaque arrêt.`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          optimized_stops: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                order_index: { type: 'number' },
-                zone: { type: 'string' },
-                estimated_time: { type: 'string' },
-                distance_km: { type: 'number' }
-              }
-            }
-          },
-          total_distance_km: { type: 'number' },
-          total_time_minutes: { type: 'number' },
-          zones_count: { type: 'number' },
-          efficiency_score: { type: 'number' }
-        }
-      }
-    });
+    const result = await api.ai.routeOptimization(orders.map((o) => o.id));
 
     setOptimizedRoute(result);
     setIsOptimizing(false);
@@ -80,7 +36,7 @@ Estime le temps de livraison pour chaque arrêt.`,
   };
 
   const updateDeliveryStatus = async (orderId, status) => {
-    await base44.entities.Order.update(orderId, { status });
+    await api.entities.Order.update(orderId, { status });
     toast.success(status === 'delivered' ? 'Livraison confirmée !' : 'Statut mis à jour');
   };
 

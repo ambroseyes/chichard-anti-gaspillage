@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-  Upload, Download, Percent, Trash2, Check, AlertTriangle,
-  Loader2, FileSpreadsheet, Package
+import { api } from '@/api';
+import { useQueryClient } from '@tanstack/react-query';
+import { Download, Check,
+  Loader2
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -43,28 +42,28 @@ export default function BulkProductManager({ products, user }) {
         case 'discount':
           for (const product of selectedProducts) {
             const newPrice = Math.round(product.original_price * (1 - discountPercent / 100));
-            await base44.entities.Product.update(product.id, { discounted_price: newPrice });
+            await api.entities.Product.update(product.id, { discounted_price: newPrice });
           }
           toast.success(`${selectedIds.length} produit(s) mis à jour avec -${discountPercent}%`);
           break;
 
         case 'deactivate':
           for (const product of selectedProducts) {
-            await base44.entities.Product.update(product.id, { status: 'expired' });
+            await api.entities.Product.update(product.id, { status: 'expired' });
           }
           toast.success(`${selectedIds.length} produit(s) désactivé(s)`);
           break;
 
         case 'delete':
           for (const product of selectedProducts) {
-            await base44.entities.Product.delete(product.id);
+            await api.entities.Product.delete(product.id);
           }
           toast.success(`${selectedIds.length} produit(s) supprimé(s)`);
           break;
 
         case 'activate':
           for (const product of selectedProducts) {
-            await base44.entities.Product.update(product.id, { status: 'active' });
+            await api.entities.Product.update(product.id, { status: 'active' });
           }
           toast.success(`${selectedIds.length} produit(s) activé(s)`);
           break;

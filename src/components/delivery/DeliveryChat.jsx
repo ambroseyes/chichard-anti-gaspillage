@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +22,7 @@ export default function DeliveryChat({ order, currentUser }) {
   // Load initial messages
   useEffect(() => {
     if (!open) return;
-    base44.entities.ChatMessage.filter({ room_id: roomId }, 'created_date', 100).then(msgs => {
+    api.entities.ChatMessage.filter({ room_id: roomId }, 'created_date', 100).then(msgs => {
       const cutoff = Date.now() - EPHEMERAL_HOURS * 3600 * 1000;
       const fresh = msgs.filter(m => new Date(m.created_date).getTime() > cutoff);
       setMessages(fresh);
@@ -32,7 +32,7 @@ export default function DeliveryChat({ order, currentUser }) {
 
   // Real-time subscription
   useEffect(() => {
-    const unsub = base44.entities.ChatMessage.subscribe((event) => {
+    const unsub = api.subscribe('ChatMessage', (event) => {
       if (event.type === 'create' && event.data.room_id === roomId) {
         const cutoff = Date.now() - EPHEMERAL_HOURS * 3600 * 1000;
         if (new Date(event.data.created_date || Date.now()).getTime() > cutoff) {
@@ -62,7 +62,7 @@ export default function DeliveryChat({ order, currentUser }) {
     setSending(true);
     const content = text.trim();
     setText('');
-    await base44.entities.ChatMessage.create({
+    await api.entities.ChatMessage.create({
       room_id: roomId,
       sender_email: currentUser.email,
       sender_name: currentUser.full_name || currentUser.email,

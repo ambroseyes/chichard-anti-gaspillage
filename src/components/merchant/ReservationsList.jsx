@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Clock, MapPin, Phone, CheckCircle2, XCircle, Package } from 'lucide-react';
+import { Clock, Phone, CheckCircle2, XCircle, Package } from 'lucide-react';
 
 const STATUS_CONFIG = {
   reserved: { label: 'Réservée', color: 'bg-blue-100 text-blue-700', next: 'confirmed' },
@@ -27,7 +27,7 @@ export default function ReservationsList({ reservations }) {
   const queryClient = useQueryClient();
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, status }) => base44.entities.ClickCollectReservation.update(id, { status }),
+    mutationFn: ({ id, status }) => api.entities.ClickCollectReservation.update(id, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['merchant-reservations'] });
       toast.success('Statut mis à jour');

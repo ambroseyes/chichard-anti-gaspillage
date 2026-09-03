@@ -1,111 +1,75 @@
-import './App.css'
-import { Toaster } from "@/components/ui/toaster"
-import { QueryClientProvider } from '@tanstack/react-query'
-import { queryClientInstance } from '@/lib/query-client'
-import VisualEditAgent from '@/lib/VisualEditAgent'
-import NavigationTracker from '@/lib/NavigationTracker'
-import { pagesConfig } from './pages.config'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import PageNotFound from './lib/PageNotFound';
-import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-import AdminBackoffice from './pages/AdminBackoffice';
-import AIRecipes from './pages/AIRecipes';
-import NotificationSettings from './pages/NotificationSettings';
-import PartnerPredictiveDashboard from './pages/PartnerPredictiveDashboard';
-import BackofficeUsers from './pages/BackofficeUsers';
-import BackofficeSales from './pages/BackofficeSales';
-import BackofficeLogs from './pages/BackofficeLogs';
-import BackofficeTransactions from './pages/BackofficeTransactions';
-import ClickCollect from './pages/ClickCollect';
-import MerchantBasketManager from './pages/MerchantBasketManager';
-import ProductPreferences from './pages/ProductPreferences';
-import About from './pages/About';
-import Contact from './pages/Contact';
+import { Suspense } from 'react';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'sonner';
 
-const { Pages, Layout, mainPage } = pagesConfig;
-const mainPageKey = mainPage ?? Object.keys(Pages)[0];
-const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
+import './App.css';
+import { queryClientInstance } from '@/lib/query-client';
+import { AuthProvider } from '@/lib/AuthContext';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import RequireRole from '@/components/auth/RequireRole';
+import PageSpinner from '@/components/ui/PageSpinner';
+import PageNotFound from '@/lib/PageNotFound';
+import Layout from '@/Layout';
+import { backofficeRoutes, publicAuthRoutes, routes } from '@/routes';
 
-const LayoutWrapper = ({ children, currentPageName }) => Layout ?
-  <Layout currentPageName={currentPageName}>{children}</Layout>
-  : <>{children}</>;
+/** Enveloppe les pages publiques et connectées dans le gabarit du site. */
+const withLayout = (name, Element) => (
+  <Layout currentPageName={name}>
+    <Element />
+  </Layout>
+);
 
-const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin } = useAuth();
-
-  // Show loading spinner while checking app public settings or auth
-  if (isLoadingPublicSettings || isLoadingAuth) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  // Handle authentication errors
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
-      navigateToLogin();
-      return null;
-    }
-  }
-
-  // Render the main app
+function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={
-        <LayoutWrapper currentPageName={mainPageKey}>
-          <MainPage />
-        </LayoutWrapper>
-      } />
-      {Object.entries(Pages).map(([path, Page]) => (
-        <Route
-          key={path}
-          path={`/${path}`}
-          element={
-            <LayoutWrapper currentPageName={path}>
-              <Page />
-            </LayoutWrapper>
-          }
-        />
+      {publicAuthRoutes.map(({ path, element: Element }) => (
+        <Route key={path} path={path} element={<Element />} />
       ))}
-      <Route path="/AdminBackoffice" element={<AdminBackoffice />} />
-      <Route path="/AIRecipes" element={<LayoutWrapper currentPageName="AIRecipes"><AIRecipes /></LayoutWrapper>} />
-      <Route path="/NotificationSettings" element={<LayoutWrapper currentPageName="NotificationSettings"><NotificationSettings /></LayoutWrapper>} />
-      <Route path="/PartnerPredictiveDashboard" element={<LayoutWrapper currentPageName="PartnerPredictiveDashboard"><PartnerPredictiveDashboard /></LayoutWrapper>} />
-      <Route path="/BackofficeUsers" element={<BackofficeUsers />} />
-      <Route path="/BackofficeSales" element={<BackofficeSales />} />
-      <Route path="/BackofficeLogs" element={<BackofficeLogs />} />
-      <Route path="/BackofficeTransactions" element={<BackofficeTransactions />} />
-      <Route path="/ClickCollect" element={<LayoutWrapper currentPageName="ClickCollect"><ClickCollect /></LayoutWrapper>} />
-      <Route path="/MerchantBasketManager" element={<LayoutWrapper currentPageName="MerchantBasketManager"><MerchantBasketManager /></LayoutWrapper>} />
-      <Route path="/ProductPreferences" element={<LayoutWrapper currentPageName="ProductPreferences"><ProductPreferences /></LayoutWrapper>} />
-      <Route path="/About" element={<LayoutWrapper currentPageName="About"><About /></LayoutWrapper>} />
-      <Route path="/Contact" element={<LayoutWrapper currentPageName="Contact"><Contact /></LayoutWrapper>} />
+
+      {routes
+        .filter((r) => !r.role)
+        .map(({ path, name, element: Element, index }) => (
+          <Route key={path} path={path} index={index} element={withLayout(name, Element)} />
+        ))}
+
+      {/* Une garde par niveau : les pages qu'elle protège ne sont montées
+          qu'une fois le droit établi. */}
+      {['authenticated', 'partner', 'driver', 'admin', 'backofficeAdmin'].map((role) => (
+        <Route key={role} element={<RequireRole role={role} />}>
+          {routes
+            .filter((r) => r.role === role)
+            .map(({ path, name, element: Element }) => (
+              <Route key={path} path={path} element={withLayout(name, Element)} />
+            ))}
+        </Route>
+      ))}
+
+      {backofficeRoutes.map(({ path, role, element: Element }) => (
+        <Route key={path} element={<RequireRole role={role} />}>
+          <Route path={path} element={<Element />} />
+        </Route>
+      ))}
+
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
-};
-
-
-function App() {
-
-  return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <NavigationTracker />
-          <AuthenticatedApp />
-        </Router>
-        <Toaster />
-        <VisualEditAgent />
-      </QueryClientProvider>
-    </AuthProvider>
-  )
 }
 
-export default App
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClientInstance}>
+        <BrowserRouter>
+          <AuthProvider>
+            <Suspense fallback={<PageSpinner />}>
+              <AppRoutes />
+            </Suspense>
+          </AuthProvider>
+        </BrowserRouter>
+        {/* Un seul système de messages, monté une fois pour toute l'application. */}
+        <Toaster position="top-center" richColors closeButton expand={false} duration={4000} />
+      </QueryClientProvider>
+    </ErrorBoundary>
+  );
+}

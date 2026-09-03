@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Zap, MapPin, Clock, Loader2 } from 'lucide-react';
+import { Zap, MapPin, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function RouteOptimizer({ orders, onRouteCreated }) {
@@ -27,44 +26,7 @@ export default function RouteOptimizer({ orders, onRouteCreated }) {
         priority: calculatePriority(o)
       }));
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Tu es un système d'optimisation de tournées de livraison. 
-        
-Voici ${ordersData.length} commandes à livrer:
-${JSON.stringify(ordersData, null, 2)}
-
-Optimise l'itinéraire de livraison en tenant compte de:
-1. La proximité géographique des adresses
-2. La priorité de chaque commande (1-5, 5 étant le plus urgent)
-3. Le nombre d'articles par commande
-4. L'efficacité du trajet (minimiser la distance totale)
-
-Retourne un itinéraire optimisé avec l'ordre de livraison recommandé.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            optimized_sequence: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  order_id: { type: 'string' },
-                  sequence: { type: 'number' },
-                  estimated_time_minutes: { type: 'number' },
-                  reason: { type: 'string' }
-                }
-              }
-            },
-            total_distance_km: { type: 'number' },
-            total_duration_minutes: { type: 'number' },
-            optimization_score: { type: 'number' },
-            recommendations: {
-              type: 'array',
-              items: { type: 'string' }
-            }
-          }
-        }
-      });
+      const response = await api.ai.routeOptimization(ordersData.map((o) => o.id));
 
       const optimizedRoute = response;
 

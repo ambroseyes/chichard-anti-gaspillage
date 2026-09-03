@@ -1,0 +1,60 @@
+{
+  "name": "Promotion",
+  "type": "object",
+  "properties": {
+    "store_id": {
+      "type": "string",
+      "description": "ID du magasin"
+    },
+    "title": {
+      "type": "string",
+      "description": "Titre de la promotion"
+    },
+    "description": {
+      "type": "string"
+    },
+    "discount_type": {
+      "type": "string",
+      "enum": [
+        "percentage",
+        "fixed_amount"
+      ],
+      "default": "percentage"
+    },
+    "discount_value": {
+      "type": "number",
+      "description": "Pourcentage ou montant de réduction"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "applicable_products": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs des produits concernés"
+    },
+    "usage_count": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "store_id",
+    "title",
+    "discount_type",
+    "discount_value",
+    "start_date",
+    "end_date"
+  ]
+}

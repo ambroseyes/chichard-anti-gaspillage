@@ -1,14 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useNavigate } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
-  Truck, Package, MapPin, Phone, Navigation, CheckCircle,
-  Clock, Camera, FileSignature, AlertTriangle, User, Loader2,
+  Truck, Package, MapPin, Phone, Navigation, CheckCircle, AlertTriangle, Loader2,
   QrCode, Map
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -26,6 +23,7 @@ import { BarChart3, RefreshCw, Gauge } from 'lucide-react';
 import DeliveryChat from '@/components/delivery/DeliveryChat';
 import MultiBulkScanner from '@/components/delivery/MultiBulkScanner';
 import GoogleDirectionsMap from '@/components/delivery/GoogleDirectionsMap';
+import { useAuth } from '@/lib/AuthContext';
 
 const STATUS_FLOW = {
   assigned:    { next: 'picked_up',   label: 'Récupérer',    btnClass: 'bg-blue-500 hover:bg-blue-600' },
@@ -121,7 +119,7 @@ function formatDistance(meters) {
 }
 
 export default function DriverDashboard() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [courierPos, setCourierPos] = useState(null);
   const lastOptimizeTime = useRef(0);
   const lastOptimizePos = useRef(null);
@@ -139,21 +137,6 @@ export default function DriverDashboard() {
   const [alerts, setAlerts] = useState([]);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-        if (!userData.is_delivery_driver) {
-          navigate(createPageUrl('Home'));
-        }
-      } catch (e) {
-        base44.auth.redirectToLogin();
-      }
-    };
-    loadUser();
-  }, []);
 
   // GPS live tracking
   useEffect(() => {
@@ -196,7 +179,7 @@ export default function DriverDashboard() {
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['driver-orders', user?.email],
     queryFn: async () => {
-      const allOrders = await base44.entities.Order.filter(
+      const allOrders = await api.entities.Order.filter(
         { driver_email: user.email },
         '-created_date',
         100
@@ -220,7 +203,7 @@ export default function DriverDashboard() {
   const { data: deliveredToday = [] } = useQuery({
     queryKey: ['driver-delivered-today', user?.email],
     queryFn: async () => {
-      const all = await base44.entities.Order.filter({ driver_email: user.email, status: 'delivered' }, '-created_date', 50);
+      const all = await api.entities.Order.filter({ driver_email: user.email, status: 'delivered' }, '-created_date', 50);
       const today = new Date().toDateString();
       return all.filter(o => new Date(o.updated_date || o.created_date).toDateString() === today);
     },
@@ -231,7 +214,7 @@ export default function DriverDashboard() {
   const { data: preferences } = useQuery({
     queryKey: ['dashboard-preferences', user?.email],
     queryFn: async () => {
-      const prefs = await base44.entities.DashboardPreference.filter({ 
+      const prefs = await api.entities.DashboardPreference.filter({ 
         user_email: user.email, 
         dashboard_type: 'driver' 
       });
@@ -243,9 +226,9 @@ export default function DriverDashboard() {
   const savePrefsMutation = useMutation({
     mutationFn: async (data) => {
       if (preferences?.id) {
-        return base44.entities.DashboardPreference.update(preferences.id, data);
+        return api.entities.DashboardPreference.update(preferences.id, data);
       }
-      return base44.entities.DashboardPreference.create({
+      return api.entities.DashboardPreference.create({
         user_email: user.email,
         dashboard_type: 'driver',
         ...data
@@ -265,7 +248,7 @@ export default function DriverDashboard() {
         updateData.delivered_by = user.email;
       }
       if (failReason) updateData.fail_reason = failReason;
-      await base44.entities.Order.update(orderId, updateData);
+      await api.entities.Order.update(orderId, updateData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['driver-orders'] });
@@ -278,7 +261,7 @@ export default function DriverDashboard() {
   const handleDeliveryProof = async () => {
     let photo_url = null;
     if (proofPhoto) {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: proofPhoto });
+      const { file_url } = await api.uploads.file(proofPhoto);
       photo_url = file_url;
     }
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { ChefHat, Sparkles, Clock, Users, Loader2 } from 'lucide-react';
@@ -12,67 +12,32 @@ export default function AIRecipeRecommendations({ user }) {
 
   const { data: cartItems = [] } = useQuery({
     queryKey: ['cart', user?.email],
-    queryFn: () => base44.entities.CartItem.filter({ user_email: user?.email }),
+    queryFn: () => api.entities.CartItem.filter({ user_email: user?.email }),
     enabled: !!user,
   });
 
   const { data: existingRecipes = [] } = useQuery({
     queryKey: ['recipes'],
-    queryFn: () => base44.entities.Recipe.list('-created_date', 20),
+    queryFn: () => api.entities.Recipe.list('-created_date', 20),
   });
 
   useEffect(() => {
     const generateRecipes = async () => {
       setLoading(true);
       
-      const availableIngredients = cartItems.map(c => c.product_name).join(', ');
-      const preferences = user?.dietary_preferences || [];
-
-      const prompt = `Tu es un chef cuisinier expert en cuisine africaine et anti-gaspillage.
-
-INGRÉDIENTS DISPONIBLES: ${availableIngredients || 'Aucun panier en cours'}
-PRÉFÉRENCES: ${preferences.join(', ') || 'Aucune'}
-
-Génère 3 recettes simples et savoureuses adaptées au contexte camerounais. Format JSON:
-{
-  "recipes": [
-    {
-      "title": "Nom de la recette",
-      "description": "Description courte",
-      "prep_time": 15,
-      "difficulty": "facile|moyen|difficile",
-      "servings": 4,
-      "match_score": 85
-    }
-  ]
-}`;
+      const ingredients = cartItems.map((c) => c.product_name).filter(Boolean).slice(0, 12);
+      if (!ingredients.length) {
+        setRecipes([]);
+        setLoading(false);
+        return;
+      }
 
       try {
-        const result = await base44.integrations.Core.InvokeLLM({
-          prompt,
-          response_json_schema: {
-            type: "object",
-            properties: {
-              recipes: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    title: { type: "string" },
-                    description: { type: "string" },
-                    prep_time: { type: "number" },
-                    difficulty: { type: "string" },
-                    servings: { type: "number" },
-                    match_score: { type: "number" }
-                  }
-                }
-              }
-            }
-          }
-        });
-
-        setRecipes(result.recipes || []);
-      } catch (e) {
+        const recipe = await api.ai.recipeFromIngredients(ingredients);
+        setRecipes([recipe]);
+      } catch {
+        // L'assistance IA peut être désactivée sur l'instance : on retombe
+        // silencieusement sur les recettes publiées par la communauté.
         setRecipes([]);
       }
       

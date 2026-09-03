@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,22 +25,22 @@ export default function ProductBundleManager({ storeEmail }) {
 
   const { data: products = [] } = useQuery({
     queryKey: ['partner-products', storeEmail],
-    queryFn: () => base44.entities.Product.filter({ created_by: storeEmail }),
+    queryFn: () => api.entities.Product.filter({ created_by: storeEmail }),
     enabled: !!storeEmail,
   });
 
   const { data: bundles = [] } = useQuery({
     queryKey: ['product-bundles', storeEmail],
-    queryFn: () => base44.entities.Product.filter({ created_by: storeEmail, is_bundle: true }),
+    queryFn: () => api.entities.Product.filter({ created_by: storeEmail, is_bundle: true }),
     enabled: !!storeEmail,
   });
 
   const createBundleMutation = useMutation({
     mutationFn: async (data) => {
       if (editingBundle) {
-        return base44.entities.Product.update(editingBundle.id, data);
+        return api.entities.Product.update(editingBundle.id, data);
       }
-      return base44.entities.Product.create({
+      return api.entities.Product.create({
         ...data,
         store_name: products[0]?.store_name,
         category: 'bundle',
@@ -60,7 +60,7 @@ export default function ProductBundleManager({ storeEmail }) {
   });
 
   const deleteBundleMutation = useMutation({
-    mutationFn: (id) => base44.entities.Product.delete(id),
+    mutationFn: (id) => api.entities.Product.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['product-bundles'] });
       toast.success('Pack supprimé');

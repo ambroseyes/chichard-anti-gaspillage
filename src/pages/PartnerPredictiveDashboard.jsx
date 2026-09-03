@@ -1,18 +1,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { differenceInHours, format, startOfWeek, endOfWeek } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { motion } from 'framer-motion';
 import {
   AlertTriangle, TrendingDown, BarChart3, Leaf, Clock, Package,
-  Check, X, RefreshCw, Download, Loader2, ChevronDown, ChevronUp
+  Check, X, RefreshCw, Loader2
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from 'sonner';
+import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 // --- Pricing suggestion engine (rule-based, no external API needed) ---
 function getSuggestedPrice(product) {
@@ -46,7 +48,7 @@ const colorConfig = {
 };
 
 export default function PartnerPredictiveDashboard() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [store, setStore] = useState(null);
   const [filterColor, setFilterColor] = useState('all');
   const [generatingReport, setGeneratingReport] = useState(false);
@@ -54,16 +56,15 @@ export default function PartnerPredictiveDashboard() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    base44.auth.me().then(async u => {
-      setUser(u);
-      const stores = await base44.entities.Store.filter({ owner_email: u.email });
+    api.auth.me().then(async u => {
+      const stores = await api.entities.Store.filter({ owner_email: u.email });
       if (stores[0]) setStore(stores[0]);
-    }).catch(() => base44.auth.redirectToLogin());
+    }).catch(() => goToLogin());
   }, []);
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['partner-products-predictive', store?.id],
-    queryFn: () => base44.entities.Product.filter({ store_id: store.id }, 'expiration_date', 200),
+    queryFn: () => api.entities.Product.filter({ store_id: store.id }, 'expiration_date', 200),
     enabled: !!store?.id,
     refetchInterval: 60000,
   });
@@ -90,7 +91,7 @@ export default function PartnerPredictiveDashboard() {
 
   const applyPriceMutation = useMutation({
     mutationFn: async ({ product, newPrice }) => {
-      await base44.entities.Product.update(product.id, { discounted_price: newPrice });
+      await api.entities.Product.update(product.id, { discounted_price: newPrice });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['partner-products-predictive'] });
@@ -103,7 +104,7 @@ export default function PartnerPredictiveDashboard() {
     setGeneratingReport(true);
     const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
     const weekEnd = endOfWeek(new Date(), { weekStartsOn: 1 });
-    const weekOrders = await base44.entities.Order.filter({ store_id: store.id, status: 'delivered' });
+    const weekOrders = await api.entities.Order.filter({ store_id: store.id, status: 'delivered' });
     const weekProductsAtRisk = products.filter(p => p.expiration_date);
     const atRiskQty = weekProductsAtRisk.reduce((s, p) => s + (p.quantity_available || 0), 0);
     const soldQty = weekOrders.reduce((s, o) => s + (o.items?.reduce((ss, i) => ss + (i.quantity || 1), 0) || 0), 0);

@@ -1,0 +1,99 @@
+{
+  "name": "ShoppingList",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "description": "Nom de la liste"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "product_name": {
+            "type": "string"
+          },
+          "product_id": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number",
+            "default": 1
+          },
+          "unit": {
+            "type": "string"
+          },
+          "is_checked": {
+            "type": "boolean",
+            "default": false
+          },
+          "category": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "default": "medium"
+          }
+        }
+      }
+    },
+    "estimated_budget": {
+      "type": "number",
+      "description": "Budget estimé en FCFA"
+    },
+    "actual_cost": {
+      "type": "number",
+      "default": 0
+    },
+    "stores_suggested": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Magasins recommandés pour cette liste"
+    },
+    "savings_potential": {
+      "type": "number",
+      "default": 0,
+      "description": "Économies potentielles en FCFA"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "active",
+        "completed"
+      ],
+      "default": "active"
+    },
+    "is_recurring": {
+      "type": "boolean",
+      "default": false
+    },
+    "recurrence_period": {
+      "type": "string",
+      "enum": [
+        "weekly",
+        "biweekly",
+        "monthly"
+      ]
+    }
+  },
+  "required": [
+    "user_email",
+    "name"
+  ]
+}

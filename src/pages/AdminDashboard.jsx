@@ -1,57 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import React from 'react';
+import { api } from '@/api';
 import { useNavigate, Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  LayoutDashboard, Store, Package, Users, TrendingUp, Clock,
+  LayoutDashboard, Store, Package, Users, Clock,
   CheckCircle, AlertTriangle, DollarSign, ShoppingBag, Truck, BarChart3
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function AdminDashboard() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-        if (userData.role !== 'admin') {
-          navigate(createPageUrl('Home'));
-        }
-      } catch (e) {
-        base44.auth.redirectToLogin();
-      }
-    };
-    loadUser();
-  }, []);
 
   const { data: stores = [] } = useQuery({
     queryKey: ['all-stores'],
-    queryFn: () => base44.entities.Store.list(),
+    queryFn: () => api.entities.Store.list(),
     enabled: !!user
   });
 
   const { data: products = [] } = useQuery({
     queryKey: ['all-products'],
-    queryFn: () => base44.entities.Product.list(),
+    queryFn: () => api.entities.Product.list(),
     enabled: !!user
   });
 
   const { data: orders = [] } = useQuery({
     queryKey: ['all-orders'],
-    queryFn: () => base44.entities.Order.list('-created_date', 100),
+    queryFn: () => api.entities.Order.list('-created_date', 100),
     enabled: !!user
   });
 
   const { data: users = [] } = useQuery({
     queryKey: ['all-users'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: () => api.entities.User.list(),
     enabled: !!user
   });
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Zap, Package, ChevronRight, Check, Loader2 } from 'lucide-react';
+import { Sparkles, Zap, Package, Loader2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,40 +23,7 @@ export default function SmartCartSuggestions({ cartItems, user, onOptimize }) {
     const currentTotal = cartItems.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
     
     // Simulate AI analysis
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Tu es un assistant shopping intelligent. Analyse ce panier et propose des optimisations:
-      
-Panier actuel:
-${cartItems.map(item => `- ${item.product_name}: ${item.unit_price} FCFA x ${item.quantity}`).join('\n')}
-
-Total: ${currentTotal} FCFA
-
-Propose:
-1. Des économies possibles (ex: si achète 2 au lieu de 1)
-2. Des produits complémentaires qui iraient bien ensemble
-3. Des alternatives moins chères si disponibles
-
-Réponds en JSON:`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          optimizations: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                type: { type: 'string' },
-                description: { type: 'string' },
-                savings: { type: 'number' },
-                action: { type: 'string' }
-              }
-            }
-          },
-          total_potential_savings: { type: 'number' },
-          recommendation: { type: 'string' }
-        }
-      }
-    });
+    const result = await api.ai.cartSuggestions();
 
     setSuggestions(result);
     setIsOptimizing(false);

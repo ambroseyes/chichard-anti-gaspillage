@@ -5,8 +5,7 @@ import {
   Legend, PieChart, Pie, Cell
 } from 'recharts';
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { BarChart3, LineChart as LineIcon, PieChart as PieIcon, TrendingUp } from 'lucide-react';
+import { BarChart3, LineChart as LineIcon, TrendingUp } from 'lucide-react';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 
@@ -85,10 +84,10 @@ export default function AdvancedChart({ data, title, type = 'line', dataKeys = [
           </AreaChart>
         );
 
-      case 'pie':
-        const pieData = data.map((item, idx) => ({
+      case 'pie': {
+        const pieData = data.map((item) => ({
           name: item.name || item.date,
-          value: item[dataKeys[0]] || 0
+          value: item[dataKeys[0]] || 0,
         }));
         return (
           <PieChart>
@@ -109,8 +108,9 @@ export default function AdvancedChart({ data, title, type = 'line', dataKeys = [
             <Tooltip />
           </PieChart>
         );
+      }
 
-      default: // line
+      default: // ligne
         return (
           <LineChart {...commonProps}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />

@@ -1,0 +1,192 @@
+{
+  "name": "Product",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nom du produit"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description du produit"
+    },
+    "original_price": {
+      "type": "number",
+      "description": "Prix original en FCFA"
+    },
+    "discounted_price": {
+      "type": "number",
+      "description": "Prix réduit en FCFA"
+    },
+    "ai_suggested_price": {
+      "type": "number",
+      "description": "Prix suggéré par StockGuardian"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "fruits_legumes",
+        "produits_laitiers",
+        "viandes_poissons",
+        "boulangerie",
+        "epicerie",
+        "boissons",
+        "surgeles",
+        "hygiene",
+        "conserves",
+        "condiments"
+      ],
+      "description": "Catégorie du produit"
+    },
+    "expiration_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date de péremption"
+    },
+    "quantity_available": {
+      "type": "number",
+      "description": "Quantité disponible",
+      "default": 0
+    },
+    "quantity_sold": {
+      "type": "number",
+      "default": 0,
+      "description": "Quantité vendue"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "URL de l'image principale"
+    },
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "URLs des images supplémentaires"
+    },
+    "store_id": {
+      "type": "string",
+      "description": "ID du magasin partenaire"
+    },
+    "store_name": {
+      "type": "string",
+      "description": "Nom du magasin"
+    },
+    "store_location": {
+      "type": "string",
+      "description": "Localisation du magasin"
+    },
+    "is_verified": {
+      "type": "boolean",
+      "default": true,
+      "description": "Produit vérifié par le magasin"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "sold_out",
+        "expired",
+        "reserved",
+        "pending_review",
+        "flagged"
+      ],
+      "default": "active"
+    },
+    "urgency_level": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "soon",
+        "urgent",
+        "critical"
+      ],
+      "default": "normal"
+    },
+    "freshness_score": {
+      "type": "number",
+      "description": "Score de fraîcheur 0-100"
+    },
+    "weight": {
+      "type": "number",
+      "description": "Poids en grammes"
+    },
+    "weight_unit": {
+      "type": "string",
+      "enum": [
+        "g",
+        "kg",
+        "L",
+        "mL",
+        "piece"
+      ],
+      "description": "Unité de mesure"
+    },
+    "brand": {
+      "type": "string",
+      "description": "Marque du produit"
+    },
+    "barcode": {
+      "type": "string",
+      "description": "Code-barres EAN"
+    },
+    "nutritional_info": {
+      "type": "object",
+      "description": "Informations nutritionnelles"
+    },
+    "allergens": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Liste des allergènes"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags pour recherche"
+    },
+    "views_count": {
+      "type": "number",
+      "default": 0
+    },
+    "favorites_count": {
+      "type": "number",
+      "default": 0
+    },
+    "avg_rating": {
+      "type": "number",
+      "default": 0
+    },
+    "reviews_count": {
+      "type": "number",
+      "default": 0
+    },
+    "is_bundle": {
+      "type": "boolean",
+      "default": false
+    },
+    "bundle_products": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs des produits du bundle"
+    },
+    "co2_saved": {
+      "type": "number",
+      "description": "CO2 économisé en kg"
+    }
+  },
+  "required": [
+    "name",
+    "original_price",
+    "discounted_price",
+    "category",
+    "expiration_date",
+    "quantity_available",
+    "store_name"
+  ]
+}

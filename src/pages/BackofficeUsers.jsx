@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import BackofficeLayout from '@/components/backoffice/BackofficeLayout';
-import { Search, Filter, MoreVertical, Shield, User, UserCheck, Download, Plus, Eye } from 'lucide-react';
+import { Search, Filter, Download, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useAuth } from '@/lib/AuthContext';
+
+const PAGE_SIZE = 50;
 
 const ROLES = {
   super_admin: { label: 'Super Admin', color: 'bg-red-100 text-red-700 border-red-200', icon: '🔴' },
@@ -30,41 +32,62 @@ const PERMISSIONS_MATRIX = [
 ];
 
 export default function BackofficeUsers() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('users');
   const [selectedUser, setSelectedUser] = useState(null);
+  const [page, setPage] = useState(0);
   const [showUserDialog, setShowUserDialog] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    base44.auth.me().then(u => {
-      setUser(u);
+    api.auth.me().then(u => {
       if (!['super_admin', 'admin'].includes(u?.backoffice_role || u?.role)) {
         toast.error('Accès refusé');
       }
     });
   }, []);
 
-  const { data: users = [], isLoading } = useQuery({
-    queryKey: ['bo-users-list'],
-    queryFn: () => base44.entities.User.list('-created_date', 100)
+  /**
+   * La liste et l'attribution des rôles passent par /api/backoffice : le
+   * serveur refuse la requête si le rôle ne suffit pas, et journalise chaque
+   * changement. L'écran ne peut plus se contenter d'un message d'erreur.
+   */
+  const { data, isLoading } = useQuery({
+    queryKey: ['bo-users', search, roleFilter, page],
+    queryFn: () =>
+      api.backoffice.users({
+        search: search || undefined,
+        role: roleFilter,
+        limit: PAGE_SIZE,
+        offset: page * PAGE_SIZE,
+      }),
+    placeholderData: (previous) => previous,
   });
+
+  const users = data?.data ?? [];
+  const totalUsers = data?.meta?.total ?? 0;
 
   const updateRoleMutation = useMutation({
-    mutationFn: ({ userId, role }) => base44.entities.User.update(userId, { backoffice_role: role }),
+    mutationFn: ({ userId, role }) => api.backoffice.setUserRole(userId, role),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bo-users-list'] });
+      queryClient.invalidateQueries({ queryKey: ['bo-users'] });
       toast.success('Rôle mis à jour');
-    }
+    },
+    onError: (error) => toast.error(error.message ?? "Le rôle n'a pas pu être changé"),
   });
 
-  const filteredUsers = users.filter(u => {
-    const matchSearch = !search || u.full_name?.toLowerCase().includes(search.toLowerCase()) || u.email?.toLowerCase().includes(search.toLowerCase());
-    const matchRole = roleFilter === 'all' || (u.backoffice_role || u.role) === roleFilter;
-    return matchSearch && matchRole;
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ userId, isActive }) => api.backoffice.setUserStatus(userId, isActive),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bo-users'] });
+      toast.success('Compte mis à jour');
+    },
+    onError: (error) => toast.error(error.message ?? "Le compte n'a pas pu être modifié"),
   });
+
+  const filteredUsers = users;
 
   const exportCSV = () => {
     const csv = [

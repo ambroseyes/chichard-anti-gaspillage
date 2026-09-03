@@ -1,8 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { format, differenceInDays } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { Trophy, Users, Clock, ChevronRight, CheckCircle } from 'lucide-react';
+import { differenceInDays } from 'date-fns';
+import { Trophy, Users, Clock, CheckCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";

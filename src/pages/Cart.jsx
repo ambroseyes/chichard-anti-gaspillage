@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
+import { useAuth } from '@/lib/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShoppingCart, Trash2, Plus, Minus, ArrowRight, 
-  Clock, MapPin, ShoppingBag, Leaf, Sparkles, Tag, X
+  Clock, MapPin, ShoppingBag, Leaf, Tag, X
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -15,37 +16,27 @@ import { toast } from 'sonner';
 import SmartCartSuggestions from '@/components/cart/SmartCartSuggestions';
 
 export default function Cart() {
-  const [user, setUser] = useState(null);
+
   const [couponInput, setCouponInput] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [appliedCoupon, setAppliedCoupon] = useState('');
   const [couponError, setCouponError] = useState('');
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      } catch (e) {
-        base44.auth.redirectToLogin();
-      }
-    };
-    loadUser();
-  }, []);
 
   const { data: cartItems = [], isLoading } = useQuery({
     queryKey: ['cart', user?.email],
-    queryFn: () => base44.entities.CartItem.filter({ user_email: user.email }),
+    queryFn: () => api.entities.CartItem.filter({ user_email: user.email }),
     enabled: !!user,
   });
 
   const updateQuantityMutation = useMutation({
-    mutationFn: ({ id, quantity }) => base44.entities.CartItem.update(id, { quantity }),
+    mutationFn: ({ id, quantity }) => api.entities.CartItem.update(id, { quantity }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cart'] }),
   });
 
   const deleteItemMutation = useMutation({
-    mutationFn: (id) => base44.entities.CartItem.delete(id),
+    mutationFn: (id) => api.entities.CartItem.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
       toast.success('Article supprimé');
@@ -54,31 +45,42 @@ export default function Cart() {
 
   const { data: userCoupons = [] } = useQuery({
     queryKey: ['user-coupons', user?.email],
-    queryFn: () => base44.entities.Coupon.filter({ user_email: user.email, status: 'ACTIVE' }),
+    queryFn: () => api.entities.Coupon.filter({ user_email: user.email, status: 'ACTIVE' }),
     enabled: !!user,
   });
 
-  const totalAmount = cartItems.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
-  const totalSavings = cartItems.reduce((sum, item) => 
-    sum + ((item.original_price - item.unit_price) * item.quantity), 0
-  );
+  /**
+   * Le total vient du serveur : c'est le même calcul que celui appliqué au
+   * paiement, coupon et frais compris. L'écran ne peut plus annoncer un montant
+   * que la commande ignorerait.
+   */
+  const { data: quote } = useQuery({
+    queryKey: ['order-quote', user?.email, 'pickup', appliedCoupon],
+    queryFn: () => api.orders.quote({ delivery_type: 'pickup', coupon_code: appliedCoupon || null }),
+    enabled: Boolean(user) && cartItems.length > 0,
+    placeholderData: (previous) => previous,
+  });
 
-  const couponDiscount = appliedCoupon
-    ? appliedCoupon.type === 'PERCENT'
-      ? Math.round(totalAmount * appliedCoupon.value / 100)
-      : appliedCoupon.value
-    : 0;
-  const finalTotal = Math.max(0, totalAmount - couponDiscount);
+  const totalAmount = quote?.subtotal ?? 0;
+  const totalSavings = quote?.savings ?? 0;
+  const couponDiscount = quote?.discount ?? 0;
+  const finalTotal = quote?.total ?? 0;
 
   const applyCoupon = () => {
+    const code = couponInput.trim().toUpperCase();
+    if (!code) return;
+    setAppliedCoupon(code);
     setCouponError('');
-    const coupon = userCoupons.find(c => c.code.toUpperCase() === couponInput.toUpperCase());
-    if (!coupon) { setCouponError('Code invalide ou déjà utilisé'); return; }
-    if (new Date(coupon.valid_to) < new Date()) { setCouponError('Ce coupon a expiré'); return; }
-    if (coupon.min_cart_amount && totalAmount < coupon.min_cart_amount) { setCouponError(`Minimum de commande : ${coupon.min_cart_amount.toLocaleString()} FCFA`); return; }
-    setAppliedCoupon(coupon);
-    toast.success(`Coupon appliqué : -${coupon.type === 'PERCENT' ? coupon.value + '%' : coupon.value.toLocaleString() + ' FCFA'}`);
   };
+
+  // Le serveur tranche la validité : on affiche son verdict tel quel.
+  useEffect(() => {
+    if (!appliedCoupon || !quote) return;
+    setCouponError(quote.couponError ?? '');
+    if (!quote.couponError && quote.coupon_applied) {
+      toast.success(`Code ${quote.coupon_applied} appliqué`);
+    }
+  }, [quote, appliedCoupon]);
 
   if (!user) {
     return (

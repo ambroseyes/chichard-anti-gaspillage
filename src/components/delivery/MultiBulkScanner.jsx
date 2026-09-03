@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useEffect } from 'react';
+import { api } from '@/api';
+import { useQueryClient } from '@tanstack/react-query';
 import {
-  QrCode, CheckCircle, X, Loader2, Camera, FileSignature,
+  QrCode, CheckCircle, Loader2, Camera, FileSignature,
   Package, ScanLine, Trash2, ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -74,7 +74,7 @@ export default function MultiBulkScanner({ open, onClose, availableOrders, drive
 
     let photo_url = null;
     if (proofPhoto) {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: proofPhoto });
+      const { file_url } = await api.uploads.file(proofPhoto);
       photo_url = file_url;
     }
 
@@ -89,7 +89,7 @@ export default function MultiBulkScanner({ open, onClose, availableOrders, drive
     // Update all scanned orders in parallel
     await Promise.all(
       scannedOrders.map(order =>
-        base44.entities.Order.update(order.id, {
+        api.entities.Order.update(order.id, {
           status: 'delivered',
           delivery_proof: proofData,
           delivered_at: new Date().toISOString(),

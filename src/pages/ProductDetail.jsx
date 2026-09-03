@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '@/api';
+import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, Clock, MapPin, ShoppingCart, Plus, Minus, 
-  CheckCircle, Shield, Truck, Store, Share2, Heart, Star,
-  Leaf, AlertTriangle, Flag
+  CheckCircle, Shield, Truck, Store, Share2, Heart,
+  Leaf, AlertTriangle
 } from 'lucide-react';
 import ReportModal from '@/components/safety/ReportModal';
 import TrustBadge from '@/components/safety/TrustBadge';
@@ -15,31 +15,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { toast } from 'sonner';
+import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function ProductDetail() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [quantity, setQuantity] = useState(1);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
 
   const urlParams = new URLSearchParams(window.location.search);
   const productId = urlParams.get('id');
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      } catch (e) {}
-    };
-    loadUser();
-  }, []);
-
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', productId],
-    queryFn: () => base44.entities.Product.filter({ id: productId }),
+    queryFn: () => api.entities.Product.filter({ id: productId }),
     select: (data) => data[0],
     enabled: !!productId,
   });
@@ -89,23 +80,23 @@ export default function ProductDetail() {
 
   const addToCart = async () => {
     if (!user) {
-      base44.auth.redirectToLogin();
+      goToLogin();
       return;
     }
 
     setIsAddingToCart(true);
     
-    const existingItems = await base44.entities.CartItem.filter({ 
+    const existingItems = await api.entities.CartItem.filter({ 
       user_email: user.email, 
       product_id: product.id 
     });
     
     if (existingItems.length > 0) {
-      await base44.entities.CartItem.update(existingItems[0].id, {
+      await api.entities.CartItem.update(existingItems[0].id, {
         quantity: (existingItems[0].quantity || 1) + quantity
       });
     } else {
-      await base44.entities.CartItem.create({
+      await api.entities.CartItem.create({
         user_email: user.email,
         product_id: product.id,
         product_name: product.name,

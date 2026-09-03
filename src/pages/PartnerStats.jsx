@@ -1,55 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import React, { useState } from 'react';
+import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-import { format, subDays, subMonths } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { format, subDays } from 'date-fns';
 import {
   TrendingUp, Package, DollarSign, Users, Award, BarChart3,
-  ArrowUpRight, ArrowDownRight, Calendar, Filter, Download
+  ArrowUpRight, Calendar, Download
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from '@/lib/AuthContext';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar, PieChart, Pie, Cell
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 export default function PartnerStats() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [period, setPeriod] = useState('month');
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      } catch (e) {
-        base44.auth.redirectToLogin();
-      }
-    };
-    loadUser();
-  }, []);
 
   const { data: products = [] } = useQuery({
     queryKey: ['partner-products', user?.email],
-    queryFn: () => base44.entities.Product.filter({ created_by: user?.email }),
+    queryFn: () => api.entities.Product.filter({ created_by: user?.email }),
     enabled: !!user,
   });
 
   const { data: allOrders = [] } = useQuery({
     queryKey: ['all-orders'],
-    queryFn: () => base44.entities.Order.list('-created_date', 500),
+    queryFn: () => api.entities.Order.list('-created_date', 500),
   });
 
   const { data: allStores = [] } = useQuery({
     queryKey: ['all-stores'],
-    queryFn: () => base44.entities.Store.list(),
+    queryFn: () => api.entities.Store.list(),
   });
 
   // Calculate stats
@@ -79,18 +64,14 @@ export default function PartnerStats() {
     revenue: data.revenue
   }));
 
-  // Mock comparison data
-  const comparisonData = [
-    { name: 'Votre magasin', ventes: totalSold, revenus: totalRevenue, ranking: 3 },
-    { name: 'Moyenne partenaires', ventes: Math.round(totalSold * 0.8), revenus: Math.round(totalRevenue * 0.75) },
-    { name: 'Top partenaire', ventes: Math.round(totalSold * 1.5), revenus: Math.round(totalRevenue * 1.4) },
-  ];
+  // Le comparatif sectoriel demandera un jeu de données de référence ; tant
+  // qu'il n'existe pas, l'écran n'affiche que les chiffres réels du magasin.
 
   // Chart data
   const chartData = Array.from({ length: 30 }, (_, i) => ({
     date: format(subDays(new Date(), 29 - i), 'dd/MM'),
-    ventes: Math.floor(Math.random() * 50) + 20,
-    revenus: Math.floor(Math.random() * 100000) + 50000,
+    ventes: 0,
+    revenus: 0,
   }));
 
   if (!user) {
@@ -265,26 +246,114 @@ export default function PartnerStats() {
           </Card>
 
           {/* Comparison */}
+          {/* Le comparatif entre partenaires exige un référentiel sectoriel qui
+              n'existe pas encore. Plutôt qu'un classement inventé, l'écran dit
+              franchement ce qu'il ne peut pas encore montrer. */}
           <Card className="p-6">
             <h3 className="font-semibold mb-4 flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-blue-500" />
-              Comparaison partenaires
+              Comparaison entre partenaires
             </h3>
-            <div className="h-64">
+            <div className="h-64 flex flex-col items-center justify-center text-center gap-2 text-gray-500">
+              <BarChart3 className="w-8 h-8 text-gray-300" />
+              <p className="text-sm max-w-xs">
+                Le comparatif sectoriel arrivera lorsque suffisamment de magasins
+                de votre catégorie auront rejoint la plateforme.
+              </p>
+            </div>
+          </Card>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {/* Sales Chart */}
+          <Card className="md:col-span-2 p-6">
+            <h3 className="font-semibold mb-4">Évolution des ventes</h3>
+            <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={comparisonData} layout="vertical">
+                <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis type="number" fontSize={11} />
-                  <YAxis dataKey="name" type="category" fontSize={11} width={120} />
+                  <XAxis dataKey="date" stroke="#9ca3af" fontSize={11} />
+                  <YAxis stroke="#9ca3af" fontSize={11} />
                   <Tooltip />
-                  <Bar dataKey="ventes" fill="#10b981" radius={[0, 4, 4, 0]} />
-                </BarChart>
+                  <Line type="monotone" dataKey="ventes" stroke="#10b981" strokeWidth={2} dot={false} />
+                </LineChart>
               </ResponsiveContainer>
             </div>
-            <div className="mt-4 p-4 bg-emerald-50 rounded-xl">
-              <p className="text-sm text-emerald-800">
-                🏆 Vous êtes dans le <strong>Top 3</strong> des partenaires ce mois-ci !
-                Continuez ainsi pour atteindre la première place.
+          </Card>
+
+          {/* Category Breakdown */}
+          <Card className="p-6">
+            <h3 className="font-semibold mb-4">Répartition par catégorie</h3>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={categoryData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={70}
+                    dataKey="value"
+                    label={({ name }) => name}
+                  >
+                    {categoryData.map((_, idx) => (
+                      <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+        </div>
+
+        {/* Top Products & Comparison */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Top Products */}
+          <Card className="p-6">
+            <h3 className="font-semibold mb-4 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-emerald-500" />
+              Produits les plus vendus
+            </h3>
+            <div className="space-y-3">
+              {topProducts.map((product, idx) => (
+                <div key={product.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                    idx === 0 ? 'bg-amber-100 text-amber-700' :
+                    idx === 1 ? 'bg-gray-200 text-gray-700' :
+                    idx === 2 ? 'bg-orange-100 text-orange-700' :
+                    'bg-gray-100 text-gray-600'
+                  }`}>
+                    {idx + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{product.name}</p>
+                    <p className="text-xs text-gray-500">{product.category}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-emerald-600">{product.quantity_sold || 0}</p>
+                    <p className="text-xs text-gray-500">vendus</p>
+                  </div>
+                </div>
+              ))}
+              {topProducts.length === 0 && (
+                <p className="text-center text-gray-500 py-8">Aucune vente encore</p>
+              )}
+            </div>
+          </Card>
+
+          {/* Comparatif sectoriel : voir la note plus haut — pas de classement
+              tant que le référentiel n'existe pas. */}
+          <Card className="p-6">
+            <h3 className="font-semibold mb-4 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-blue-500" />
+              Comparaison entre partenaires
+            </h3>
+            <div className="h-64 flex flex-col items-center justify-center text-center gap-2 text-gray-500">
+              <BarChart3 className="w-8 h-8 text-gray-300" />
+              <p className="text-sm max-w-xs">
+                Disponible dès que votre catégorie comptera assez de magasins pour
+                qu'une comparaison ait du sens.
               </p>
             </div>
           </Card>

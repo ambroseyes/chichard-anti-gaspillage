@@ -1,29 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import StatusHistoryModal from '@/components/admin/StatusHistoryModal';
 import BulkActionsBar from '@/components/admin/BulkActionsBar';
 import PartnerChatbot from '@/components/partner/PartnerChatbot';
 import {
-  Store, Plus, Search, Edit2, Trash2, Check, X, Clock,
-  MapPin, Phone, Mail, Shield, Users, Package, TrendingUp,
-  Eye, MoreVertical, CheckCircle, AlertCircle, History, BarChart3
+  Store, Plus, Search, Edit2, Trash2, X, Clock,
+  MapPin, Shield, Package, TrendingUp, MoreVertical, CheckCircle, AlertCircle, History, BarChart3
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 const emptyStore = {
   name: '',
@@ -39,7 +37,7 @@ const emptyStore = {
 };
 
 export default function AdminPartners() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showDialog, setShowDialog] = useState(false);
@@ -50,30 +48,18 @@ export default function AdminPartners() {
   const [selectedStores, setSelectedStores] = useState([]);
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      } catch (e) {
-        base44.auth.redirectToLogin();
-      }
-    };
-    loadUser();
-  }, []);
-
   const { data: stores = [], isLoading } = useQuery({
     queryKey: ['admin-stores'],
-    queryFn: () => base44.entities.Store.list('-created_date'),
+    queryFn: () => api.entities.Store.list('-created_date'),
   });
 
   const { data: products = [] } = useQuery({
     queryKey: ['all-products'],
-    queryFn: () => base44.entities.Product.list(),
+    queryFn: () => api.entities.Product.list(),
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Store.create(data),
+    mutationFn: (data) => api.entities.Store.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-stores'] });
       toast.success('Partenaire ajouté');
@@ -82,7 +68,7 @@ export default function AdminPartners() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Store.update(id, data),
+    mutationFn: ({ id, data }) => api.entities.Store.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-stores'] });
       toast.success('Partenaire mis à jour');
@@ -91,7 +77,7 @@ export default function AdminPartners() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Store.delete(id),
+    mutationFn: (id) => api.entities.Store.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-stores'] });
       toast.success('Partenaire supprimé');
@@ -137,7 +123,7 @@ export default function AdminPartners() {
 
   const updateStatus = async (store, newStatus, notes = '') => {
     // Record status change in history
-    await base44.entities.PartnerStatusHistory.create({
+    await api.entities.PartnerStatusHistory.create({
       store_id: store.id,
       store_name: store.name,
       previous_status: store.status,
@@ -161,7 +147,7 @@ export default function AdminPartners() {
       };
 
       if (statusMessages[newStatus]) {
-        base44.entities.Notification.create({
+        api.entities.Notification.create({
           user_email: store.owner_email,
           title: `Statut de votre boutique: ${statusConfig[newStatus]?.label}`,
           message: statusMessages[newStatus],
@@ -175,7 +161,7 @@ export default function AdminPartners() {
   const handleBulkAction = async (actionType, notes) => {
     if (actionType === 'delete') {
       for (const storeId of selectedStores) {
-        await base44.entities.Store.delete(storeId);
+        await api.entities.Store.delete(storeId);
       }
       toast.success(`${selectedStores.length} partenaire(s) supprimé(s)`);
     } else {
@@ -227,10 +213,10 @@ export default function AdminPartners() {
   useEffect(() => {
     if (!user || user.role !== 'admin') return;
 
-    const unsubscribe = base44.entities.Store.subscribe((event) => {
+    const unsubscribe = api.subscribe('Store', (event) => {
       if (event.type === 'create' && event.data.status === 'pending') {
         // Create notification for admin
-        base44.entities.Notification.create({
+        api.entities.Notification.create({
           user_email: user.email,
           title: 'Nouveau partenaire en attente',
           message: `${event.data.name} a demandé à rejoindre CHICHARD`,

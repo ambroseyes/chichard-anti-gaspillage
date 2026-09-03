@@ -1,20 +1,19 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { motion } from 'framer-motion';
-import { Calendar, ChefHat, Loader2, Sparkles, Check, ArrowRight } from 'lucide-react';
+import { api } from '@/api';
+import { Calendar, ChefHat, Loader2, Sparkles } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import ReactMarkdown from 'react-markdown';
 
 export default function MealPlanner({ user }) {
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState(null);
   const [preferences, setPreferences] = useState({
     goal: 'healthy_eating',
-    duration: '3_days',
-    calories: '2000'
+    days: 3,
+    servings: 4,
+    budget: 15000,
   });
 
   const goals = {
@@ -27,61 +26,12 @@ export default function MealPlanner({ user }) {
   const generatePlan = async () => {
     setLoading(true);
     try {
-      const prompt = `
-        Génère un plan de repas de ${preferences.duration.replace('_', ' ')} pour un utilisateur avec l'objectif: ${goals[preferences.goal]}.
-        Calories cibles: ${preferences.calories} kcal/jour.
-        
-        Préférences alimentaires: ${(user?.dietary_preferences || []).join(', ') || 'Aucune'}.
-        Allergies: ${(user?.allergens || []).join(', ') || 'Aucune'}.
 
-        Le plan doit être adapté à la cuisine locale (Cameroun/Afrique) avec des ingrédients accessibles.
-        Pour chaque jour, donne Petit-déjeuner, Déjeuner, Dîner et Snack.
-        
-        Format JSON attendu:
-        {
-          "days": [
-            {
-              "day": "Jour 1",
-              "meals": [
-                { "type": "Petit-déjeuner", "name": "...", "calories": 0, "ingredients": "..." },
-                { "type": "Déjeuner", "name": "...", "calories": 0, "ingredients": "..." },
-                ...
-              ]
-            }
-          ],
-          "shopping_list": ["item 1", "item 2"]
-        }
-      `;
-
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            days: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  day: { type: "string" },
-                  meals: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        type: { type: "string" },
-                        name: { type: "string" },
-                        calories: { type: "number" },
-                        ingredients: { type: "string" }
-                      }
-                    }
-                  }
-                }
-              }
-            },
-            shopping_list: { type: "array", items: { type: "string" } }
-          }
-        }
+      // Régime et allergènes sont lus dans le profil côté serveur.
+      const response = await api.ai.mealPlan({
+        days: Number(preferences.days),
+        budget_xaf: Number(preferences.budget),
+        servings: Number(preferences.servings),
       });
       setPlan(response);
     } catch (error) {

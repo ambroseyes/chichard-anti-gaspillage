@@ -1,25 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
-import { createPageUrl } from '@/utils';
+import React from 'react';
 import PartnerChallengeManager from '@/components/partner/PartnerChallengeManager';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function PartnerChallenges() {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-        if (!userData.is_partner) {
-          window.location.href = createPageUrl('Home');
-        }
-      } catch (e) {
-        base44.auth.redirectToLogin();
-      }
-    };
-    loadUser();
-  }, []);
+  const { user } = useAuth();
 
   if (!user) {
     return (

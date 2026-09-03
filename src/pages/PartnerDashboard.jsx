@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
+import { formatShortDate } from '@/lib/format';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { format, subDays } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import {
-  Package, TrendingUp, Leaf, AlertTriangle, Plus,
-  BarChart3, Clock, CheckCircle, ArrowUpRight, Sparkles,
-  DollarSign, Zap, Target, RefreshCw, PieChart as PieChartIcon
+  Package, AlertTriangle, Plus,
+  BarChart3, ArrowUpRight, Sparkles
 } from 'lucide-react';
 import SalesForecast from '@/components/partner/SalesForecast';
 import BundlingAnalysis from '@/components/partner/BundlingAnalysis';
@@ -18,16 +16,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Progress } from "@/components/ui/progress";
 import WidgetCustomizer from '@/components/dashboard/WidgetCustomizer';
 import SmartAlert from '@/components/dashboard/SmartAlert';
 import AdvancedChart from '@/components/dashboard/AdvancedChart';
-import PerformanceMetrics from '@/components/dashboard/PerformanceMetrics';
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell
-} from 'recharts';
-import BulkProductManager from '@/components/partner/BulkProductManager';
+
+
 import AdvancedStockManager from '@/components/partner/AdvancedStockManager';
 import StockPredictions from '@/components/partner/StockPredictions';
 import SmartBundles from '@/components/partner/SmartBundles';
@@ -36,39 +29,25 @@ import ProductBundleManager from '@/components/partner/ProductBundleManager';
 import PromotionManager from '@/components/partner/PromotionManager';
 import PartnerChatbot from '@/components/partner/PartnerChatbot';
 import FoodSavingsDashboard from '@/components/partner/FoodSavingsDashboard';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function PartnerDashboard() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [showCustomizer, setShowCustomizer] = useState(false);
   const [alerts, setAlerts] = useState([]);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-        if (!userData.is_partner) {
-          navigate(createPageUrl('Home'));
-        }
-      } catch (e) {
-        base44.auth.redirectToLogin();
-      }
-    };
-    loadUser();
-  }, []);
-
   const { data: products = [], isLoading: loadingProducts } = useQuery({
     queryKey: ['partner-products', user?.store_id],
-    queryFn: () => base44.entities.Product.filter({ created_by: user?.email }),
+    queryFn: () => api.entities.Product.filter({ created_by: user?.email }),
     enabled: !!user,
   });
 
   const { data: orders = [], isLoading: loadingOrders } = useQuery({
     queryKey: ['partner-orders', user?.store_id],
     queryFn: async () => {
-      const allOrders = await base44.entities.Order.list('-created_date', 100);
+      const allOrders = await api.entities.Order.list('-created_date', 100);
       return allOrders;
     },
     enabled: !!user,
@@ -77,7 +56,7 @@ export default function PartnerDashboard() {
   const { data: preferences } = useQuery({
     queryKey: ['dashboard-preferences', user?.email],
     queryFn: async () => {
-      const prefs = await base44.entities.DashboardPreference.filter({ 
+      const prefs = await api.entities.DashboardPreference.filter({ 
         user_email: user.email, 
         dashboard_type: 'partner' 
       });
@@ -89,9 +68,9 @@ export default function PartnerDashboard() {
   const savePrefsMutation = useMutation({
     mutationFn: async (data) => {
       if (preferences?.id) {
-        return base44.entities.DashboardPreference.update(preferences.id, data);
+        return api.entities.DashboardPreference.update(preferences.id, data);
       }
-      return base44.entities.DashboardPreference.create({
+      return api.entities.DashboardPreference.create({
         user_email: user.email,
         dashboard_type: 'partner',
         ...data
@@ -102,21 +81,25 @@ export default function PartnerDashboard() {
     }
   });
 
-  // Stats calculations
-  const activeProducts = products.filter(p => p.status === 'active').length;
-  const urgentProducts = products.filter(p => {
-    const daysLeft = Math.ceil((new Date(p.expiration_date) - new Date()) / (1000 * 60 * 60 * 24));
-    return daysLeft <= 3 && daysLeft > 0 && p.status === 'active';
+  /**
+   * Tous les indicateurs viennent d'agrégats calculés en base sur la période
+   * demandée. Le graphique de ventes n'est plus un tirage aléatoire.
+   */
+  const { data: dashboard, isLoading: loadingDashboard } = useQuery({
+    queryKey: ['partner-dashboard', 30],
+    queryFn: () => api.partner.dashboard(30),
+    enabled: Boolean(user?.is_partner),
   });
-  const totalRevenue = orders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
-  const totalSaved = products.reduce((sum, p) => sum + (p.quantity_available || 0), 0);
 
-  // Chart data
-  const chartData = Array.from({ length: 7 }, (_, i) => ({
-    date: format(subDays(new Date(), 6 - i), 'dd/MM'),
-    ventes: Math.floor(Math.random() * 50000) + 10000,
-    produits: Math.floor(Math.random() * 20) + 5,
-    commandes: Math.floor(Math.random() * 15) + 3,
+  const activeProducts = dashboard?.active_products ?? 0;
+  const urgentProducts = dashboard?.urgent_products ?? [];
+  const totalRevenue = dashboard?.revenue ?? 0;
+  const totalSaved = dashboard?.units_in_stock ?? 0;
+
+  const chartData = (dashboard?.daily ?? []).map((d) => ({
+    date: formatShortDate(d.date),
+    ventes: d.ventes,
+    commandes: d.commandes,
   }));
 
   // Generate smart alerts
