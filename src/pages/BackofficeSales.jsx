@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { api } from '@/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
@@ -13,7 +13,6 @@ import { Plus, Search, TrendingUp, Users, Target, Mail, CheckCircle, Download } 
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { goToLogin } from '@/lib/navigation';
 
 const PIPELINE_STAGES = [
   { key: 'new', label: 'Nouveau', color: 'bg-gray-100 text-gray-700', dot: 'bg-gray-400' },
@@ -26,7 +25,6 @@ const PIPELINE_STAGES = [
 ];
 
 export default function BackofficeSales() {
-  const [user, setUser] = useState(null);
   const [showLeadDialog, setShowLeadDialog] = useState(false);
   const [showAgentDialog, setShowAgentDialog] = useState(false);
   const [search, setSearch] = useState('');
@@ -39,10 +37,6 @@ export default function BackofficeSales() {
     full_name: '', email: '', phone: '', target_monthly: '', region: ''
   });
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    api.auth.me().then(setUser).catch(() => goToLogin());
-  }, []);
 
   // Using stores as proxy for leads & agents
   const { data: leads = [] } = useQuery({

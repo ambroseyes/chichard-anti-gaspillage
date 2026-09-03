@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
 import { Input } from '@/components/ui/input';
@@ -12,18 +12,15 @@ import ReservationModal from '@/components/clickcollect/ReservationModal';
 import BasketReviewModal from '@/components/clickcollect/BasketReviewModal';
 import { toast } from 'sonner';
 import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function ClickCollect() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [selectedBasket, setSelectedBasket] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [lastReservation, setLastReservation] = useState(null);
   const [reviewReservation, setReviewReservation] = useState(null);
-
-  useEffect(() => {
-    api.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const { data: baskets = [], isLoading } = useQuery({
     queryKey: ['cc-baskets'],

@@ -1,47 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { api } from '@/api';
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import {
-  LayoutDashboard, Users, ShieldCheck, BarChart3, FileText, Bell,
-  Settings, LogOut, Menu, X, TrendingUp, Package,
-  AlertTriangle, Search, Moon, Sun, Zap
+  LayoutDashboard, Users, ShieldCheck, FileText, Bell, LogOut, Menu, X, TrendingUp, Package, Search, Moon, Sun, Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { goToLogin, logout } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
+/**
+ * Navigation du backoffice. N'y figurent que des pages qui existent : les
+ * quatre entrées précédentes menaient à l'écran 404.
+ */
 const NAV_ITEMS = [
   {
     section: 'PILOTAGE',
     items: [
       { path: '/AdminBackoffice', icon: LayoutDashboard, label: 'Tableau de bord', roles: ['super_admin', 'admin', 'operator'] },
-      { path: '/BackofficeAnalytics', icon: BarChart3, label: 'Analytics', roles: ['super_admin', 'admin'] },
-    ]
+    ],
   },
   {
     section: 'OPÉRATIONS',
     items: [
       { path: '/BackofficeUsers', icon: Users, label: 'Utilisateurs', roles: ['super_admin', 'admin'] },
-      { path: '/BackofficeSales', icon: TrendingUp, label: 'Commerciaux & Leads', roles: ['super_admin', 'admin', 'operator'] },
       { path: '/BackofficeTransactions', icon: Package, label: 'Transactions', roles: ['super_admin', 'admin', 'operator'] },
-    ]
+      { path: '/BackofficeSales', icon: TrendingUp, label: 'Prospects partenaires', roles: ['super_admin', 'admin', 'operator'] },
+      { path: '/AdminPartners', icon: ShieldCheck, label: 'Validation partenaires', roles: ['super_admin', 'admin'] },
+    ],
   },
   {
     section: 'SÉCURITÉ',
     items: [
-      { path: '/BackofficeRoles', icon: ShieldCheck, label: 'Rôles & Permissions', roles: ['super_admin'] },
-      { path: '/BackofficeLogs', icon: FileText, label: 'Audit & Logs', roles: ['super_admin', 'admin'] },
-      { path: '/BackofficeAlerts', icon: AlertTriangle, label: 'Alertes', roles: ['super_admin', 'admin'] },
-    ]
+      { path: '/BackofficeLogs', icon: FileText, label: 'Audit & journaux', roles: ['super_admin', 'admin'] },
+    ],
   },
-  {
-    section: 'SYSTÈME',
-    items: [
-      { path: '/BackofficeSettings', icon: Settings, label: 'Paramètres', roles: ['super_admin'] },
-    ]
-  }
 ];
 
 const ROLE_CONFIG = {
@@ -51,15 +45,11 @@ const ROLE_CONFIG = {
 };
 
 export default function BackofficeLayout({ children, currentPage }) {
-  const [user, setUser] = useState(null);
+  const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const location = useLocation();
-
-  useEffect(() => {
-    api.auth.me().then(setUser).catch(() => goToLogin());
-  }, []);
 
   const { data: notifications = [] } = useQuery({
     queryKey: ['backoffice-notifs', user?.email],
@@ -156,7 +146,7 @@ export default function BackofficeLayout({ children, currentPage }) {
             {/* Logout */}
             <div className="p-4 border-t border-gray-700/50">
               <button
-                onClick={() => logout()}
+                onClick={logout}
                 className="flex items-center gap-3 w-full px-3 py-2.5 text-gray-400 hover:text-red-400 hover:bg-gray-800 rounded-lg text-sm transition-all"
               >
                 <LogOut className="w-4 h-4" />

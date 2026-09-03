@@ -9,16 +9,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UserPreferencesForm from '@/components/forms/UserPreferencesForm';
 import StoreForm from '@/components/forms/StoreForm';
 import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function Settings() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [store, setStore] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
       try {
         const userData = await api.auth.me();
-        setUser(userData);
         
         if (userData.store_id) {
           const stores = await api.entities.Store.filter({ id: userData.store_id });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -20,7 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from 'sonner';
-import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 const categories = [
   { id: 'fruits_legumes', label: 'Fruits & Légumes', emoji: '🥬' },
@@ -45,7 +45,7 @@ const emptyProduct = {
 };
 
 export default function PartnerProducts() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [showDialog, setShowDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -55,18 +55,6 @@ export default function PartnerProducts() {
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await api.auth.me();
-        setUser(userData);
-      } catch (e) {
-        goToLogin();
-      }
-    };
-    loadUser();
-  }, []);
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['partner-products', user?.email],

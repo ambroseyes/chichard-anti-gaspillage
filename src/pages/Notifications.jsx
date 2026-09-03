@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -6,23 +6,11 @@ import { fr } from 'date-fns/locale';
 import { Bell, Check, Trash2, Package, MessageCircle, Flame, Tag } from 'lucide-react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function Notifications() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await api.auth.me();
-        setUser(userData);
-      } catch (e) {
-        goToLogin();
-      }
-    };
-    loadUser();
-  }, []);
 
   const { data: notifications = [] } = useQuery({
     queryKey: ['notifications', user?.email],

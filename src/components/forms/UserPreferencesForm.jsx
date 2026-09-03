@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { api } from '@/api';
 import { Shield, Heart, AlertTriangle, Loader2, Check
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 const dietaryOptions = [
   'Végétarien', 'Végan', 'Sans gluten', 'Halal', 'Casher', 'Sans lactose'
@@ -16,6 +16,7 @@ const allergenOptions = [
 ];
 
 export default function UserPreferencesForm({ user, onSuccess }) {
+  const { updateProfile } = useAuth();
   const [formData, setFormData] = useState({
     dietary_preferences: user?.dietary_preferences || [],
     allergens: user?.allergens || [],
@@ -37,7 +38,7 @@ export default function UserPreferencesForm({ user, onSuccess }) {
     setLoading(true);
     
     try {
-      await api.auth.updateMe(formData);
+      await updateProfile(formData);
       toast.success('Préférences mises à jour');
       onSuccess?.();
     } catch (e) {

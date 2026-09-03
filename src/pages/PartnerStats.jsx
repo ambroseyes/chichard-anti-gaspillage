@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
 import { format, subDays } from 'date-fns';
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts';
@@ -18,20 +18,8 @@ import {
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 export default function PartnerStats() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [period, setPeriod] = useState('month');
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await api.auth.me();
-        setUser(userData);
-      } catch (e) {
-        goToLogin();
-      }
-    };
-    loadUser();
-  }, []);
 
   const { data: products = [] } = useQuery({
     queryKey: ['partner-products', user?.email],

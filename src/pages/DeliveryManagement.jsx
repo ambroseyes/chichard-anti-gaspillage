@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
@@ -12,25 +12,13 @@ import { format } from 'date-fns';
 import QRCode from 'qrcode';
 import RouteOptimizer from '@/components/logistics/RouteOptimizer';
 import TimeSlotManager from '@/components/logistics/TimeSlotManager';
-import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function DeliveryManagement() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [deliveryType, setDeliveryType] = useState('delivery');
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await api.auth.me();
-        setUser(userData);
-      } catch (e) {
-        goToLogin();
-      }
-    };
-    loadUser();
-  }, []);
 
   const { data: orders = [] } = useQuery({
     queryKey: ['pending-orders'],

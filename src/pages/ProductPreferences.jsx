@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { CheckCircle2, Sparkles, ArrowRight, Leaf } from 'lucide-react';
 import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 const CATEGORIES = [
   { id: 'fruits_legumes', label: 'Fruits & Légumes', emoji: '🥦', color: 'bg-green-50 border-green-200 text-green-800', active: 'bg-green-500 text-white border-green-500' },
@@ -33,7 +34,7 @@ const DIETARY = [
 ];
 
 export default function ProductPreferences() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedDietary, setSelectedDietary] = useState([]);
   const [saved, setSaved] = useState(false);
@@ -41,7 +42,6 @@ export default function ProductPreferences() {
 
   useEffect(() => {
     api.auth.me().then(u => {
-      setUser(u);
     }).catch(() => {});
   }, []);
 

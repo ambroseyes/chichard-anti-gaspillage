@@ -21,7 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from 'sonner';
-import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 const emptyStore = {
   name: '',
@@ -37,7 +37,7 @@ const emptyStore = {
 };
 
 export default function AdminPartners() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showDialog, setShowDialog] = useState(false);
@@ -47,18 +47,6 @@ export default function AdminPartners() {
   const [historyStore, setHistoryStore] = useState(null);
   const [selectedStores, setSelectedStores] = useState([]);
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await api.auth.me();
-        setUser(userData);
-      } catch (e) {
-        goToLogin();
-      }
-    };
-    loadUser();
-  }, []);
 
   const { data: stores = [], isLoading } = useQuery({
     queryKey: ['admin-stores'],

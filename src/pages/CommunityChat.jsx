@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 const categoryConfig = {
   recettes: { icon: ChefHat, color: 'bg-orange-100 text-orange-600', label: 'Recettes' },
@@ -33,24 +33,12 @@ const defaultRooms = [
 ];
 
 export default function CommunityChat() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const messagesEndRef = useRef(null);
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await api.auth.me();
-        setUser(userData);
-      } catch (e) {
-        goToLogin();
-      }
-    };
-    loadUser();
-  }, []);
 
   const { data: rooms = [] } = useQuery({
     queryKey: ['chat-rooms'],

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -12,16 +12,13 @@ import BasketRowCard from '@/components/merchant/BasketRowCard';
 import ReservationsList from '@/components/merchant/ReservationsList';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function MerchantBasketManager() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [editingBasket, setEditingBasket] = useState(null);
   const [showEditor, setShowEditor] = useState(false);
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    api.auth.me().then(setUser).catch(() => {});
-  }, []);
 
   const { data: baskets = [], isLoading, refetch } = useQuery({
     queryKey: ['merchant-baskets', user?.email],

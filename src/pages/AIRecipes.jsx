@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { api } from '@/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -7,18 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from 'sonner';
-import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function AIRecipes() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [recipes, setRecipes] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [expandedRecipe, setExpandedRecipe] = useState(null);
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    api.auth.me().then(setUser).catch(() => goToLogin());
-  }, []);
 
   // Fetch recent orders to extract products
   const { data: recentOrders = [] } = useQuery({

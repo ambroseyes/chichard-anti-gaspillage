@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
@@ -13,12 +13,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sparkles, Plus, Edit2, Eye, DollarSign, TrendingUp, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { goToLogin } from '@/lib/navigation';
 
 const COLORS = ['#8b5cf6', '#ec4899', '#3b82f6', '#10b981'];
 
 export default function BrandCampaignManager() {
-  const [user, setUser] = useState(null);
   const [brand, setBrand] = useState(null);
   const [showCampaignDialog, setShowCampaignDialog] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState(null);
@@ -37,20 +35,6 @@ export default function BrandCampaignManager() {
     }
   });
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await api.auth.me();
-        setUser(userData);
-        const brands = await api.entities.BrandPartnership.filter({ contact_email: userData.email });
-        setBrand(brands[0]);
-      } catch (e) {
-        goToLogin();
-      }
-    };
-    loadUser();
-  }, []);
 
   const { data: campaigns = [] } = useQuery({
     queryKey: ['brand-campaigns', brand?.id],

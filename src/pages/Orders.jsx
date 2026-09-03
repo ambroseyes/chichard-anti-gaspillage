@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { api } from '@/api';
@@ -15,7 +15,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 // Active delivery statuses where chat is relevant
 const CHAT_ACTIVE_STATUSES = ['confirmed', 'picked_up', 'on_the_way', 'ready'];
@@ -29,20 +29,8 @@ const statusConfig = {
 };
 
 export default function Orders() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [statusFilter, setStatusFilter] = useState('all');
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await api.auth.me();
-        setUser(userData);
-      } catch (e) {
-        goToLogin();
-      }
-    };
-    loadUser();
-  }, []);
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['orders', user?.email],

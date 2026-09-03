@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '@/api';
 import { useNavigate } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -24,7 +23,7 @@ import { BarChart3, RefreshCw, Gauge } from 'lucide-react';
 import DeliveryChat from '@/components/delivery/DeliveryChat';
 import MultiBulkScanner from '@/components/delivery/MultiBulkScanner';
 import GoogleDirectionsMap from '@/components/delivery/GoogleDirectionsMap';
-import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 const STATUS_FLOW = {
   assigned:    { next: 'picked_up',   label: 'Récupérer',    btnClass: 'bg-blue-500 hover:bg-blue-600' },
@@ -120,7 +119,7 @@ function formatDistance(meters) {
 }
 
 export default function DriverDashboard() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [courierPos, setCourierPos] = useState(null);
   const lastOptimizeTime = useRef(0);
   const lastOptimizePos = useRef(null);
@@ -138,21 +137,6 @@ export default function DriverDashboard() {
   const [alerts, setAlerts] = useState([]);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await api.auth.me();
-        setUser(userData);
-        if (!userData.is_delivery_driver) {
-          navigate(createPageUrl('Home'));
-        }
-      } catch (e) {
-        goToLogin();
-      }
-    };
-    loadUser();
-  }, []);
 
   // GPS live tracking
   useEffect(() => {

@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from 'sonner';
 import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 // --- Pricing suggestion engine (rule-based, no external API needed) ---
 function getSuggestedPrice(product) {
@@ -47,7 +48,7 @@ const colorConfig = {
 };
 
 export default function PartnerPredictiveDashboard() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [store, setStore] = useState(null);
   const [filterColor, setFilterColor] = useState('all');
   const [generatingReport, setGeneratingReport] = useState(false);
@@ -56,7 +57,6 @@ export default function PartnerPredictiveDashboard() {
 
   useEffect(() => {
     api.auth.me().then(async u => {
-      setUser(u);
       const stores = await api.entities.Store.filter({ owner_email: u.email });
       if (stores[0]) setStore(stores[0]);
     }).catch(() => goToLogin());

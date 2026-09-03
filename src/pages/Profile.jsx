@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { api } from '@/api';
@@ -18,7 +18,8 @@ import { toast } from 'sonner';
 import SavingsCounter from '@/components/ui/SavingsCounter';
 import BadgeDisplay from '@/components/gamification/BadgeDisplay';
 import ReferralSystem from '@/components/gamification/ReferralSystem';
-import { goToLogin, logout } from '@/lib/navigation';
+import { logout } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 const DIETARY_OPTIONS = [
   'Végétarien', 'Vegan', 'Halal', 'Sans gluten', 'Sans lactose', 'Kasher', 'Bio uniquement', 'Sans fruits de mer'
@@ -49,34 +50,16 @@ const ecoLevels = {
 };
 
 export default function Profile() {
-  const [user, setUser] = useState(null);
+  const { user, updateProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({ phone: '', city: '', address: '' });
   const [prefData, setPrefData] = useState({ dietary: [], allergens: [] });
   const [isSavingPrefs, setIsSavingPrefs] = useState(false);
 
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await api.auth.me();
-        setUser(userData);
-        setFormData({ phone: userData.phone || '', city: userData.city || '', address: userData.address || '' });
-        setPrefData({
-          dietary: userData.dietary_preferences || [],
-          allergens: userData.allergens_to_avoid || []
-        });
-      } catch (e) {
-        goToLogin();
-      }
-    };
-    loadUser();
-  }, []);
-
   const handleSave = async () => {
     setIsSaving(true);
-    await api.auth.updateMe(formData);
-    setUser({ ...user, ...formData });
+    await updateProfile(formData);
     setIsEditing(false);
     setIsSaving(false);
     toast.success('Profil mis à jour');
@@ -84,8 +67,7 @@ export default function Profile() {
 
   const handleSavePrefs = async () => {
     setIsSavingPrefs(true);
-    await api.auth.updateMe({ dietary_preferences: prefData.dietary, allergens_to_avoid: prefData.allergens });
-    setUser({ ...user, dietary_preferences: prefData.dietary, allergens_to_avoid: prefData.allergens });
+    await updateProfile({ dietary_preferences: prefData.dietary, allergens_to_avoid: prefData.allergens });
     setIsSavingPrefs(false);
     toast.success('Préférences enregistrées');
   };

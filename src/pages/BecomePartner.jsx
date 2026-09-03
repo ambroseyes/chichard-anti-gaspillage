@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { api } from '@/api';
@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import StoreForm from '@/components/forms/StoreForm';
 import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 const benefits = [
   { icon: TrendingUp, title: 'Réduisez vos pertes', desc: 'Récupérez jusqu\'à 70% de la valeur de vos invendus' },
@@ -28,20 +29,8 @@ const steps = [
 ];
 
 export default function BecomePartner() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await api.auth.me();
-        setUser(userData);
-      } catch {
-        // Visiteur non connecté : la page reste consultable en anonyme.
-      }
-    };
-    loadUser();
-  }, []);
 
   // Check if user has a store
   const { data: userStore } = useQuery({

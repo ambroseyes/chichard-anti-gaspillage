@@ -29,29 +29,14 @@ import ProductBundleManager from '@/components/partner/ProductBundleManager';
 import PromotionManager from '@/components/partner/PromotionManager';
 import PartnerChatbot from '@/components/partner/PartnerChatbot';
 import FoodSavingsDashboard from '@/components/partner/FoodSavingsDashboard';
-import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function PartnerDashboard() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [showCustomizer, setShowCustomizer] = useState(false);
   const [alerts, setAlerts] = useState([]);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await api.auth.me();
-        setUser(userData);
-        if (!userData.is_partner) {
-          navigate(createPageUrl('Home'));
-        }
-      } catch (e) {
-        goToLogin();
-      }
-    };
-    loadUser();
-  }, []);
 
   const { data: products = [], isLoading: loadingProducts } = useQuery({
     queryKey: ['partner-products', user?.store_id],

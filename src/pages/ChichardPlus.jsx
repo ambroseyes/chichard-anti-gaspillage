@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { api } from '@/api';
 import { motion } from 'framer-motion';
 import {
@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from 'sonner';
 import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 const benefits = [
   {
@@ -75,21 +76,9 @@ const plans = [
 ];
 
 export default function ChichardPlus() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [selectedPlan, setSelectedPlan] = useState('yearly');
   const [isSubscribing, setIsSubscribing] = useState(false);
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await api.auth.me();
-        setUser(userData);
-      } catch {
-        // Visiteur non connecté : la page reste consultable en anonyme.
-      }
-    };
-    loadUser();
-  }, []);
 
   const handleSubscribe = async () => {
     if (!user) {
@@ -100,6 +89,11 @@ export default function ChichardPlus() {
     setIsSubscribing(true);
     
     // Update user with premium status
+    // L'activation d'un abonnement suppose un encaissement : elle passera par
+    // le module de paiement, comme les commandes. Rien n'est accordé ici.
+    toast.info("L'abonnement Chichard+ arrive bientôt — nous vous préviendrons.");
+    return;
+    // eslint-disable-next-line no-unreachable
     await api.auth.updateMe({
       is_premium: true,
       premium_plan: selectedPlan,

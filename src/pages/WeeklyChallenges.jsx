@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 const challengeTemplates = [
   {
@@ -116,20 +117,8 @@ const difficultyConfig = {
 };
 
 export default function WeeklyChallenges() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await api.auth.me();
-        setUser(userData);
-      } catch {
-        // Visiteur non connecté : la page reste consultable en anonyme.
-      }
-    };
-    loadUser();
-  }, []);
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],

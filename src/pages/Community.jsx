@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { api } from '@/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -17,25 +17,14 @@ import EnhancedDirectMessages from '@/components/community/EnhancedDirectMessage
 import ContentSubmissionModal from '@/components/community/ContentSubmissionModal';
 import ForumSection from '@/components/community/ForumSection';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function Community() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [showSubmissionModal, setShowSubmissionModal] = useState(false);
   const [activeTab, setActiveTab] = useState('feed');
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await api.auth.me();
-        setUser(userData);
-      } catch {
-        // Visiteur non connecté : la page reste consultable en anonyme.
-      }
-    };
-    loadUser();
-  }, []);
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],

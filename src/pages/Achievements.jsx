@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -82,19 +82,7 @@ function LeafIcon(props) {
 }
 
 export default function Achievements() {
-  const [user, setUser] = useState(null);
-  
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await api.auth.me();
-        setUser(userData);
-      } catch {
-        // Visiteur non connecté : la page reste consultable en anonyme.
-      }
-    };
-    loadUser();
-  }, []);
+  const { user, updateProfile } = useAuth();
 
   // Fetch detailed stats to calculate progress
   const { data: stats } = useQuery({
@@ -121,8 +109,7 @@ export default function Achievements() {
 
   const handleEquipBadge = async (badgeId) => {
     try {
-        await api.auth.updateMe({ featured_badge: badgeId });
-        setUser(prev => ({ ...prev, featured_badge: badgeId }));
+        await updateProfile({ featured_badge: badgeId });
         toast.success('Badge équipé sur votre profil !');
     } catch (error) {
         toast.error('Erreur lors de la mise à jour');
@@ -239,6 +226,7 @@ export default function Achievements() {
 // Actually, let's recreate the badge list for selection to be safe and clean.
 
 import { Lightbulb, Heart } from 'lucide-react'; // Ensure imports
+import { useAuth } from '@/lib/AuthContext';
 
 const badgesData = [
   { id: 'top_advisor', name: 'Conseiller Expert', icon: Lightbulb, color: 'from-amber-400 to-orange-500' },

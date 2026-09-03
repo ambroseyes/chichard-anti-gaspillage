@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
@@ -13,7 +13,6 @@ import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { subDays } from 'date-fns';
-import { goToLogin } from '@/lib/navigation';
 
 const STATUS_CONFIG = {
   pending: { label: 'En attente', color: 'bg-orange-100 text-orange-700', icon: Clock },
@@ -24,7 +23,6 @@ const STATUS_CONFIG = {
 };
 
 export default function BackofficeTransactions() {
-  const [user, setUser] = useState(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -32,13 +30,9 @@ export default function BackofficeTransactions() {
   const PAGE_SIZE = 20;
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    api.auth.me().then(setUser).catch(() => goToLogin());
-  }, []);
-
   const { data: orders = [], isLoading, refetch, isFetching } = useQuery({
     queryKey: ['bo-transactions'],
-    queryFn: () => api.entities.Order.list('-created_date', 200),
+    queryFn: () => api.backoffice.transactions({ limit: 100 }).then((r) => r.data),
     refetchInterval: 20000
   });
 

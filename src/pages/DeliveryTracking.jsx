@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -20,21 +20,8 @@ const deliverySteps = [
 ];
 
 export default function DeliveryTracking() {
-  const [user, setUser] = useState(null);
   const urlParams = new URLSearchParams(window.location.search);
   const orderId = urlParams.get('order');
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await api.auth.me();
-        setUser(userData);
-      } catch {
-        // Visiteur non connecté : la page reste consultable en anonyme.
-      }
-    };
-    loadUser();
-  }, []);
 
   const { data: order } = useQuery({
     queryKey: ['order', orderId],

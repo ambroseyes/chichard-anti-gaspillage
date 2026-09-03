@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -17,10 +17,10 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from 'sonner';
 import SavingsDashboard from '@/components/account/SavingsDashboard';
 import { BarChart2 } from 'lucide-react';
-import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function MyAccount() {
-  const [user, setUser] = useState(null);
+  const { user, updateProfile } = useAuth();
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
   const [addressForm, setAddressForm] = useState({
@@ -35,18 +35,6 @@ export default function MyAccount() {
     is_billing: false
   });
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await api.auth.me();
-        setUser(userData);
-      } catch (e) {
-        goToLogin();
-      }
-    };
-    loadUser();
-  }, []);
 
   const { data: orders = [] } = useQuery({
     queryKey: ['my-orders', user?.email],
@@ -111,7 +99,8 @@ export default function MyAccount() {
   });
 
   const updateNotificationMutation = useMutation({
-    mutationFn: (settings) => api.auth.updateMe({ notification_settings: settings }),
+    mutationFn: (settings) =>
+      updateProfile({ preferences: { ...(user?.preferences ?? {}), notifications: settings } }),
     onSuccess: () => {
       toast.success('Préférences mises à jour');
     }

@@ -52,10 +52,6 @@ export default function CreatePostModal({ open, onClose, user, onSuccess }) {
     });
 
     // Update user eco points
-    await api.auth.updateMe({
-      eco_points: (user.eco_points || 0) + 10
-    });
-
     setIsPosting(false);
     toast.success('Post publié !');
     

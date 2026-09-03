@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
@@ -10,7 +10,6 @@ import { Search, Filter, Download, ShieldCheck, AlertTriangle, Info, CheckCircle
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
-import { goToLogin } from '@/lib/navigation';
 
 const ACTION_TYPES = {
   create: { label: 'Création', color: 'bg-blue-100 text-blue-700', icon: CheckCircle },
@@ -22,15 +21,10 @@ const ACTION_TYPES = {
 };
 
 export default function BackofficeLogs() {
-  const [user, setUser] = useState(null);
   const [search, setSearch] = useState('');
   const [actionFilter, setActionFilter] = useState('all');
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 20;
-
-  useEffect(() => {
-    api.auth.me().then(setUser).catch(() => goToLogin());
-  }, []);
 
   /**
    * Journal réel : chaque ligne a été écrite par le serveur au moment de

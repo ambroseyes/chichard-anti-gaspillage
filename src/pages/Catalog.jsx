@@ -12,20 +12,19 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import ProductCard from '@/components/ui/ProductCard';
 import CategoryPill from '@/components/ui/CategoryPill';
 import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function Catalog() {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('discount');
   const [maxPrice, setMaxPrice] = useState([50000]);
   const [urgencyFilter, setUrgencyFilter] = useState('all');
-  const [user, setUser] = useState(null);
-
   React.useEffect(() => {
     const loadUser = async () => {
       try {
         const userData = await api.auth.me();
-        setUser(userData);
       } catch {
         // Visiteur non connecté : la page reste consultable en anonyme.
       }

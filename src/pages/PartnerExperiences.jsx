@@ -1,26 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { api } from '@/api';
-import { createPageUrl } from '@/utils';
+import React from 'react';
 import ExperienceManager from '@/components/partner/ExperienceManager';
-import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function PartnerExperiences() {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await api.auth.me();
-        setUser(userData);
-        if (!userData.is_partner) {
-          window.location.href = createPageUrl('Home');
-        }
-      } catch (e) {
-        goToLogin();
-      }
-    };
-    loadUser();
-  }, []);
+  const { user } = useAuth();
 
   if (!user) {
     return (

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
@@ -17,32 +17,16 @@ import {
 } from 'recharts';
 import { format, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { goToLogin } from '@/lib/navigation';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 export default function PartnerAnalytics() {
-  const [user, setUser] = useState(null);
   const [store, setStore] = useState(null);
   const [dateRange, setDateRange] = useState({
     from: subDays(new Date(), 30),
     to: new Date()
   });
   const [selectedCampaign, setSelectedCampaign] = useState('all');
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await api.auth.me();
-        setUser(userData);
-        const stores = await api.entities.Store.filter({ owner_email: userData.email });
-        setStore(stores[0]);
-      } catch (e) {
-        goToLogin();
-      }
-    };
-    loadUser();
-  }, []);
 
   const { data: campaigns = [] } = useQuery({
     queryKey: ['campaign-metrics', store?.id],

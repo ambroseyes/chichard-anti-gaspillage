@@ -56,10 +56,6 @@ export default function ExperienceBookingSection({ user, userPoints = 0, userTie
   const bookMutation = useMutation({
     mutationFn: async (experience) => {
       // Deduct points
-      await api.auth.updateMe({
-        loyalty_points: userPoints - experience.points_required
-      });
-
       // Create booking
       await api.entities.ExperienceBooking.create({
         experience_id: experience.id,

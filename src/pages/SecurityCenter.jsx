@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
@@ -13,24 +13,12 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from 'sonner';
 import TrustBadge from '@/components/safety/TrustBadge';
 import { motion } from 'framer-motion';
-import { goToLogin } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function SecurityCenter() {
-  const [user, setUser] = useState(null);
+  const { user } = useAuth();
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await api.auth.me();
-        setUser(userData);
-      } catch (e) {
-        goToLogin();
-      }
-    };
-    loadUser();
-  }, []);
 
   const { data: verifications = [] } = useQuery({
     queryKey: ['verifications', user?.email],
