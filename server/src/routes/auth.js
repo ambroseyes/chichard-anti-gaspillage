@@ -88,7 +88,10 @@ authRouter.post(
       },
     });
 
-    await recordAudit(req, { action: 'create', module: 'Auth', description: 'inscription', entity_id: user.id });
+    await recordAudit(req, {
+      action: 'create', module: 'Auth', description: 'inscription',
+      entity_id: user.id, actor_email: user.email,
+    });
     res.status(201).json(await issueSession(res, req, user));
   }),
 );
@@ -106,14 +109,17 @@ authRouter.post(
 
     if (!user || !ok || !user.is_active) {
       await recordAudit(req, {
-        action: 'login', module: 'Auth', success: false, description: `échec pour ${email}`,
+        action: 'login', module: 'Auth', success: false, actor_email: email,
+        description: 'identifiants refusés',
       });
       // Message identique dans les deux cas : on n'indique pas si le compte existe.
       throw unauthorized('Identifiants invalides');
     }
 
     await prisma.user.update({ where: { id: user.id }, data: { last_login_at: new Date() } });
-    await recordAudit(req, { action: 'login', module: 'Auth', entity_id: user.id });
+    await recordAudit(req, {
+      action: 'login', module: 'Auth', entity_id: user.id, actor_email: user.email,
+    });
 
     res.json(await issueSession(res, req, user));
   }),
