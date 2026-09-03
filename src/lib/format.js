@@ -38,12 +38,19 @@ export const formatDate = (value) => (value ? dateFormatter.format(toDate(value)
 export const formatShortDate = (value) => (value ? shortDateFormatter.format(toDate(value)) : '—');
 export const formatDateTime = (value) => (value ? dateTimeFormatter.format(toDate(value)) : '—');
 
-/** Nombre de jours entiers avant une date ; négatif si elle est passée. */
+/**
+ * Nombre de jours calendaires avant une date ; négatif si elle est passée.
+ *
+ * On compare des dates, pas des instants : un produit qui périme ce soir est
+ * « dernier jour », pas « demain ».
+ */
 export function daysUntil(value, now = new Date()) {
   if (!value) return null;
   const target = toDate(value);
   if (Number.isNaN(target.getTime())) return null;
-  return Math.ceil((target.getTime() - now.getTime()) / 86_400_000);
+
+  const midnight = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  return Math.round((midnight(target) - midnight(now)) / 86_400_000);
 }
 
 /** « il reste 2 jours », « dernier jour », « périmé ». */

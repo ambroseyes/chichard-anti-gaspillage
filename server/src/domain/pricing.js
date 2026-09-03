@@ -14,11 +14,18 @@ export const DISCOUNT_LADDER = Object.freeze([
   { maxDaysLeft: 7, rate: 0.2, urgency: 'normal' },
 ]);
 
+/**
+ * Jours calendaires avant une date. On compare des dates, pas des instants :
+ * un produit qui périme ce soir est à J-0, pas à J-1. L'interface applique la
+ * même règle (src/lib/format.js).
+ */
 export function daysUntil(date, now = new Date()) {
   if (!date) return null;
   const target = date instanceof Date ? date : new Date(date);
   if (Number.isNaN(target.getTime())) return null;
-  return Math.ceil((target.getTime() - now.getTime()) / 86_400_000);
+
+  const midnight = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  return Math.round((midnight(target) - midnight(now)) / 86_400_000);
 }
 
 /** Niveau d'urgence et remise conseillée pour un produit. */
