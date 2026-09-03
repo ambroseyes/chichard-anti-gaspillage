@@ -1,0 +1,59 @@
+{
+  "name": "ScamReport",
+  "type": "object",
+  "properties": {
+    "reporter_email": {
+      "type": "string",
+      "description": "Email of the user reporting"
+    },
+    "reported_entity_type": {
+      "type": "string",
+      "enum": [
+        "product",
+        "store",
+        "user",
+        "message"
+      ],
+      "description": "Type of entity being reported"
+    },
+    "reported_entity_id": {
+      "type": "string",
+      "description": "ID of the reported entity"
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "fraud",
+        "fake_product",
+        "harassment",
+        "suspicious_behavior",
+        "other"
+      ],
+      "description": "Reason for reporting"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description of the issue"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "investigating",
+        "resolved",
+        "dismissed"
+      ],
+      "default": "pending"
+    },
+    "evidence_url": {
+      "type": "string",
+      "description": "URL to screenshot or evidence"
+    }
+  },
+  "required": [
+    "reporter_email",
+    "reported_entity_type",
+    "reported_entity_id",
+    "reason"
+  ]
+}

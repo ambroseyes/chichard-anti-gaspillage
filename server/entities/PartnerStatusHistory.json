@@ -1,0 +1,52 @@
+{
+  "name": "PartnerStatusHistory",
+  "type": "object",
+  "properties": {
+    "store_id": {
+      "type": "string",
+      "description": "ID du magasin partenaire"
+    },
+    "store_name": {
+      "type": "string"
+    },
+    "previous_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "verified",
+        "rejected",
+        "suspended"
+      ]
+    },
+    "new_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "verified",
+        "rejected",
+        "suspended"
+      ]
+    },
+    "changed_by": {
+      "type": "string",
+      "description": "Email de l'admin qui a effectué le changement"
+    },
+    "changed_by_name": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Notes ou raison du changement"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Données additionnelles"
+    }
+  },
+  "required": [
+    "store_id",
+    "previous_status",
+    "new_status",
+    "changed_by"
+  ]
+}

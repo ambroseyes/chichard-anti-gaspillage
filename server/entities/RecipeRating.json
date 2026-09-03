@@ -1,0 +1,34 @@
+{
+  "name": "RecipeRating",
+  "type": "object",
+  "properties": {
+    "recipe_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "rating": {
+      "type": "number",
+      "description": "Note de 1 à 5"
+    },
+    "comment": {
+      "type": "string"
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "helpful_count": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "recipe_id",
+    "user_email",
+    "rating"
+  ]
+}

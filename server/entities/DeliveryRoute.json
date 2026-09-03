@@ -1,0 +1,87 @@
+{
+  "name": "DeliveryRoute",
+  "type": "object",
+  "properties": {
+    "driver_email": {
+      "type": "string",
+      "description": "Email du livreur"
+    },
+    "driver_name": {
+      "type": "string"
+    },
+    "route_name": {
+      "type": "string",
+      "description": "Nom de l'itinéraire"
+    },
+    "order_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs des commandes dans l'itinéraire"
+    },
+    "stops": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "order_id": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          },
+          "sequence": {
+            "type": "number"
+          },
+          "estimated_time": {
+            "type": "string"
+          },
+          "completed": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      }
+    },
+    "total_distance_km": {
+      "type": "number",
+      "description": "Distance totale en km"
+    },
+    "estimated_duration_minutes": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "planned",
+        "in_progress",
+        "completed",
+        "cancelled"
+      ],
+      "default": "planned"
+    },
+    "start_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "end_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "optimization_score": {
+      "type": "number",
+      "description": "Score d'optimisation 0-100"
+    }
+  },
+  "required": [
+    "driver_email",
+    "order_ids"
+  ]
+}

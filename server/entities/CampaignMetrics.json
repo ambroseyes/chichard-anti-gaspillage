@@ -1,0 +1,86 @@
+{
+  "name": "CampaignMetrics",
+  "type": "object",
+  "properties": {
+    "store_id": {
+      "type": "string"
+    },
+    "campaign_id": {
+      "type": "string",
+      "description": "ID de la promotion ou campagne"
+    },
+    "campaign_name": {
+      "type": "string"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "impressions": {
+      "type": "number",
+      "default": 0,
+      "description": "Nombre de vues"
+    },
+    "clicks": {
+      "type": "number",
+      "default": 0
+    },
+    "conversions": {
+      "type": "number",
+      "default": 0,
+      "description": "Nombre d'achats"
+    },
+    "revenue": {
+      "type": "number",
+      "default": 0,
+      "description": "Revenus générés"
+    },
+    "cost": {
+      "type": "number",
+      "default": 0,
+      "description": "Coût de la campagne"
+    },
+    "roi": {
+      "type": "number",
+      "default": 0,
+      "description": "Return on Investment"
+    },
+    "conversion_rate": {
+      "type": "number",
+      "default": 0
+    },
+    "average_order_value": {
+      "type": "number",
+      "default": 0
+    },
+    "products_sold": {
+      "type": "number",
+      "default": 0
+    },
+    "customer_segments": {
+      "type": "object",
+      "properties": {
+        "new_customers": {
+          "type": "number",
+          "default": 0
+        },
+        "returning_customers": {
+          "type": "number",
+          "default": 0
+        },
+        "high_value_customers": {
+          "type": "number",
+          "default": 0
+        }
+      }
+    }
+  },
+  "required": [
+    "store_id",
+    "campaign_name"
+  ]
+}

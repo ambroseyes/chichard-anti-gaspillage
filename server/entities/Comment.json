@@ -1,0 +1,27 @@
+{
+  "name": "Comment",
+  "type": "object",
+  "properties": {
+    "post_id": {
+      "type": "string"
+    },
+    "author_email": {
+      "type": "string"
+    },
+    "author_name": {
+      "type": "string"
+    },
+    "content": {
+      "type": "string"
+    },
+    "likes_count": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "post_id",
+    "author_email",
+    "content"
+  ]
+}

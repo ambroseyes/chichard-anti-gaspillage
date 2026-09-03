@@ -1,0 +1,160 @@
+{
+  "name": "Order",
+  "type": "object",
+  "properties": {
+    "customer_email": {
+      "type": "string",
+      "description": "Email du client"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Nom du client"
+    },
+    "customer_phone": {
+      "type": "string",
+      "description": "Téléphone du client"
+    },
+    "items": {
+      "type": "array",
+      "description": "Articles commandés",
+      "items": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "type": "string"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unit_price": {
+            "type": "number"
+          },
+          "store_name": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "total_amount": {
+      "type": "number",
+      "description": "Montant total"
+    },
+    "total_savings": {
+      "type": "number",
+      "description": "Économies réalisées"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "confirmed",
+        "ready",
+        "delivered",
+        "cancelled"
+      ],
+      "default": "pending"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "orange_money",
+        "mtn_money",
+        "cash",
+        "card"
+      ],
+      "description": "Mode de paiement"
+    },
+    "delivery_type": {
+      "type": "string",
+      "enum": [
+        "pickup",
+        "delivery"
+      ],
+      "default": "pickup"
+    },
+    "delivery_address": {
+      "type": "string",
+      "description": "Adresse de livraison"
+    },
+    "store_id": {
+      "type": "string"
+    },
+    "store_name": {
+      "type": "string"
+    },
+    "qr_scanned_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Date et heure du scan QR"
+    },
+    "qr_scan_attempts": {
+      "type": "number",
+      "default": 0,
+      "description": "Nombre de tentatives de scan"
+    },
+    "delivery_proof": {
+      "type": "object",
+      "description": "Preuve de livraison"
+    },
+    "delivered_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "delivered_by": {
+      "type": "string"
+    },
+    "order_number": {
+      "type": "string"
+    },
+    "subtotal_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "delivery_fee": {
+      "type": "number",
+      "default": 0
+    },
+    "discount_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "coupon_code": {
+      "type": "string"
+    },
+    "payment_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "authorized",
+        "paid",
+        "failed",
+        "refunded"
+      ],
+      "default": "pending"
+    },
+    "payment_reference": {
+      "type": "string"
+    },
+    "pickup_token_hash": {
+      "type": "string"
+    },
+    "co2_saved_kg": {
+      "type": "number",
+      "default": 0
+    },
+    "cancelled_at": {
+      "type": "string"
+    },
+    "cancel_reason": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "customer_email",
+    "items",
+    "total_amount"
+  ]
+}
