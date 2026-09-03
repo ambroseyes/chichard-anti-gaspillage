@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
-  Store, TrendingUp, Leaf, Users, CheckCircle, ArrowRight,
-  Package, Zap, BarChart3
+  Store, TrendingUp, Leaf, Users, CheckCircle, ArrowRight, Zap, BarChart3
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import StoreForm from '@/components/forms/StoreForm';
+import { goToLogin } from '@/lib/navigation';
 
 const benefits = [
   { icon: TrendingUp, title: 'Réduisez vos pertes', desc: 'Récupérez jusqu\'à 70% de la valeur de vos invendus' },
@@ -34,9 +34,11 @@ export default function BecomePartner() {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const userData = await base44.auth.me();
+        const userData = await api.auth.me();
         setUser(userData);
-      } catch (e) {}
+      } catch {
+        // Visiteur non connecté : la page reste consultable en anonyme.
+      }
     };
     loadUser();
   }, []);
@@ -45,7 +47,7 @@ export default function BecomePartner() {
   const { data: userStore } = useQuery({
     queryKey: ['user-store', user?.email],
     queryFn: async () => {
-      const stores = await base44.entities.Store.filter({ owner_email: user.email });
+      const stores = await api.entities.Store.filter({ owner_email: user.email });
       return stores[0];
     },
     enabled: !!user
@@ -109,7 +111,7 @@ export default function BecomePartner() {
                     className="bg-white text-emerald-600 hover:bg-emerald-50"
                     onClick={() => {
                       if (!user) {
-                        base44.auth.redirectToLogin();
+                        goToLogin();
                       } else {
                         setShowForm(true);
                       }
@@ -246,7 +248,7 @@ export default function BecomePartner() {
                 className="bg-white text-emerald-600 hover:bg-emerald-50"
                 onClick={() => {
                   if (!user) {
-                    base44.auth.redirectToLogin();
+                    goToLogin();
                   } else {
                     setShowForm(true);
                   }

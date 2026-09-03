@@ -1,14 +1,10 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { 
-  User, Bell, Shield, Heart, AlertTriangle, Loader2, Check
+import { api } from '@/api';
+import { Shield, Heart, AlertTriangle, Loader2, Check
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { toast } from 'sonner';
 
 const dietaryOptions = [
@@ -41,7 +37,7 @@ export default function UserPreferencesForm({ user, onSuccess }) {
     setLoading(true);
     
     try {
-      await base44.auth.updateMe(formData);
+      await api.auth.updateMe(formData);
       toast.success('Préférences mises à jour');
       onSuccess?.();
     } catch (e) {

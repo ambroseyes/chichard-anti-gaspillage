@@ -1,20 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '@/api';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BackofficeLayout from '@/components/backoffice/BackofficeLayout';
-import { Plus, Search, TrendingUp, Users, Target, Phone, Mail, ArrowRight, Calendar, CheckCircle, Clock, XCircle, Download } from 'lucide-react';
+import { Plus, Search, TrendingUp, Users, Target, Mail, CheckCircle, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { goToLogin } from '@/lib/navigation';
 
 const PIPELINE_STAGES = [
   { key: 'new', label: 'Nouveau', color: 'bg-gray-100 text-gray-700', dot: 'bg-gray-400' },
@@ -42,13 +41,13 @@ export default function BackofficeSales() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => base44.auth.redirectToLogin());
+    api.auth.me().then(setUser).catch(() => goToLogin());
   }, []);
 
   // Using stores as proxy for leads & agents
   const { data: leads = [] } = useQuery({
     queryKey: ['bo-leads'],
-    queryFn: () => base44.entities.Store.filter({ is_partner: false }, '-created_date', 100)
+    queryFn: () => api.entities.Store.filter({ is_partner: false }, '-created_date', 100)
       .then(data => data.length > 0 ? data : [
         { id: '1', name: 'SuperMarché Excel', city: 'Douala', status: 'pending', email: 'contact@excel.cm', phone: '+237 699000001', pipeline_stage: 'qualified', expected_value: 150000, owner_email: 'agent1@chichard.cm' },
         { id: '2', name: 'FreshMart Yaoundé', city: 'Yaoundé', status: 'pending', email: 'info@freshmart.cm', phone: '+237 699000002', pipeline_stage: 'proposal', expected_value: 250000, owner_email: 'agent2@chichard.cm' },
@@ -58,7 +57,7 @@ export default function BackofficeSales() {
 
   const { data: stores = [] } = useQuery({
     queryKey: ['bo-stores-sales'],
-    queryFn: () => base44.entities.Store.filter({ status: 'verified' })
+    queryFn: () => api.entities.Store.filter({ status: 'verified' })
   });
 
   // Mock agents data derived from stores owners

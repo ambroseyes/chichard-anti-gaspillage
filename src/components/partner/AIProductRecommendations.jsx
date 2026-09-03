@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, TrendingUp, Clock, Loader2, Plus } from 'lucide-react';
+import { Sparkles, TrendingUp, Loader2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AIProductRecommendations({ storeId, onAddProduct }) {
@@ -12,43 +12,18 @@ export default function AIProductRecommendations({ storeId, onAddProduct }) {
 
   const { data: orders = [] } = useQuery({
     queryKey: ['orders-analysis'],
-    queryFn: () => base44.entities.Order.list('-created_date', 100),
+    queryFn: () => api.entities.Order.list('-created_date', 100),
   });
 
   const { data: products = [] } = useQuery({
     queryKey: ['products-analysis'],
-    queryFn: () => base44.entities.Product.list('-created_date', 100),
+    queryFn: () => api.entities.Product.list('-created_date', 100),
   });
 
   const generateRecommendations = async () => {
     setGenerating(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Analyse ces données de ventes et produits pour recommander 5 produits à ajouter ou promouvoir pour un magasin.
-        
-Produits actuels: ${products.slice(0, 20).map(p => `${p.name} (${p.category})`).join(', ')}
-Commandes récentes: ${orders.slice(0, 30).map(o => o.items?.map(i => i.product_name).join(', ')).join('; ')}
-
-Retourne 5 recommandations avec: nom du produit, catégorie, raison de la recommandation, prix suggéré.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            recommendations: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  product_name: { type: "string" },
-                  category: { type: "string" },
-                  reason: { type: "string" },
-                  suggested_price: { type: "number" },
-                  trend_score: { type: "number" }
-                }
-              }
-            }
-          }
-        }
-      });
+      const result = await api.ai.partnerRestockAdvice();
 
       return result.recommendations;
     } catch (e) {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,7 @@ const statusConfig = {
 export default function StatusHistoryModal({ store, isOpen, onClose }) {
   const { data: history = [], isLoading } = useQuery({
     queryKey: ['status-history', store?.id],
-    queryFn: () => base44.entities.PartnerStatusHistory.filter({ store_id: store.id }, '-created_date'),
+    queryFn: () => api.entities.PartnerStatusHistory.filter({ store_id: store.id }, '-created_date'),
     enabled: !!store && isOpen
   });
 

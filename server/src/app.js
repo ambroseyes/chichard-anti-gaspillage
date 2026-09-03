@@ -18,7 +18,7 @@ import { ordersRouter } from './routes/orders.js';
 import { reservationsRouter } from './routes/reservations.js';
 import { loyaltyRouter } from './routes/loyalty.js';
 import { backofficeRouter } from './routes/backoffice.js';
-import { partnerRouter } from './routes/partner.js';
+import { partnerRouter, partnerSignupRouter } from './routes/partner.js';
 import { paymentsRouter } from './routes/payments.js';
 import { realtimeRouter } from './routes/realtime.js';
 import { aiRouter } from './routes/ai.js';
@@ -49,7 +49,15 @@ export function createApp() {
   );
   app.use(compression());
   app.use(cookieParser());
-  app.use(pinoHttp({ logger, autoLogging: { ignore: (req) => req.url === '/health' } }));
+  app.use(
+    pinoHttp({
+      logger,
+      autoLogging: { ignore: (req) => req.url === '/health' },
+      // L'URL du flux SSE porte un jeton : on ne journalise que le chemin.
+      customProps: (req) => ({ path: req.url?.split('?')[0] }),
+      serializers: { req: (req) => ({ method: req.method, path: req.url?.split('?')[0] }) },
+    }),
+  );
 
   // Le webhook de paiement lit son corps en brut : il est monté avant le parseur JSON.
   app.use('/api/payments', paymentsRouter);
@@ -84,6 +92,7 @@ export function createApp() {
   app.use('/api/orders', ordersRouter);
   app.use('/api/reservations', reservationsRouter);
   app.use('/api/loyalty', loyaltyRouter);
+  app.use('/api/partner', partnerSignupRouter);
   app.use('/api/partner', partnerRouter);
   app.use('/api/backoffice', backofficeRouter);
   app.use('/api/realtime', realtimeRouter);

@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { 
-  Package, Clock, CheckCircle, Truck, XCircle, 
-  ChevronRight, ShoppingBag, MapPin, Store
+  Package, Clock, CheckCircle, Truck, XCircle, ShoppingBag, Store
 } from 'lucide-react';
 import DeliveryChat from '@/components/delivery/DeliveryChat';
 import { Button } from "@/components/ui/button";
@@ -16,6 +15,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { goToLogin } from '@/lib/navigation';
 
 // Active delivery statuses where chat is relevant
 const CHAT_ACTIVE_STATUSES = ['confirmed', 'picked_up', 'on_the_way', 'ready'];
@@ -35,10 +35,10 @@ export default function Orders() {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const userData = await base44.auth.me();
+        const userData = await api.auth.me();
         setUser(userData);
       } catch (e) {
-        base44.auth.redirectToLogin();
+        goToLogin();
       }
     };
     loadUser();
@@ -46,7 +46,7 @@ export default function Orders() {
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['orders', user?.email],
-    queryFn: () => base44.entities.Order.filter({ customer_email: user.email }, '-created_date'),
+    queryFn: () => api.entities.Order.filter({ customer_email: user.email }, '-created_date'),
     enabled: !!user,
   });
 

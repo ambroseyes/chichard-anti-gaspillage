@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { 
-  Store, MapPin, Phone, Mail, Clock, Image, Loader2
+  Store, Loader2
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,54 +30,25 @@ export default function StoreForm({ store, onSuccess, onCancel }) {
       let logo_url = store?.logo_url;
       
       if (logoFile) {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file: logoFile });
+        const { file_url } = await api.uploads.file(logoFile);
         logo_url = file_url;
       }
 
-      const storeData = {
-        ...formData,
-        logo_url,
-        is_partner: true,
-        status: store?.status || 'email_verification_pending',
-        email_verified: store?.email_verified || false,
-      };
+      const storeData = { ...formData, logo_url };
 
       if (store?.id) {
-        await base44.entities.Store.update(store.id, storeData);
+        await api.entities.Store.update(store.id, storeData);
         toast.success('Magasin mis à jour');
       } else {
-        const user = await base44.auth.me();
-        storeData.owner_email = user.email;
-        
-        const newStore = await base44.entities.Store.create(storeData);
-        
-        // Generate verification token and send email
-        const verificationToken = `${newStore.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const verificationLink = `${window.location.origin}/VerifyPartner?token=${verificationToken}&store_id=${newStore.id}`;
-
-        await base44.integrations.Core.SendEmail({
-          to: formData.email || user.email,
-          subject: 'Vérifiez votre email - CHICHARD Partenaire',
-          body: `
-            <h2>Bienvenue sur CHICHARD !</h2>
-            <p>Merci de vous être inscrit en tant que partenaire.</p>
-            <p>Pour finaliser votre inscription, veuillez cliquer sur le lien ci-dessous pour vérifier votre adresse email :</p>
-            <a href="${verificationLink}" style="display: inline-block; padding: 12px 24px; background-color: #10B981; color: white; text-decoration: none; border-radius: 8px; margin: 16px 0;">
-              Vérifier mon email
-            </a>
-            <p>Une fois votre email vérifié, notre équipe examinera votre demande sous 24h.</p>
-            <p>À bientôt sur CHICHARD !</p>
-          `
-        });
-        
-        // Update user with store_id
-        await base44.auth.updateMe({ store_id: newStore.id, is_partner: true });
-        toast.success('Un email de vérification a été envoyé !');
+        // Le serveur crée le magasin, le rattache au compte et envoie le
+        // courriel de vérification : ni le statut ni le jeton ne transitent ici.
+        await api.partner.createStore(storeData);
+        toast.success('Dossier envoyé. Vérifiez votre boîte mail pour confirmer votre adresse.');
       }
-      
+
       onSuccess?.();
-    } catch (e) {
-      toast.error('Erreur lors de l\'enregistrement');
+    } catch (error) {
+      toast.error(error.message ?? "L'enregistrement n'a pas abouti");
     }
     setLoading(false);
   };

@@ -3,12 +3,12 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Pencil, Trash2, Package, Users, ChevronDown, ChevronUp,
+  Pencil, Trash2, Package, Users, ChevronDown,
   Minus, Plus, Eye, EyeOff, CheckCircle2, Clock
 } from 'lucide-react';
 
@@ -20,7 +20,7 @@ export default function BasketRowCard({ basket, reservations, onEdit, onDelete, 
   const queryClient = useQueryClient();
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.ClickCollectBasket.update(basket.id, data),
+    mutationFn: (data) => api.entities.ClickCollectBasket.update(basket.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['merchant-baskets'] });
       toast.success('Mis à jour !');

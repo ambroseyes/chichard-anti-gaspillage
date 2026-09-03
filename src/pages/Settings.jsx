@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
-import { motion } from 'framer-motion';
+import { api } from '@/api';
 import {
-  Settings as SettingsIcon, User, Bell, Shield, Heart,
-  Store, Truck, CreditCard, HelpCircle, ChevronRight
+  Settings as SettingsIcon, Bell, Heart,
+  Store
 } from 'lucide-react';
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UserPreferencesForm from '@/components/forms/UserPreferencesForm';
 import StoreForm from '@/components/forms/StoreForm';
+import { goToLogin } from '@/lib/navigation';
 
 export default function Settings() {
   const [user, setUser] = useState(null);
@@ -17,15 +17,15 @@ export default function Settings() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const userData = await base44.auth.me();
+        const userData = await api.auth.me();
         setUser(userData);
         
         if (userData.store_id) {
-          const stores = await base44.entities.Store.filter({ id: userData.store_id });
+          const stores = await api.entities.Store.filter({ id: userData.store_id });
           if (stores.length > 0) setStore(stores[0]);
         }
       } catch (e) {
-        base44.auth.redirectToLogin();
+        goToLogin();
       }
     };
     loadData();

@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import {
-  User, ShoppingBag, MapPin, Heart, Bell, Edit2, Plus,
+import { ShoppingBag, MapPin, Heart, Bell, Edit2, Plus,
   Trash2, Package, Clock, CheckCircle, X, Home, Briefcase
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -16,9 +15,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { toast } from 'sonner';
-import { motion } from 'framer-motion';
 import SavingsDashboard from '@/components/account/SavingsDashboard';
 import { BarChart2 } from 'lucide-react';
+import { goToLogin } from '@/lib/navigation';
 
 export default function MyAccount() {
   const [user, setUser] = useState(null);
@@ -40,10 +39,10 @@ export default function MyAccount() {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const userData = await base44.auth.me();
+        const userData = await api.auth.me();
         setUser(userData);
       } catch (e) {
-        base44.auth.redirectToLogin();
+        goToLogin();
       }
     };
     loadUser();
@@ -51,25 +50,25 @@ export default function MyAccount() {
 
   const { data: orders = [] } = useQuery({
     queryKey: ['my-orders', user?.email],
-    queryFn: () => base44.entities.Order.filter({ customer_email: user.email }, '-created_date'),
+    queryFn: () => api.entities.Order.filter({ customer_email: user.email }, '-created_date'),
     enabled: !!user
   });
 
   const { data: addresses = [] } = useQuery({
     queryKey: ['my-addresses', user?.email],
-    queryFn: () => base44.entities.DeliveryAddress.filter({ user_email: user.email }),
+    queryFn: () => api.entities.DeliveryAddress.filter({ user_email: user.email }),
     enabled: !!user
   });
 
   const { data: favorites = [] } = useQuery({
     queryKey: ['my-favorites', user?.email],
-    queryFn: () => base44.entities.Favorite.filter({ user_email: user.email }),
+    queryFn: () => api.entities.Favorite.filter({ user_email: user.email }),
     enabled: !!user
   });
 
   const { data: products = [] } = useQuery({
     queryKey: ['products-for-favorites'],
-    queryFn: () => base44.entities.Product.list(),
+    queryFn: () => api.entities.Product.list(),
     enabled: favorites.length > 0
   });
 
@@ -78,7 +77,7 @@ export default function MyAccount() {
   );
 
   const createAddressMutation = useMutation({
-    mutationFn: (data) => base44.entities.DeliveryAddress.create({ ...data, user_email: user.email }),
+    mutationFn: (data) => api.entities.DeliveryAddress.create({ ...data, user_email: user.email }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-addresses'] });
       toast.success('Adresse ajoutée');
@@ -87,7 +86,7 @@ export default function MyAccount() {
   });
 
   const updateAddressMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.DeliveryAddress.update(id, data),
+    mutationFn: ({ id, data }) => api.entities.DeliveryAddress.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-addresses'] });
       toast.success('Adresse mise à jour');
@@ -96,7 +95,7 @@ export default function MyAccount() {
   });
 
   const deleteAddressMutation = useMutation({
-    mutationFn: (id) => base44.entities.DeliveryAddress.delete(id),
+    mutationFn: (id) => api.entities.DeliveryAddress.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-addresses'] });
       toast.success('Adresse supprimée');
@@ -104,7 +103,7 @@ export default function MyAccount() {
   });
 
   const removeFavoriteMutation = useMutation({
-    mutationFn: (favoriteId) => base44.entities.Favorite.delete(favoriteId),
+    mutationFn: (favoriteId) => api.entities.Favorite.delete(favoriteId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-favorites'] });
       toast.success('Retiré des favoris');
@@ -112,7 +111,7 @@ export default function MyAccount() {
   });
 
   const updateNotificationMutation = useMutation({
-    mutationFn: (settings) => base44.auth.updateMe({ notification_settings: settings }),
+    mutationFn: (settings) => api.auth.updateMe({ notification_settings: settings }),
     onSuccess: () => {
       toast.success('Préférences mises à jour');
     }

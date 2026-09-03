@@ -1,30 +1,43 @@
 import React from 'react';
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { TrendingDown, Calendar, AlertCircle } from 'lucide-react';
-import { addDays, format } from 'date-fns';
+import { TrendingDown, Calendar } from 'lucide-react';
+import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 export default function StockPredictions({ products }) {
-  // Mock prediction logic
+  /**
+   * Jours de couverture restants, à partir de la vitesse d'écoulement observée
+   * depuis la mise en rayon. Un produit sans historique n'est pas prédit — on
+   * l'affiche comme tel plutôt que d'inventer une vitesse.
+   */
   const predictions = products
-    .filter(p => p.status === 'active' && p.quantity_available > 0)
-    .map(p => {
-      // Simulate daily sales velocity based on quantity and random factor
-      const dailyVelocity = Math.max(1, Math.floor(Math.random() * 5));
-      const daysUntilStockout = Math.floor(p.quantity_available / dailyVelocity);
-      const stockoutDate = addDays(new Date(), daysUntilStockout);
-      
+    .filter((p) => p.status === 'active')
+    .map((product) => {
+      const ageInDays = Math.max(
+        1,
+        Math.round((Date.now() - new Date(product.created_date).getTime()) / 86_400_000),
+      );
+      const sold = product.quantity_sold ?? 0;
+      const dailyVelocity = sold / ageInDays;
+      const stock = product.quantity_available ?? 0;
+
+      const daysOfCover = dailyVelocity > 0 ? Math.floor(stock / dailyVelocity) : null;
+      const daysToExpiry = product.expiration_date
+        ? Math.ceil((new Date(product.expiration_date) - Date.now()) / 86_400_000)
+        : null;
+
       return {
-        ...p,
+        ...product,
         dailyVelocity,
-        daysUntilStockout,
-        stockoutDate
+        daysOfCover,
+        daysToExpiry,
+        // Un produit qui périmera avant d'être écoulé est le vrai signal utile.
+        atRisk: daysOfCover !== null && daysToExpiry !== null && daysOfCover > daysToExpiry,
+        hasHistory: sold > 0,
       };
     })
-    .sort((a, b) => a.daysUntilStockout - b.daysUntilStockout)
-    .slice(0, 5);
+    .sort((a, b) => Number(b.atRisk) - Number(a.atRisk));
 
   return (
     <div className="space-y-4">

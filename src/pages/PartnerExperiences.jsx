@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { createPageUrl } from '@/utils';
 import ExperienceManager from '@/components/partner/ExperienceManager';
+import { goToLogin } from '@/lib/navigation';
 
 export default function PartnerExperiences() {
   const [user, setUser] = useState(null);
@@ -9,13 +10,13 @@ export default function PartnerExperiences() {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const userData = await base44.auth.me();
+        const userData = await api.auth.me();
         setUser(userData);
         if (!userData.is_partner) {
           window.location.href = createPageUrl('Home');
         }
       } catch (e) {
-        base44.auth.redirectToLogin();
+        goToLogin();
       }
     };
     loadUser();

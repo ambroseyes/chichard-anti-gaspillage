@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
-  Shield, AlertTriangle, CheckCircle, FileText, Upload, 
+  Shield, CheckCircle, FileText, Upload, 
   TrendingUp, Lock, Eye, Flag, Award, Info
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from 'sonner';
 import TrustBadge from '@/components/safety/TrustBadge';
 import { motion } from 'framer-motion';
+import { goToLogin } from '@/lib/navigation';
 
 export default function SecurityCenter() {
   const [user, setUser] = useState(null);
@@ -22,10 +23,10 @@ export default function SecurityCenter() {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const userData = await base44.auth.me();
+        const userData = await api.auth.me();
         setUser(userData);
       } catch (e) {
-        base44.auth.redirectToLogin();
+        goToLogin();
       }
     };
     loadUser();
@@ -33,20 +34,20 @@ export default function SecurityCenter() {
 
   const { data: verifications = [] } = useQuery({
     queryKey: ['verifications', user?.email],
-    queryFn: () => base44.entities.IdentityVerification.filter({ user_email: user.email }),
+    queryFn: () => api.entities.IdentityVerification.filter({ user_email: user.email }),
     enabled: !!user
   });
 
   const { data: reports = [] } = useQuery({
     queryKey: ['my-reports', user?.email],
-    queryFn: () => base44.entities.ScamReport.filter({ reporter_email: user.email }),
+    queryFn: () => api.entities.ScamReport.filter({ reporter_email: user.email }),
     enabled: !!user
   });
 
   const uploadMutation = useMutation({
     mutationFn: async ({ file, type }) => {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      return base44.entities.IdentityVerification.create({
+      const { file_url } = await api.uploads.file(file);
+      return api.entities.IdentityVerification.create({
         user_email: user.email,
         verification_type: type,
         document_url: file_url,

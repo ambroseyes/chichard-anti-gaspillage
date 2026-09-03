@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
@@ -14,33 +14,35 @@ export default function BrandOffers() {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const userData = await base44.auth.me();
+        const userData = await api.auth.me();
         setUser(userData);
-      } catch (e) {}
+      } catch {
+        // Visiteur non connecté : la page reste consultable en anonyme.
+      }
     };
     loadUser();
   }, []);
 
   const { data: activeCampaigns = [] } = useQuery({
     queryKey: ['active-sponsored-campaigns'],
-    queryFn: () => base44.entities.SponsoredCampaign.filter({ status: 'active' }, '-created_date')
+    queryFn: () => api.entities.SponsoredCampaign.filter({ status: 'active' }, '-created_date')
   });
 
   const { data: brands = [] } = useQuery({
     queryKey: ['active-brand-partnerships'],
-    queryFn: () => base44.entities.BrandPartnership.filter({ partnership_status: 'active' })
+    queryFn: () => api.entities.BrandPartnership.filter({ partnership_status: 'active' })
   });
 
   const { data: products = [] } = useQuery({
     queryKey: ['products-for-brands'],
-    queryFn: () => base44.entities.Product.filter({ status: 'active' }, '-created_date', 100)
+    queryFn: () => api.entities.Product.filter({ status: 'active' }, '-created_date', 100)
   });
 
   // Track impression when campaigns are viewed
   useEffect(() => {
     if (activeCampaigns.length > 0) {
       activeCampaigns.forEach(campaign => {
-        base44.entities.SponsoredCampaign.update(campaign.id, {
+        api.entities.SponsoredCampaign.update(campaign.id, {
           impressions: (campaign.impressions || 0) + 1
         });
       });
@@ -48,7 +50,7 @@ export default function BrandOffers() {
   }, [activeCampaigns.length]);
 
   const trackClick = async (campaign) => {
-    await base44.entities.SponsoredCampaign.update(campaign.id, {
+    await api.entities.SponsoredCampaign.update(campaign.id, {
       clicks: (campaign.clicks || 0) + 1,
       ctr: ((campaign.clicks + 1) / (campaign.impressions || 1)) * 100
     });

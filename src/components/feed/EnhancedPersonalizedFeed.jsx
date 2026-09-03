@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Sparkles, ShoppingBag, ChefHat, Lightbulb, Flame, Users,
-  TrendingUp, Heart, Clock, Star, Loader2, ThumbsUp, Share2,
+  Sparkles, ShoppingBag, ChefHat, Flame, Users, Heart, Clock, Loader2,
   Bookmark, Target
 } from 'lucide-react';
 import { Card } from "@/components/ui/card";
@@ -21,39 +20,39 @@ export default function EnhancedPersonalizedFeed({ user, onAddToCart }) {
 
   const { data: products = [] } = useQuery({
     queryKey: ['products'],
-    queryFn: () => base44.entities.Product.filter({ status: 'active' }, '-created_date', 100),
+    queryFn: () => api.entities.Product.filter({ status: 'active' }, '-created_date', 100),
   });
 
   const { data: recipes = [] } = useQuery({
     queryKey: ['recipes'],
-    queryFn: () => base44.entities.Recipe.list('-created_date', 30),
+    queryFn: () => api.entities.Recipe.list('-created_date', 30),
   });
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.filter({ is_active: true }),
+    queryFn: () => api.entities.Challenge.filter({ is_active: true }),
   });
 
   const { data: partnerChallenges = [] } = useQuery({
     queryKey: ['partner-challenges'],
-    queryFn: () => base44.entities.PartnerChallenge.filter({ is_active: true }),
+    queryFn: () => api.entities.PartnerChallenge.filter({ is_active: true }),
   });
 
   const { data: orders = [] } = useQuery({
     queryKey: ['user-orders', user?.email],
-    queryFn: () => base44.entities.Order.filter({ customer_email: user?.email }, '-created_date', 50),
+    queryFn: () => api.entities.Order.filter({ customer_email: user?.email }, '-created_date', 50),
     enabled: !!user,
   });
 
   const { data: interactions = [] } = useQuery({
     queryKey: ['user-interactions', user?.email],
-    queryFn: () => base44.entities.UserInteraction.filter({ user_email: user?.email }, '-created_date', 200),
+    queryFn: () => api.entities.UserInteraction.filter({ user_email: user?.email }, '-created_date', 200),
     enabled: !!user,
   });
 
   const { data: userChallenges = [] } = useQuery({
     queryKey: ['user-challenges', user?.email],
-    queryFn: () => base44.entities.UserChallenge.filter({ user_email: user?.email }),
+    queryFn: () => api.entities.UserChallenge.filter({ user_email: user?.email }),
     enabled: !!user,
   });
 
@@ -104,7 +103,7 @@ export default function EnhancedPersonalizedFeed({ user, onAddToCart }) {
     // Score products with enhanced AI
     const scoredProducts = products.map(product => {
       let score = 50;
-      let reasons = [];
+      const reasons = [];
 
       // Category affinity from purchases
       const categoryPurchases = purchasedCategories[product.category] || 0;
@@ -158,7 +157,7 @@ export default function EnhancedPersonalizedFeed({ user, onAddToCart }) {
     // Score recipes based on purchased ingredients
     const scoredRecipes = recipes.map(recipe => {
       let score = 40;
-      let reasons = [];
+      const reasons = [];
 
       // Check ingredient match
       const recipeIngredients = recipe.ingredients?.map(i => i.name?.toLowerCase()) || [];
@@ -200,7 +199,7 @@ export default function EnhancedPersonalizedFeed({ user, onAddToCart }) {
 
     const scoredChallenges = [...challenges, ...partnerChallenges].map(challenge => {
       let score = 35;
-      let reasons = [];
+      const reasons = [];
 
       // Skip completed
       if (completedChallengeIds.includes(challenge.id)) {
@@ -285,7 +284,7 @@ export default function EnhancedPersonalizedFeed({ user, onAddToCart }) {
 
   const trackInteraction = async (item, type) => {
     if (!user) return;
-    await base44.entities.UserInteraction.create({
+    await api.entities.UserInteraction.create({
       user_email: user.email,
       item_type: item.type,
       item_id: item.id,

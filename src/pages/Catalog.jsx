@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-import { Search, SlidersHorizontal, X, Clock, TrendingDown } from 'lucide-react';
+import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,7 +10,8 @@ import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import ProductCard from '@/components/ui/ProductCard';
-import CategoryPill, { categories } from '@/components/ui/CategoryPill';
+import CategoryPill from '@/components/ui/CategoryPill';
+import { goToLogin } from '@/lib/navigation';
 
 export default function Catalog() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -24,35 +24,37 @@ export default function Catalog() {
   React.useEffect(() => {
     const loadUser = async () => {
       try {
-        const userData = await base44.auth.me();
+        const userData = await api.auth.me();
         setUser(userData);
-      } catch (e) {}
+      } catch {
+        // Visiteur non connecté : la page reste consultable en anonyme.
+      }
     };
     loadUser();
   }, []);
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['products'],
-    queryFn: () => base44.entities.Product.filter({ status: 'active' }, '-created_date', 100),
+    queryFn: () => api.entities.Product.filter({ status: 'active' }, '-created_date', 100),
   });
 
   const addToCart = async (product) => {
     if (!user) {
-      base44.auth.redirectToLogin();
+      goToLogin();
       return;
     }
     
-    const existingItems = await base44.entities.CartItem.filter({ 
+    const existingItems = await api.entities.CartItem.filter({ 
       user_email: user.email, 
       product_id: product.id 
     });
     
     if (existingItems.length > 0) {
-      await base44.entities.CartItem.update(existingItems[0].id, {
+      await api.entities.CartItem.update(existingItems[0].id, {
         quantity: (existingItems[0].quantity || 1) + 1
       });
     } else {
-      await base44.entities.CartItem.create({
+      await api.entities.CartItem.create({
         user_email: user.email,
         product_id: product.id,
         product_name: product.name,

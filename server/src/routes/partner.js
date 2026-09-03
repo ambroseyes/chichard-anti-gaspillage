@@ -3,13 +3,158 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { handler } from '../lib/async-handler.js';
 import { forbidden } from '../lib/errors.js';
+import crypto from 'node:crypto';
 import { requireAuth, requirePartner } from '../auth/middleware.js';
+import { prisma as db } from '../lib/prisma.js';
+import { sendEmail } from '../integrations/email.js';
+import { env } from '../config/env.js';
+import { logger } from '../lib/logger.js';
+import { badRequest, notFound } from '../lib/errors.js';
 import { withStoreContext } from '../access/context.js';
 import { urgencyFor, suggestedPrice } from '../domain/pricing.js';
 
 export const partnerRouter = Router();
 
+/**
+ * Candidature partenaire : crée le magasin, rattache le compte et envoie le
+ * courriel de vérification. Ouvert à tout compte connecté — c'est le point
+ * d'entrée qui *fait* de quelqu'un un partenaire.
+ */
+export const partnerSignupRouter = Router();
+
+partnerSignupRouter.post(
+  '/stores',
+  requireAuth,
+  handler(async (req, res) => {
+    const parsed = z
+      .object({
+        name: z.string().min(2).max(120),
+        address: z.string().min(3).max(255),
+        city: z.string().min(2).max(80),
+        phone: z.string().max(20).optional(),
+        email: z.string().email().optional(),
+        description: z.string().max(1000).optional(),
+        opening_hours: z.string().max(120).optional(),
+        logo_url: z.string().url().optional(),
+        latitude: z.number().optional(),
+        longitude: z.number().optional(),
+      })
+      .safeParse(req.body);
+    if (!parsed.success) throw badRequest('Informations du magasin invalides', parsed.error.issues);
+
+    const token = crypto.randomBytes(24).toString('base64url');
+
+    const store = await db.store.create({
+      data: {
+        ...parsed.data,
+        owner_email: req.user.email,
+        // Un magasin naît « en attente » : seul le backoffice peut le vérifier.
+        status: 'pending',
+        is_partner: false,
+        verification_token: token,
+        email_verified: false,
+      },
+    });
+
+    await db.user.update({ where: { id: req.user.id }, data: { store_id: store.id } });
+
+    const link = `${env.CORS_ORIGINS.split(',')[0]}/VerifyPartner?token=${token}&store_id=${store.id}`;
+    sendEmail({
+      to: parsed.data.email ?? req.user.email,
+      subject: 'Vérifiez votre adresse — partenaire Chichard',
+      html: `<p>Bienvenue sur Chichard.</p><p>Confirmez l'adresse de votre magasin <strong>${store.name}</strong> en suivant ce lien :</p><p><a href="${link}">${link}</a></p><p>Votre dossier sera ensuite examiné par notre équipe.</p>`,
+    }).catch((error) => logger.warn({ err: error }, 'e-mail de vérification non envoyé'));
+
+    res.status(201).json({ data: store });
+  }),
+);
+
+/** Confirmation de l'adresse par le propriétaire, via le lien reçu. */
+partnerSignupRouter.post(
+  '/stores/verify',
+  handler(async (req, res) => {
+    const parsed = z.object({ store_id: z.string(), token: z.string() }).safeParse(req.body);
+    if (!parsed.success) throw badRequest('Lien de vérification invalide');
+
+    const store = await db.store.findUnique({ where: { id: parsed.data.store_id } });
+    if (!store || !store.verification_token || store.verification_token !== parsed.data.token) {
+      throw badRequest('Lien de vérification invalide ou expiré');
+    }
+
+    const updated = await db.store.update({
+      where: { id: store.id },
+      data: { email_verified: true, verification_token: null },
+    });
+    res.json({ data: { id: updated.id, name: updated.name, email_verified: true } });
+  }),
+);
+
 partnerRouter.use(requireAuth, requirePartner);
+
+/** Confirmation ou refus d'une réservation d'expérience par le partenaire. */
+partnerRouter.patch(
+  '/bookings/:id/status',
+  handler(async (req, res) => {
+    const parsed = z
+      .object({ status: z.enum(['confirmed', 'cancelled', 'completed', 'no_show']) })
+      .safeParse(req.body);
+    if (!parsed.success) throw badRequest('Statut invalide', parsed.error.issues);
+
+    const storeIds = await withStoreContext(req);
+    const booking = await db.experienceBooking.findUnique({ where: { id: req.params.id } });
+    if (!booking) throw notFound('Réservation introuvable');
+
+    const experience = await db.experience.findUnique({ where: { id: booking.experience_id } });
+    if (!experience || !storeIds.includes(experience.store_id)) throw notFound('Réservation introuvable');
+
+    const [updated] = await db.$transaction([
+      db.experienceBooking.update({
+        where: { id: booking.id },
+        data: { status: parsed.data.status, confirmation_sent: true },
+      }),
+      db.notification.create({
+        data: {
+          user_email: booking.user_email,
+          title:
+            parsed.data.status === 'confirmed'
+              ? `Réservation confirmée : ${experience.title}`
+              : `Réservation ${parsed.data.status} : ${experience.title}`,
+          message:
+            parsed.data.status === 'confirmed'
+              ? `Rendez-vous le ${experience.event_date?.toLocaleDateString('fr-FR')} à ${experience.event_time ?? ''} — ${experience.location ?? experience.store_name}.`
+              : 'Consultez vos réservations pour le détail.',
+          type: 'system',
+          action_url: '/LoyaltyProgram',
+          data: { booking_id: booking.id, experience_id: experience.id },
+        },
+      }),
+      // Une annulation rend la place et rembourse les points.
+      ...(parsed.data.status === 'cancelled'
+        ? [
+            db.experience.update({
+              where: { id: experience.id },
+              data: { current_participants: { decrement: 1 } },
+            }),
+            db.user.updateMany({
+              where: { email: booking.user_email },
+              data: { loyalty_points: { increment: booking.points_spent } },
+            }),
+            db.loyaltyTransaction.create({
+              data: {
+                user_email: booking.user_email,
+                type: 'earn',
+                points: booking.points_spent,
+                source: 'bonus',
+                description: `Remboursement : ${experience.title}`,
+              },
+            }),
+          ]
+        : []),
+    ]);
+
+    res.json({ data: updated });
+  }),
+);
 
 /**
  * Tableau de bord partenaire — chiffres réels, agrégés en base sur la période

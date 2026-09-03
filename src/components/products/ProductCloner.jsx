@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Copy, Check } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ export default function ProductCloner({ product, onCloneSuccess }) {
       delete clonedProduct.created_date;
       delete clonedProduct.updated_date;
       
-      return base44.entities.Product.create(clonedProduct);
+      return api.entities.Product.create(clonedProduct);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['partner-products'] });

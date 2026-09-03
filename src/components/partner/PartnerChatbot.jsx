@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -57,10 +57,7 @@ Fonctionnalités principales:
 
 Réponds de manière concise, pratique et en français. Sois amical et professionnel.`;
 
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `${context}\n\nQuestion du partenaire: ${userMessage}`,
-        add_context_from_internet: false,
-      });
+      const response = await api.ai.partnerAssistant(userMessage);
 
       setMessages(prev => [...prev, { 
         role: 'assistant', 

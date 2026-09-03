@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { MessageSquare, Send, ThumbsUp, MessageCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
@@ -18,11 +17,11 @@ export default function ForumSection({ user }) {
 
   const { data: questions = [], isLoading } = useQuery({
     queryKey: ['forum-questions'],
-    queryFn: () => base44.entities.SocialPost.filter({ post_type: 'question' }, '-created_date', 20),
+    queryFn: () => api.entities.SocialPost.filter({ post_type: 'question' }, '-created_date', 20),
   });
 
   const createQuestionMutation = useMutation({
-    mutationFn: (content) => base44.entities.SocialPost.create({
+    mutationFn: (content) => api.entities.SocialPost.create({
       content,
       post_type: 'question',
       author_email: user.email,

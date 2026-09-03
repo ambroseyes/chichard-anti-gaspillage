@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
-import { differenceInDays, differenceInHours } from 'date-fns';
+import { motion } from 'framer-motion';
+import { differenceInHours } from 'date-fns';
 import {
-  Trophy, Flame, Clock, Target, Zap, ShoppingCart, Leaf,
-  Award, Star, ChevronRight, Check, Lock, Sparkles, Users, Store
+  Trophy, Flame, Clock, Target, Zap,
+  Award, Star, Check, Users, Store
 } from 'lucide-react';
 import TeamChallenges from '@/components/challenges/TeamChallenges';
 import PersonalGoals from '@/components/challenges/PersonalGoals';
@@ -122,33 +122,35 @@ export default function WeeklyChallenges() {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const userData = await base44.auth.me();
+        const userData = await api.auth.me();
         setUser(userData);
-      } catch (e) {}
+      } catch {
+        // Visiteur non connecté : la page reste consultable en anonyme.
+      }
     };
     loadUser();
   }, []);
 
   const { data: challenges = [] } = useQuery({
     queryKey: ['challenges'],
-    queryFn: () => base44.entities.Challenge.filter({ is_active: true }),
+    queryFn: () => api.entities.Challenge.filter({ is_active: true }),
   });
 
   const { data: userChallenges = [] } = useQuery({
     queryKey: ['user-challenges', user?.email],
-    queryFn: () => base44.entities.UserChallenge.filter({ user_email: user.email }),
+    queryFn: () => api.entities.UserChallenge.filter({ user_email: user.email }),
     enabled: !!user,
   });
 
   const joinChallengeMutation = useMutation({
     mutationFn: async (challenge) => {
-      await base44.entities.UserChallenge.create({
+      await api.entities.UserChallenge.create({
         user_email: user.email,
         challenge_id: challenge.id,
         current_progress: 0,
         is_completed: false
       });
-      await base44.entities.Challenge.update(challenge.id, {
+      await api.entities.Challenge.update(challenge.id, {
         participants_count: (challenge.participants_count || 0) + 1
       });
     },

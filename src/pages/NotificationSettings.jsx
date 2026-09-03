@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { Bell, Clock, Tag, Leaf, Save, ChevronLeft } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { goToLogin } from '@/lib/navigation';
 
 const DIETARY_OPTIONS = ['Végétarien', 'Vegan', 'Halal', 'Sans gluten', 'Sans lactose', 'Kasher', 'Bio uniquement'];
 const CATEGORIES = ['fruits_legumes', 'produits_laitiers', 'viandes_poissons', 'boulangerie', 'epicerie', 'boissons'];
@@ -27,7 +27,7 @@ export default function NotificationSettings() {
   });
 
   useEffect(() => {
-    base44.auth.me().then(u => {
+    api.auth.me().then(u => {
       setUser(u);
       setSettings({
         dlc_alert_days: u.dlc_alert_days || 2,
@@ -35,7 +35,7 @@ export default function NotificationSettings() {
         offer_categories: u.offer_categories || [],
         dietary_preferences: u.dietary_preferences || [],
       });
-    }).catch(() => base44.auth.redirectToLogin());
+    }).catch(() => goToLogin());
   }, []);
 
   const toggleArr = (key, value) => {
@@ -56,7 +56,7 @@ export default function NotificationSettings() {
 
   const save = async () => {
     setSaving(true);
-    await base44.auth.updateMe(settings);
+    await api.auth.updateMe(settings);
     setSaving(false);
     toast.success('Paramètres enregistrés');
   };

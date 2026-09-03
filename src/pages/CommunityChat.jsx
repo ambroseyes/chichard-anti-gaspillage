@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
-  MessageCircle, Send, Plus, Users, Hash, ChefHat, Lightbulb,
-  Flame, ShoppingBag, Search, ArrowLeft, Smile, Image, Loader2
+  MessageCircle, Send, ChefHat, Lightbulb,
+  Flame, ShoppingBag, Search, ArrowLeft, Loader2
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { toast } from 'sonner';
+import { goToLogin } from '@/lib/navigation';
 
 const categoryConfig = {
   recettes: { icon: ChefHat, color: 'bg-orange-100 text-orange-600', label: 'Recettes' },
@@ -43,10 +43,10 @@ export default function CommunityChat() {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const userData = await base44.auth.me();
+        const userData = await api.auth.me();
         setUser(userData);
       } catch (e) {
-        base44.auth.redirectToLogin();
+        goToLogin();
       }
     };
     loadUser();
@@ -55,14 +55,14 @@ export default function CommunityChat() {
   const { data: rooms = [] } = useQuery({
     queryKey: ['chat-rooms'],
     queryFn: async () => {
-      const existingRooms = await base44.entities.ChatRoom.filter({ is_active: true });
+      const existingRooms = await api.entities.ChatRoom.filter({ is_active: true });
       
       // Create default rooms if they don't exist
       if (existingRooms.length === 0) {
         for (const room of defaultRooms) {
-          await base44.entities.ChatRoom.create(room);
+          await api.entities.ChatRoom.create(room);
         }
-        return await base44.entities.ChatRoom.filter({ is_active: true });
+        return await api.entities.ChatRoom.filter({ is_active: true });
       }
       return existingRooms;
     },
@@ -70,7 +70,7 @@ export default function CommunityChat() {
 
   const { data: messages = [], refetch: refetchMessages } = useQuery({
     queryKey: ['chat-messages', selectedRoom?.id],
-    queryFn: () => base44.entities.ChatMessage.filter(
+    queryFn: () => api.entities.ChatMessage.filter(
       { room_id: selectedRoom?.id },
       '-created_date',
       100
@@ -81,7 +81,7 @@ export default function CommunityChat() {
 
   const sendMessageMutation = useMutation({
     mutationFn: async (content) => {
-      await base44.entities.ChatMessage.create({
+      await api.entities.ChatMessage.create({
         room_id: selectedRoom.id,
         sender_email: user.email,
         sender_name: user.full_name,
@@ -89,7 +89,7 @@ export default function CommunityChat() {
         message_type: 'text',
       });
 
-      await base44.entities.ChatRoom.update(selectedRoom.id, {
+      await api.entities.ChatRoom.update(selectedRoom.id, {
         last_message: content.substring(0, 50),
         last_message_date: new Date().toISOString(),
       });

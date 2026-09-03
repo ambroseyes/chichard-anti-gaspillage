@@ -3,7 +3,7 @@ import { differenceInDays, format, subMonths, startOfMonth, endOfMonth, isWithin
 import { fr } from 'date-fns/locale';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line, PieChart, Pie, Cell, Legend
+  LineChart, Line
 } from 'recharts';
 import { Leaf, TrendingUp, DollarSign, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card } from '@/components/ui/card';

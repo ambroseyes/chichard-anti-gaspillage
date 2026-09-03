@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
@@ -25,18 +25,18 @@ export default function VerifyPartner() {
         }
 
         // Update store status to pending
-        await base44.entities.Store.update(storeId, {
+        await api.entities.Store.update(storeId, {
           status: 'pending',
           email_verified: true
         });
 
         // Notify all admins
-        const adminUsers = await base44.entities.User.filter({ role: 'admin' });
-        const store = await base44.entities.Store.filter({ id: storeId });
+        const adminUsers = await api.entities.User.filter({ role: 'admin' });
+        const store = await api.entities.Store.filter({ id: storeId });
         
         if (store && store.length > 0) {
           for (const admin of adminUsers) {
-            await base44.entities.Notification.create({
+            await api.entities.Notification.create({
               user_email: admin.email,
               title: 'Nouveau partenaire vérifié',
               message: `${store[0].name} a vérifié son email et attend votre validation`,

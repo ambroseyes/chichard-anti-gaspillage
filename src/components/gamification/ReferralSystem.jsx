@@ -1,10 +1,7 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { motion } from 'framer-motion';
-import { Users, Copy, Share2, Gift, Trophy } from 'lucide-react';
+import { Copy, Share2, Gift, Trophy } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { toast } from 'sonner';
 
 export default function ReferralSystem({ user }) {

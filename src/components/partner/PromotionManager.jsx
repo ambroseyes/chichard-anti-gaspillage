@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,22 +33,22 @@ export default function PromotionManager({ storeId, storeEmail }) {
 
   const { data: products = [] } = useQuery({
     queryKey: ['partner-products', storeEmail],
-    queryFn: () => base44.entities.Product.filter({ created_by: storeEmail }),
+    queryFn: () => api.entities.Product.filter({ created_by: storeEmail }),
     enabled: !!storeEmail,
   });
 
   const { data: promotions = [] } = useQuery({
     queryKey: ['promotions', storeId],
-    queryFn: () => base44.entities.Promotion.filter({ store_id: storeId }),
+    queryFn: () => api.entities.Promotion.filter({ store_id: storeId }),
     enabled: !!storeId,
   });
 
   const createPromoMutation = useMutation({
     mutationFn: async (data) => {
       if (editingPromo) {
-        return base44.entities.Promotion.update(editingPromo.id, data);
+        return api.entities.Promotion.update(editingPromo.id, data);
       }
-      return base44.entities.Promotion.create(data);
+      return api.entities.Promotion.create(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['promotions'] });
@@ -59,7 +59,7 @@ export default function PromotionManager({ storeId, storeEmail }) {
   });
 
   const deletePromoMutation = useMutation({
-    mutationFn: (id) => base44.entities.Promotion.delete(id),
+    mutationFn: (id) => api.entities.Promotion.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['promotions'] });
       toast.success('Promotion supprimée');

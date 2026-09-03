@@ -1,21 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import BackofficeLayout from '@/components/backoffice/BackofficeLayout';
 import {
-  TrendingUp, TrendingDown, Users, Package, DollarSign, AlertTriangle,
-  Activity, ShoppingCart, ArrowUpRight, ArrowDownRight, Zap, Eye
+  TrendingUp, Users, Package, DollarSign, AlertTriangle,
+  Activity, ShoppingCart, ArrowUpRight, ArrowDownRight, Zap
 } from 'lucide-react';
 import {
-  AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+  AreaChart, Area, BarChart, Bar, Line, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import { format, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { motion } from 'framer-motion';
+import { goToLogin } from '@/lib/navigation';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#3b82f6'];
 
@@ -45,27 +46,27 @@ export default function AdminBackoffice() {
   const [period, setPeriod] = useState('30');
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => base44.auth.redirectToLogin());
+    api.auth.me().then(setUser).catch(() => goToLogin());
   }, []);
 
   const { data: orders = [] } = useQuery({
     queryKey: ['bo-orders'],
-    queryFn: () => base44.entities.Order.list('-created_date', 200)
+    queryFn: () => api.entities.Order.list('-created_date', 200)
   });
 
   const { data: products = [] } = useQuery({
     queryKey: ['bo-products'],
-    queryFn: () => base44.entities.Product.list('-created_date', 100)
+    queryFn: () => api.entities.Product.list('-created_date', 100)
   });
 
   const { data: stores = [] } = useQuery({
     queryKey: ['bo-stores'],
-    queryFn: () => base44.entities.Store.list()
+    queryFn: () => api.entities.Store.list()
   });
 
   const { data: users = [] } = useQuery({
     queryKey: ['bo-users'],
-    queryFn: () => base44.entities.User.list()
+    queryFn: () => api.entities.User.list()
   });
 
   // KPI calculations

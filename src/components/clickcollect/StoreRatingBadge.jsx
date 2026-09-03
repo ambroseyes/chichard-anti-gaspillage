@@ -1,12 +1,12 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
-import { Star, ThumbsUp } from 'lucide-react';
+import { api } from '@/api';
+import { Star } from 'lucide-react';
 
 export default function StoreRatingBadge({ storeId, storeName, showDetails = false }) {
   const { data: reviews = [] } = useQuery({
     queryKey: ['store-reviews', storeId],
-    queryFn: () => base44.entities.BasketReview.filter({ store_id: storeId }, '-created_date', 100),
+    queryFn: () => api.entities.BasketReview.filter({ store_id: storeId }, '-created_date', 100),
     enabled: !!storeId,
   });
 

@@ -73,7 +73,9 @@ export const policies = {
   Store: {
     store: 'id',
     read: PUBLIC,
-    create: AUTH,
+    // La création passe par POST /api/partner/stores : c'est là que le magasin
+    // est rattaché à son propriétaire et que la vérification est déclenchée.
+    create: NEVER,
     update: STORE,
     delete: ADMIN,
     // Statut de partenariat et compteurs : décidés par le backoffice ou le serveur.

@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { differenceInDays } from 'date-fns';
-import { TrendingUp, AlertTriangle, PackagePlus, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
+import { TrendingUp, PackagePlus, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { toast } from 'sonner';
 
 // Velocity = units sold per day
@@ -69,7 +69,7 @@ export default function RestockAdvisor({ products, onRestock }) {
   const handleRestock = async (advisory) => {
     setRestocking(prev => ({ ...prev, [advisory.product.id]: true }));
     // Create a notification / log for the partner
-    await base44.entities.Notification.create({
+    await api.entities.Notification.create({
       user_email: advisory.product.created_by,
       title: `Réappro suggéré: ${advisory.product.name}`,
       message: `Commandez ~${advisory.suggestedQty} unités (${advisory.reason})`,

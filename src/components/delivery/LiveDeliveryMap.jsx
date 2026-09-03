@@ -109,8 +109,10 @@ export default function LiveDeliveryMap({ orders, onRouteOptimize }) {
   const getCoordinates = (address, index) => {
     const baseCoords = [3.8480, 11.5021];
     return [
-      baseCoords[0] + (Math.random() - 0.5) * 0.1,
-      baseCoords[1] + (Math.random() - 0.5) * 0.1
+      // Sans coordonnées enregistrées, on retombe sur le centre-ville plutôt
+      // que sur une position inventée qui laisserait croire à un vrai suivi.
+      baseCoords[0],
+      baseCoords[1]
     ];
   };
 
@@ -128,8 +130,8 @@ export default function LiveDeliveryMap({ orders, onRouteOptimize }) {
   const optimizeRoute = () => {
     if (deliveryPoints.length === 0) return;
 
-    let route = [userLocation];
-    let remaining = [...deliveryPoints];
+    const route = [userLocation];
+    const remaining = [...deliveryPoints];
     let currentPos = userLocation;
     let totalDistance = 0;
 

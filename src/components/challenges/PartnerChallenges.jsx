@@ -1,12 +1,11 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Store, Trophy, Gift, Percent, Clock, Users } from 'lucide-react';
+import { Store, Gift, Percent, Clock, Users } from 'lucide-react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { toast } from 'sonner';
 
 export default function PartnerChallenges({ user }) {
@@ -14,25 +13,25 @@ export default function PartnerChallenges({ user }) {
 
   const { data: partnerChallenges = [] } = useQuery({
     queryKey: ['partner-challenges'],
-    queryFn: () => base44.entities.Challenge.filter({ challenge_type: 'partner' }),
+    queryFn: () => api.entities.Challenge.filter({ challenge_type: 'partner' }),
   });
 
   const { data: userChallenges = [] } = useQuery({
     queryKey: ['user-challenges', user?.email],
-    queryFn: () => base44.entities.UserChallenge.filter({ user_email: user?.email }),
+    queryFn: () => api.entities.UserChallenge.filter({ user_email: user?.email }),
     enabled: !!user,
   });
 
   const joinMutation = useMutation({
     mutationFn: async (challenge) => {
-      await base44.entities.UserChallenge.create({
+      await api.entities.UserChallenge.create({
         user_email: user.email,
         challenge_id: challenge.id,
         current_progress: 0,
         is_completed: false
       });
 
-      await base44.entities.Challenge.update(challenge.id, {
+      await api.entities.Challenge.update(challenge.id, {
         participants_count: (challenge.participants_count || 0) + 1
       });
     },

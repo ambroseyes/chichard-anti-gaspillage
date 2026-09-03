@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, CheckCircle, AlertCircle } from 'lucide-react';
+import { Shield, AlertCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function TrustBadge({ verificationStatus, trustScore, showScore = false }) {

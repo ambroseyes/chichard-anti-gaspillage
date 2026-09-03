@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { motion } from 'framer-motion';
 import {
   Crown, Check, Truck, Zap, Percent, BarChart3, Award,
-  Star, Sparkles, Gift, Shield, Clock, ArrowRight
+  Star, Gift, Shield, ArrowRight
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from 'sonner';
+import { goToLogin } from '@/lib/navigation';
 
 const benefits = [
   {
@@ -81,23 +82,25 @@ export default function ChichardPlus() {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const userData = await base44.auth.me();
+        const userData = await api.auth.me();
         setUser(userData);
-      } catch (e) {}
+      } catch {
+        // Visiteur non connecté : la page reste consultable en anonyme.
+      }
     };
     loadUser();
   }, []);
 
   const handleSubscribe = async () => {
     if (!user) {
-      base44.auth.redirectToLogin();
+      goToLogin();
       return;
     }
 
     setIsSubscribing(true);
     
     // Update user with premium status
-    await base44.auth.updateMe({
+    await api.auth.updateMe({
       is_premium: true,
       premium_plan: selectedPlan,
       premium_since: new Date().toISOString(),

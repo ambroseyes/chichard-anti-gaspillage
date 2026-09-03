@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, MapPin, ShoppingCart, Percent, CheckCircle } from 'lucide-react';
+import { Clock, MapPin, ShoppingCart, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const getUrgencyConfig = (expirationDate) => {

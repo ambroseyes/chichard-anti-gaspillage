@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Search, MapPin, ChevronRight, Clock, Zap, Sparkles, Users, ChefHat, Trophy, Flame } from 'lucide-react';
+import { Search, ChevronRight, Sparkles, Users, ChefHat, Trophy, Flame } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,6 +18,7 @@ import AIRecipeRecommendations from '@/components/ai/AIRecipeRecommendations';
 import AIPartnerRecommendations from '@/components/ai/AIPartnerRecommendations';
 import EnhancedPersonalizedFeed from '@/components/feed/EnhancedPersonalizedFeed';
 import OrderNotifications from '@/components/notifications/OrderNotifications';
+import { goToLogin } from '@/lib/navigation';
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -27,35 +28,37 @@ export default function Home() {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const userData = await base44.auth.me();
+        const userData = await api.auth.me();
         setUser(userData);
-      } catch (e) {}
+      } catch {
+        // Visiteur non connecté : la page reste consultable en anonyme.
+      }
     };
     loadUser();
   }, []);
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['products'],
-    queryFn: () => base44.entities.Product.filter({ status: 'active' }, '-created_date', 50),
+    queryFn: () => api.entities.Product.filter({ status: 'active' }, '-created_date', 50),
   });
 
   const addToCart = async (product) => {
     if (!user) {
-      base44.auth.redirectToLogin();
+      goToLogin();
       return;
     }
     
-    const existingItems = await base44.entities.CartItem.filter({ 
+    const existingItems = await api.entities.CartItem.filter({ 
       user_email: user.email, 
       product_id: product.id 
     });
     
     if (existingItems.length > 0) {
-      await base44.entities.CartItem.update(existingItems[0].id, {
+      await api.entities.CartItem.update(existingItems[0].id, {
         quantity: (existingItems[0].quantity || 1) + 1
       });
     } else {
-      await base44.entities.CartItem.create({
+      await api.entities.CartItem.create({
         user_email: user.email,
         product_id: product.id,
         product_name: product.name,

@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card } from "@/components/ui/card";
+import { api } from '@/api';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Clock, Calendar, CheckCircle, X } from 'lucide-react';
+import { Clock, Calendar } from 'lucide-react';
 import { format, addDays, addHours, setHours, setMinutes } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -17,7 +16,7 @@ export default function TimeSlotManager({ storeId, onSlotSelected }) {
 
   const { data: pickupRequests = [] } = useQuery({
     queryKey: ['pickup-requests-slots', storeId],
-    queryFn: () => base44.entities.PickupRequest.filter({ store_id: storeId }),
+    queryFn: () => api.entities.PickupRequest.filter({ store_id: storeId }),
     enabled: !!storeId
   });
 

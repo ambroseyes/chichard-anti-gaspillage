@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import BackofficeLayout from '@/components/backoffice/BackofficeLayout';
 import { Search, Filter, Download, ShieldCheck, AlertTriangle, Info, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { goToLogin } from '@/lib/navigation';
 
 const ACTION_TYPES = {
   create: { label: 'Création', color: 'bg-blue-100 text-blue-700', icon: CheckCircle },
@@ -29,73 +29,63 @@ export default function BackofficeLogs() {
   const PAGE_SIZE = 20;
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => base44.auth.redirectToLogin());
+    api.auth.me().then(setUser).catch(() => goToLogin());
   }, []);
 
-  const { data: orders = [], refetch, isFetching } = useQuery({
-    queryKey: ['bo-audit-logs'],
-    queryFn: () => base44.entities.Order.list('-created_date', 200),
-    refetchInterval: 30000
+  /**
+   * Journal réel : chaque ligne a été écrite par le serveur au moment de
+   * l'action. L'ancien écran reconstituait un journal à partir des commandes,
+   * avec des adresses IP tirées au hasard — y compris dans l'export CSV.
+   */
+  const { data, isFetching, refetch } = useQuery({
+    queryKey: ['audit-logs', search, actionFilter, page],
+    queryFn: () =>
+      api.backoffice.auditLogs({
+        search: search || undefined,
+        action: actionFilter,
+        limit: PAGE_SIZE,
+        offset: page * PAGE_SIZE,
+      }),
+    placeholderData: (previous) => previous,
+    refetchInterval: 60_000,
   });
 
-  const { data: stores = [] } = useQuery({
-    queryKey: ['bo-audit-stores'],
-    queryFn: () => base44.entities.Store.list('-created_date', 100)
-  });
-
-  // Build synthetic audit log from real data
-  const auditLogs = [
-    ...orders.map(o => ({
-      id: `order-${o.id}`,
-      action: o.status === 'cancelled' ? 'delete' : o.status === 'confirmed' ? 'create' : 'update',
-      module: 'Commandes',
-      description: `Commande #${o.id?.slice(0, 8)} — statut: ${o.status}`,
-      user_email: o.customer_email,
-      timestamp: o.created_date || o.updated_date,
-      ip: '10.0.0.' + Math.floor(Math.random() * 255),
-      success: o.status !== 'cancelled'
-    })),
-    ...stores.map(s => ({
-      id: `store-${s.id}`,
-      action: s.status === 'verified' ? 'create' : s.status === 'rejected' ? 'delete' : 'update',
-      module: 'Magasins',
-      description: `Magasin "${s.name}" — statut: ${s.status}`,
-      user_email: s.owner_email || 'admin',
-      timestamp: s.created_date || s.updated_date,
-      ip: '10.0.0.' + Math.floor(Math.random() * 255),
-      success: s.status !== 'rejected'
-    }))
-  ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-  const filteredLogs = auditLogs.filter(log => {
-    const matchSearch = !search || log.description?.toLowerCase().includes(search.toLowerCase()) || log.user_email?.toLowerCase().includes(search.toLowerCase());
-    const matchAction = actionFilter === 'all' || log.action === actionFilter;
-    return matchSearch && matchAction;
-  });
-
-  const pagedLogs = filteredLogs.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-  const totalPages = Math.ceil(filteredLogs.length / PAGE_SIZE);
+  const pagedLogs = data?.data ?? [];
+  const totalLogs = data?.meta?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalLogs / PAGE_SIZE));
 
   const exportLogs = () => {
-    const csv = [
-      ['Action', 'Module', 'Description', 'Utilisateur', 'Date', 'IP', 'Succès'].join(','),
-      ...filteredLogs.map(l => [l.action, l.module, `"${l.description}"`, l.user_email, l.timestamp, l.ip, l.success].join(','))
-    ].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const rows = [
+      ['Date', 'Action', 'Module', 'Description', 'Utilisateur', 'Rôle', 'IP', 'Succès'],
+      ...pagedLogs.map((l) => [
+        l.created_date,
+        l.action,
+        l.module,
+        `"${(l.description ?? '').replace(/"/g, '""')}"`,
+        l.actor_email ?? '',
+        l.actor_role ?? '',
+        l.ip ?? '',
+        l.success ? 'oui' : 'non',
+      ]),
+    ];
+    const blob = new Blob([rows.map((r) => r.join(',')).join('\n')], {
+      type: 'text/csv;charset=utf-8',
+    });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `audit-logs-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    a.click();
-    toast.success('Logs exportés');
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `journal-audit-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success(`${pagedLogs.length} lignes exportées`);
   };
 
-  // Stats
+  // Comptés sur la page affichée ; `total` vient du serveur.
   const stats = {
-    total: auditLogs.length,
-    errors: auditLogs.filter(l => !l.success).length,
-    creates: auditLogs.filter(l => l.action === 'create').length,
-    updates: auditLogs.filter(l => l.action === 'update').length,
+    total: totalLogs,
+    errors: pagedLogs.filter((l) => !l.success).length,
+    creates: pagedLogs.filter((l) => l.action === 'create').length,
+    updates: pagedLogs.filter((l) => l.action === 'update').length,
   };
 
   return (
@@ -105,7 +95,7 @@ export default function BackofficeLogs() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-xl font-bold">Audit & Journaux</h1>
-            <p className="text-sm text-gray-500">{filteredLogs.length} événements enregistrés</p>
+            <p className="text-sm text-gray-500">{totalLogs} événements enregistrés</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => { refetch(); toast.success('Logs actualisés'); }} disabled={isFetching}>
@@ -204,7 +194,7 @@ export default function BackofficeLogs() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t bg-gray-50">
               <p className="text-sm text-gray-500">
-                {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filteredLogs.length)} sur {filteredLogs.length}
+                {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, totalLogs)} sur {totalLogs}
               </p>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => setPage(p => p - 1)} disabled={page === 0}>Précédent</Button>

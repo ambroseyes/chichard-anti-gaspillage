@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, Users, ShieldCheck, BarChart3, FileText, Bell,
-  Settings, LogOut, Menu, X, ChevronDown, TrendingUp, Package,
-  AlertTriangle, Search, Moon, Sun, Globe, Zap, Shield
+  Settings, LogOut, Menu, X, TrendingUp, Package,
+  AlertTriangle, Search, Moon, Sun, Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
+import { goToLogin, logout } from '@/lib/navigation';
 
 const NAV_ITEMS = [
   {
@@ -58,12 +58,12 @@ export default function BackofficeLayout({ children, currentPage }) {
   const location = useLocation();
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => base44.auth.redirectToLogin());
+    api.auth.me().then(setUser).catch(() => goToLogin());
   }, []);
 
   const { data: notifications = [] } = useQuery({
     queryKey: ['backoffice-notifs', user?.email],
-    queryFn: () => base44.entities.Notification.filter({ user_email: user.email, is_read: false }),
+    queryFn: () => api.entities.Notification.filter({ user_email: user.email, is_read: false }),
     enabled: !!user,
     refetchInterval: 15000
   });
@@ -156,7 +156,7 @@ export default function BackofficeLayout({ children, currentPage }) {
             {/* Logout */}
             <div className="p-4 border-t border-gray-700/50">
               <button
-                onClick={() => base44.auth.logout()}
+                onClick={() => logout()}
                 className="flex items-center gap-3 w-full px-3 py-2.5 text-gray-400 hover:text-red-400 hover:bg-gray-800 rounded-lg text-sm transition-all"
               >
                 <LogOut className="w-4 h-4" />

@@ -1,7 +1,6 @@
 import React from 'react';
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Package, ArrowRight, TrendingUp } from 'lucide-react';
+import { Package, TrendingUp } from 'lucide-react';
 
 export default function BundlingAnalysis() {
   const bundles = [

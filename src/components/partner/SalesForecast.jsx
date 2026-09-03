@@ -1,24 +1,36 @@
 import React from 'react';
-import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+import { Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area
 } from 'recharts';
-import { Card } from "@/components/ui/card";
-import { format, addMonths } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { formatShortDate } from '@/lib/format';
 
-export default function SalesForecast({ orders = [] }) {
-  // Mock forecast data based on orders (or random for demo if empty)
-  const data = Array.from({ length: 6 }, (_, i) => {
-    const date = addMonths(new Date(), i);
-    const isForecast = i > 0;
-    return {
-      date: format(date, 'MMM', { locale: fr }),
-      sales: isForecast ? undefined : Math.floor(Math.random() * 50000) + 20000,
-      forecast: Math.floor(Math.random() * 60000) + 25000,
-      range: [Math.floor(Math.random() * 10000), Math.floor(Math.random() * 10000)] // error margin
-    };
-  });
+export default function SalesForecast({ dailySales = [] }) {
+  /**
+   * Projection linéaire sur la moyenne des sept derniers jours observés.
+   * Simple, explicable, et fondée sur les ventes réelles — là où l'écran
+   * affichait auparavant des montants tirés au hasard.
+   */
+  const history = (dailySales ?? []).slice(-14);
+  const recent = history.slice(-7);
+  const average = recent.length
+    ? recent.reduce((sum, d) => sum + (d.ventes ?? 0), 0) / recent.length
+    : 0;
+
+  const trend =
+    recent.length >= 2
+      ? (recent[recent.length - 1].ventes - recent[0].ventes) / Math.max(1, recent.length - 1)
+      : 0;
+
+  const data = [
+    ...history.map((d) => ({ date: formatShortDate(d.date), sales: d.ventes, forecast: null })),
+    ...Array.from({ length: 7 }, (_, i) => ({
+      date: formatShortDate(new Date(Date.now() + (i + 1) * 86_400_000)),
+      sales: null,
+      forecast: Math.max(0, Math.round(average + trend * (i + 1))),
+    })),
+  ];
+
+  const hasEnoughHistory = recent.length >= 3;
 
   return (
     <div className="space-y-4">

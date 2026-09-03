@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
@@ -12,8 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { goToLogin } from '@/lib/navigation';
 
 export default function StockGuardian() {
   const [user, setUser] = useState(null);
@@ -26,10 +26,10 @@ export default function StockGuardian() {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const userData = await base44.auth.me();
+        const userData = await api.auth.me();
         setUser(userData);
       } catch (e) {
-        base44.auth.redirectToLogin();
+        goToLogin();
       }
     };
     loadUser();
@@ -37,7 +37,7 @@ export default function StockGuardian() {
 
   const { data: products = [] } = useQuery({
     queryKey: ['partner-products', user?.email],
-    queryFn: () => base44.entities.Product.filter({ created_by: user?.email }),
+    queryFn: () => api.entities.Product.filter({ created_by: user?.email }),
     enabled: !!user,
   });
 
@@ -57,7 +57,7 @@ export default function StockGuardian() {
 
   const initConversation = async () => {
     if (!conversation) {
-      const newConv = await base44.agents.createConversation({
+      const newConv = await api.agents.createConversation({
         agent_name: 'stock_guardian',
         metadata: { name: 'Session StockGuardian' }
       });
@@ -83,7 +83,7 @@ export default function StockGuardian() {
     setMessages(prev => [...prev, { role: 'assistant', content: '', isLoading: true }]);
 
     // Subscribe to updates
-    const unsubscribe = base44.agents.subscribeToConversation(conv.id, (data) => {
+    const unsubscribe = api.agents.subscribeToConversation(conv.id, (data) => {
       const lastMessage = data.messages[data.messages.length - 1];
       if (lastMessage && lastMessage.role === 'assistant') {
         setMessages(prev => {
@@ -100,7 +100,7 @@ export default function StockGuardian() {
     });
 
     // Send message
-    await base44.agents.addMessage(conv, { role: 'user', content: text });
+    await api.agents.addMessage(conv, { role: 'user', content: text });
 
     setIsLoading(false);
 

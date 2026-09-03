@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
   Ticket, Plus, Edit, Trash2, Users, Calendar, Clock,
-  MapPin, Loader2, Send, Check, X
+  MapPin, Loader2, Check, X
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -41,18 +41,18 @@ export default function ExperienceManager({ user }) {
 
   const { data: experiences = [] } = useQuery({
     queryKey: ['partner-experiences', user?.store_id],
-    queryFn: () => base44.entities.Experience.filter({ store_id: user?.store_id }),
+    queryFn: () => api.entities.Experience.filter({ store_id: user?.store_id }),
     enabled: !!user?.store_id,
   });
 
   const { data: bookings = [] } = useQuery({
     queryKey: ['experience-bookings', showBookings?.id],
-    queryFn: () => base44.entities.ExperienceBooking.filter({ experience_id: showBookings?.id }),
+    queryFn: () => api.entities.ExperienceBooking.filter({ experience_id: showBookings?.id }),
     enabled: !!showBookings,
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Experience.create({
+    mutationFn: (data) => api.entities.Experience.create({
       ...data,
       store_id: user.store_id,
       store_name: user.store_name || user.full_name,
@@ -65,7 +65,7 @@ export default function ExperienceManager({ user }) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Experience.update(id, data),
+    mutationFn: ({ id, data }) => api.entities.Experience.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['partner-experiences'] });
       setShowForm(false);
@@ -75,7 +75,7 @@ export default function ExperienceManager({ user }) {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Experience.delete(id),
+    mutationFn: (id) => api.entities.Experience.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['partner-experiences'] });
       toast.success('Expérience supprimée');
@@ -83,19 +83,9 @@ export default function ExperienceManager({ user }) {
   });
 
   const updateBookingMutation = useMutation({
-    mutationFn: async ({ bookingId, status, experience }) => {
-      await base44.entities.ExperienceBooking.update(bookingId, { status });
-      
-      if (status === 'confirmed') {
-        const booking = bookings.find(b => b.id === bookingId);
-        await base44.integrations.Core.SendEmail({
-          to: booking.user_email,
-          subject: `Confirmation de réservation - ${experience.title}`,
-          body: `Votre réservation pour "${experience.title}" le ${format(new Date(experience.event_date), 'd MMMM yyyy', { locale: fr })} à ${experience.event_time} est confirmée. Lieu: ${experience.location}. À bientôt !`
-        });
-        await base44.entities.ExperienceBooking.update(bookingId, { confirmation_sent: true });
-      }
-    },
+    // Le serveur change le statut, prévient le client et rembourse ses points
+    // en cas d'annulation — le tout dans une seule transaction.
+    mutationFn: ({ bookingId, status }) => api.partner.setBookingStatus(bookingId, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['experience-bookings'] });
       toast.success('Réservation mise à jour');

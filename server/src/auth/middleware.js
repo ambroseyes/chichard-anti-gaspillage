@@ -10,10 +10,14 @@ const BEARER = /^Bearer (.+)$/i;
  */
 export async function attachUser(req, _res, next) {
   const match = BEARER.exec(req.headers.authorization ?? '');
-  if (!match) return next();
+  // EventSource ne permet pas d'en-tête : le flux SSE présente son jeton en
+  // paramètre. Aucune autre route ne l'accepte sous cette forme.
+  const fromQuery = req.path.startsWith('/api/realtime') ? req.query?.access_token : null;
+  const token = match?.[1] ?? fromQuery;
+  if (!token) return next();
 
   try {
-    const payload = verifyAccessToken(match[1]);
+    const payload = verifyAccessToken(token);
     // On relit l'utilisateur en base : un rôle révoqué doit l'être immédiatement,
     // sans attendre l'expiration du jeton.
     const user = await prisma.user.findUnique({ where: { id: payload.sub } });

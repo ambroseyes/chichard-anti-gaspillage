@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -27,7 +27,7 @@ const movementColors = {
 export default function StockHistoryViewer({ productId }) {
   const { data: movements = [], isLoading } = useQuery({
     queryKey: ['stock-movements', productId],
-    queryFn: () => base44.entities.StockMovement.filter({ product_id: productId }, '-created_date', 50),
+    queryFn: () => api.entities.StockMovement.filter({ product_id: productId }, '-created_date', 50),
     enabled: !!productId
   });
 

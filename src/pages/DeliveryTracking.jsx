@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import {
   Truck, MapPin, Clock, Package, CheckCircle, Phone,
-  Navigation, Camera, User, Store, ArrowLeft
+  Navigation, Camera, Store
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -30,9 +27,11 @@ export default function DeliveryTracking() {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const userData = await base44.auth.me();
+        const userData = await api.auth.me();
         setUser(userData);
-      } catch (e) {}
+      } catch {
+        // Visiteur non connecté : la page reste consultable en anonyme.
+      }
     };
     loadUser();
   }, []);
@@ -40,7 +39,7 @@ export default function DeliveryTracking() {
   const { data: order } = useQuery({
     queryKey: ['order', orderId],
     queryFn: async () => {
-      const orders = await base44.entities.Order.filter({ id: orderId });
+      const orders = await api.entities.Order.filter({ id: orderId });
       return orders[0];
     },
     enabled: !!orderId,

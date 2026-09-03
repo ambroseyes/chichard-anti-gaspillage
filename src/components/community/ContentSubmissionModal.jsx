@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { toast } from 'sonner';
 import { Loader2, ChefHat, Lightbulb } from 'lucide-react';
 
@@ -45,7 +45,7 @@ export default function ContentSubmissionModal({ open, onClose, user, onSuccess 
 
       const stepsList = recipeData.steps.split('\n').filter(s => s.trim());
 
-      await base44.entities.Recipe.create({
+      await api.entities.Recipe.create({
         title: recipeData.title,
         description: recipeData.description,
         ingredients: ingredientsList,
@@ -75,7 +75,7 @@ export default function ContentSubmissionModal({ open, onClose, user, onSuccess 
     setIsSubmitting(true);
 
     try {
-      await base44.entities.ZeroWasteTip.create({
+      await api.entities.ZeroWasteTip.create({
         title: tipData.title,
         content: tipData.content,
         category: tipData.category,

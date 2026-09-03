@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { api } from '@/api';
+import { useAuth } from '@/lib/AuthContext';
+import { formatXAF } from '@/lib/format';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { 
-  ArrowLeft, MapPin, CreditCard, Smartphone, Banknote, 
-  CheckCircle, Store, Truck, Leaf
+  ArrowLeft, Banknote, 
+  CheckCircle, Store, Truck
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -18,153 +19,90 @@ import { toast } from 'sonner';
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
   const [deliveryType, setDeliveryType] = useState('pickup');
   const [paymentMethod, setPaymentMethod] = useState('orange_money');
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
+  const [couponCode, setCouponCode] = useState('');
 
   useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await base44.auth.me();
-        setUser(userData);
-        setPhone(userData.phone || '');
-        setAddress(userData.address || '');
-      } catch (e) {
-        base44.auth.redirectToLogin();
-      }
-    };
-    loadUser();
-  }, []);
+    if (!user) return;
+    setPhone((p) => p || user.phone || '');
+    setAddress((a) => a || user.address || '');
+  }, [user]);
 
   const { data: cartItems = [] } = useQuery({
     queryKey: ['cart', user?.email],
-    queryFn: () => base44.entities.CartItem.filter({ user_email: user.email }),
-    enabled: !!user,
+    queryFn: () => api.entities.CartItem.filter({ user_email: user.email }, '-created_date', 100),
+    enabled: Boolean(user),
   });
 
-  const totalAmount = cartItems.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
-  const totalSavings = cartItems.reduce((sum, item) => 
-    sum + ((item.original_price - item.unit_price) * item.quantity), 0
-  );
+  /**
+   * Le devis est calculé par le serveur, avec les prix du catalogue, le coupon
+   * et les frais de livraison. C'est exactement le montant qui sera facturé :
+   * l'écran n'annonce plus un total que le paiement ignorerait.
+   */
+  const { data: quote, isFetching: quoting } = useQuery({
+    queryKey: ['order-quote', user?.email, deliveryType, couponCode],
+    queryFn: () => api.orders.quote({ delivery_type: deliveryType, coupon_code: couponCode || null }),
+    enabled: Boolean(user) && cartItems.length > 0,
+    placeholderData: (previous) => previous,
+  });
 
-  const handleSubmit = async () => {
-    if (!phone) {
-      toast.error('Veuillez entrer votre numéro de téléphone');
+  const checkout = useMutation({
+    mutationFn: () =>
+      api.orders.create({
+        delivery_type: deliveryType,
+        payment_method: paymentMethod,
+        delivery_address: deliveryType === 'delivery' ? address : undefined,
+        customer_phone: phone,
+        coupon_code: couponCode || undefined,
+      }),
+    onSuccess: ({ order, confirmation_code: code, pickup_token: token, payment }) => {
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+
+      toast.success(
+        payment?.status === 'succeeded'
+          ? 'Commande payée et confirmée'
+          : 'Commande enregistrée — validez le paiement sur votre téléphone',
+      );
+      navigate(
+        `/OrderConfirmation?commande=${order.id}&code=${encodeURIComponent(code)}&jeton=${encodeURIComponent(token)}`,
+        { replace: true },
+      );
+    },
+    onError: (error) => {
+      const indisponibles = error?.details?.unavailable;
+      if (indisponibles?.length) {
+        toast.error(
+          `Plus disponible : ${indisponibles.map((i) => i.product_name ?? i.product_id).join(', ')}`,
+        );
+        queryClient.invalidateQueries({ queryKey: ['cart'] });
+        return;
+      }
+      toast.error(error.message ?? "La commande n'a pas abouti");
+    },
+  });
+
+  const handleSubmit = () => {
+    if (!phone.trim()) {
+      toast.error('Renseignez votre numéro de téléphone');
       return;
     }
-    if (deliveryType === 'delivery' && !address) {
-      toast.error('Veuillez entrer votre adresse de livraison');
+    if (deliveryType === 'delivery' && !address.trim()) {
+      toast.error('Renseignez votre adresse de livraison');
       return;
     }
-
-    setIsProcessing(true);
-
-    // Create order
-    const order = await base44.entities.Order.create({
-      customer_email: user.email,
-      customer_name: user.full_name,
-      items: cartItems.map(item => ({
-        product_id: item.product_id,
-        product_name: item.product_name,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        store_name: item.store_name
-      })),
-      total_amount: totalAmount,
-      total_savings: totalSavings,
-      status: 'pending',
-      payment_method: paymentMethod,
-      delivery_type: deliveryType,
-      delivery_address: deliveryType === 'delivery' ? address : null,
-      store_name: cartItems[0]?.store_name
-    });
-
-    // Update user stats
-    await base44.auth.updateMe({
-      phone,
-      address: deliveryType === 'delivery' ? address : user.address,
-      total_savings: (user.total_savings || 0) + totalSavings,
-      total_orders: (user.total_orders || 0) + 1,
-      waste_avoided_kg: (user.waste_avoided_kg || 0) + (cartItems.length * 0.5)
-    });
-
-    // Clear cart
-    for (const item of cartItems) {
-      await base44.entities.CartItem.delete(item.id);
-    }
-
-    // Send confirmation email
-    const itemsHtml = cartItems.map(item =>
-      `<tr>
-        <td style="padding:6px 0;border-bottom:1px solid #f3f4f6">${item.product_name} x${item.quantity}</td>
-        <td style="padding:6px 0;border-bottom:1px solid #f3f4f6;text-align:right">${(item.unit_price * item.quantity).toLocaleString()} FCFA</td>
-      </tr>`
-    ).join('');
-
-    const paymentLabels = {
-      orange_money: 'Orange Money',
-      mtn_money: 'MTN Mobile Money',
-      cash: 'Paiement à la livraison',
-    };
-
-    await base44.integrations.Core.SendEmail({
-      to: user.email,
-      subject: `✅ Commande confirmée #${order.id.slice(0, 8)} — Chichard`,
-      body: `
-        <div style="font-family:sans-serif;max-width:560px;margin:auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb">
-          <div style="background:linear-gradient(135deg,#10b981,#0d9488);padding:32px 24px;text-align:center">
-            <h1 style="color:#fff;margin:0;font-size:24px">🌿 Chichard</h1>
-            <p style="color:#d1fae5;margin:8px 0 0">Merci pour votre commande !</p>
-          </div>
-          <div style="padding:28px 24px">
-            <p style="color:#374151;font-size:15px">Bonjour <strong>${user.full_name}</strong>,</p>
-            <p style="color:#6b7280;font-size:14px">Votre commande <strong>#${order.id.slice(0, 8)}</strong> a bien été reçue. En achetant des produits anti-gaspillage, vous avez contribué à sauver la planète ! 🌍</p>
-
-            <div style="background:#f9fafb;border-radius:12px;padding:16px;margin:20px 0">
-              <h2 style="font-size:15px;color:#111827;margin:0 0 12px">Détail de la commande</h2>
-              <table style="width:100%;font-size:14px;color:#374151">
-                ${itemsHtml}
-                <tr>
-                  <td style="padding:10px 0 4px;color:#10b981;font-weight:600">Économies réalisées</td>
-                  <td style="padding:10px 0 4px;color:#10b981;font-weight:600;text-align:right">-${totalSavings.toLocaleString()} FCFA</td>
-                </tr>
-                <tr>
-                  <td style="padding:6px 0;font-weight:700;font-size:16px;color:#111827">Total payé</td>
-                  <td style="padding:6px 0;font-weight:700;font-size:16px;color:#111827;text-align:right">${totalAmount.toLocaleString()} FCFA</td>
-                </tr>
-              </table>
-            </div>
-
-            <div style="display:flex;gap:12px;margin:20px 0">
-              <div style="flex:1;background:#ecfdf5;border-radius:10px;padding:12px;text-align:center">
-                <p style="margin:0;font-size:12px;color:#6b7280">Mode de récupération</p>
-                <p style="margin:4px 0 0;font-weight:600;color:#065f46;font-size:13px">${deliveryType === 'pickup' ? '🏪 Retrait en magasin' : '🚚 Livraison à domicile'}</p>
-              </div>
-              <div style="flex:1;background:#eff6ff;border-radius:10px;padding:12px;text-align:center">
-                <p style="margin:0;font-size:12px;color:#6b7280">Paiement</p>
-                <p style="margin:4px 0 0;font-weight:600;color:#1e40af;font-size:13px">${paymentLabels[paymentMethod] || paymentMethod}</p>
-              </div>
-            </div>
-
-            ${deliveryType === 'delivery' && address ? `<p style="color:#6b7280;font-size:13px">📍 Livraison à : <strong>${address}</strong></p>` : ''}
-
-            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;margin-top:16px;text-align:center">
-              <p style="margin:0;color:#065f46;font-size:13px">🌱 Vous avez évité environ <strong>${(cartItems.length * 0.5).toFixed(1)} kg de CO₂</strong> avec cette commande. Merci !</p>
-            </div>
-
-            <p style="color:#9ca3af;font-size:12px;text-align:center;margin-top:24px">Chichard — La plateforme anti-gaspillage 🌍</p>
-          </div>
-        </div>
-      `
-    });
-
-    setIsProcessing(false);
-    toast.success('Commande confirmée ! Un email de confirmation vous a été envoyé.');
-    navigate(createPageUrl('Orders'));
+    checkout.mutate();
   };
+
+  const totalAmount = quote?.total ?? 0;
+  const totalSavings = quote?.savings ?? 0;
+  const isProcessing = checkout.isPending;
 
   if (!user || cartItems.length === 0) {
     return (
@@ -204,19 +142,53 @@ export default function Checkout() {
                   <p className="font-medium truncate">{item.product_name}</p>
                   <p className="text-sm text-gray-500">x{item.quantity}</p>
                 </div>
-                <p className="font-medium">{(item.unit_price * item.quantity).toLocaleString()} FCFA</p>
+                <p className="font-medium">{formatXAF(item.unit_price * item.quantity)}</p>
               </div>
             ))}
           </div>
-          <div className="mt-4 pt-4 border-t">
-            <div className="flex justify-between text-emerald-600 mb-2">
-              <span>Économies</span>
-              <span>-{totalSavings.toLocaleString()} FCFA</span>
+          <div className="mt-4 pt-4 border-t space-y-2">
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>Sous-total</span>
+              <span>{formatXAF(quote?.subtotal ?? 0)}</span>
             </div>
-            <div className="flex justify-between font-bold text-lg">
+            {totalSavings > 0 && (
+              <div className="flex justify-between text-sm text-emerald-600">
+                <span>Économies anti-gaspillage</span>
+                <span>−{formatXAF(totalSavings)}</span>
+              </div>
+            )}
+            {quote?.discount > 0 && (
+              <div className="flex justify-between text-sm text-emerald-600">
+                <span>Code promo {quote.coupon_applied}</span>
+                <span>−{formatXAF(quote.discount)}</span>
+              </div>
+            )}
+            {quote?.deliveryFee > 0 && (
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Livraison</span>
+                <span>{formatXAF(quote.deliveryFee)}</span>
+              </div>
+            )}
+            <div className="flex justify-between font-bold text-lg pt-2 border-t">
               <span>Total</span>
-              <span>{totalAmount.toLocaleString()} FCFA</span>
+              <span>{quoting ? '…' : formatXAF(totalAmount)}</span>
             </div>
+          </div>
+
+          {/* Code promo : la validité et le montant sont tranchés par le serveur. */}
+          <div className="mt-4 pt-4 border-t">
+            <Label htmlFor="coupon">Code promo</Label>
+            <Input
+              id="coupon"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+              placeholder="ECO-XXXXXX"
+              className="mt-1.5 uppercase"
+            />
+            {quote?.couponError && <p className="text-sm text-red-600 mt-1.5">{quote.couponError}</p>}
+            {quote?.coupon_applied && !quote.couponError && (
+              <p className="text-sm text-emerald-600 mt-1.5">Code {quote.coupon_applied} appliqué.</p>
+            )}
           </div>
         </Card>
 
@@ -232,7 +204,7 @@ export default function Checkout() {
                 <Store className="w-5 h-5 text-gray-500" />
                 <div className="flex-1">
                   <p className="font-medium">Retrait en magasin</p>
-                  <p className="text-sm text-gray-500">Gratuit • Prêt en 1h</p>
+                  <p className="text-sm text-gray-500">Gratuit — prêt sous 1 h</p>
                 </div>
               </label>
               <label className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
@@ -242,7 +214,9 @@ export default function Checkout() {
                 <Truck className="w-5 h-5 text-gray-500" />
                 <div className="flex-1">
                   <p className="font-medium">Livraison à domicile</p>
-                  <p className="text-sm text-gray-500">1 000 FCFA • Sous 24h</p>
+                  <p className="text-sm text-gray-500">
+                    {quote?.deliveryFee ? `${formatXAF(quote.deliveryFee)} — sous 24 h` : 'Sous 24 h'}
+                  </p>
                 </div>
               </label>
             </div>
@@ -330,7 +304,7 @@ export default function Checkout() {
             ) : (
               <span className="flex items-center gap-2">
                 <CheckCircle className="w-5 h-5" />
-                Confirmer • {totalAmount.toLocaleString()} FCFA
+                Confirmer • {formatXAF(totalAmount)}
               </span>
             )}
           </Button>

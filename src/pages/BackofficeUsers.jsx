@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import BackofficeLayout from '@/components/backoffice/BackofficeLayout';
-import { Search, Filter, MoreVertical, Shield, User, UserCheck, Download, Plus, Eye } from 'lucide-react';
+import { Search, Filter, Download, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -39,7 +38,7 @@ export default function BackofficeUsers() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    base44.auth.me().then(u => {
+    api.auth.me().then(u => {
       setUser(u);
       if (!['super_admin', 'admin'].includes(u?.backoffice_role || u?.role)) {
         toast.error('Accès refusé');
@@ -49,11 +48,11 @@ export default function BackofficeUsers() {
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['bo-users-list'],
-    queryFn: () => base44.entities.User.list('-created_date', 100)
+    queryFn: () => api.entities.User.list('-created_date', 100)
   });
 
   const updateRoleMutation = useMutation({
-    mutationFn: ({ userId, role }) => base44.entities.User.update(userId, { backoffice_role: role }),
+    mutationFn: ({ userId, role }) => api.entities.User.update(userId, { backoffice_role: role }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bo-users-list'] });
       toast.success('Rôle mis à jour');

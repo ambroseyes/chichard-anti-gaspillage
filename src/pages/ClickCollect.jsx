@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -7,13 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { Search, ShoppingBag, Clock, MapPin, Leaf, CheckCircle2, Package } from 'lucide-react';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import BasketCard from '@/components/clickcollect/BasketCard';
 import ReservationModal from '@/components/clickcollect/ReservationModal';
 import BasketReviewModal from '@/components/clickcollect/BasketReviewModal';
-import StoreRatingBadge from '@/components/clickcollect/StoreRatingBadge';
 import { toast } from 'sonner';
+import { goToLogin } from '@/lib/navigation';
 
 export default function ClickCollect() {
   const [user, setUser] = useState(null);
@@ -24,17 +22,17 @@ export default function ClickCollect() {
   const [reviewReservation, setReviewReservation] = useState(null);
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
+    api.auth.me().then(setUser).catch(() => {});
   }, []);
 
   const { data: baskets = [], isLoading } = useQuery({
     queryKey: ['cc-baskets'],
-    queryFn: () => base44.entities.ClickCollectBasket.filter({ status: 'active' }, '-created_date', 50),
+    queryFn: () => api.entities.ClickCollectBasket.filter({ status: 'active' }, '-created_date', 50),
   });
 
   const { data: myReservations = [] } = useQuery({
     queryKey: ['my-reservations', user?.email],
-    queryFn: () => base44.entities.ClickCollectReservation.filter(
+    queryFn: () => api.entities.ClickCollectReservation.filter(
       { customer_email: user.email },
       '-created_date',
       20
@@ -44,7 +42,7 @@ export default function ClickCollect() {
 
   const { data: myReviews = [] } = useQuery({
     queryKey: ['my-basket-reviews', user?.email],
-    queryFn: () => base44.entities.BasketReview.filter({ customer_email: user.email }),
+    queryFn: () => api.entities.BasketReview.filter({ customer_email: user.email }),
     enabled: !!user?.email,
   });
 
@@ -60,7 +58,7 @@ export default function ClickCollect() {
   const handleReserve = (basket) => {
     if (!user) {
       toast.error('Connectez-vous pour réserver');
-      base44.auth.redirectToLogin(window.location.pathname);
+      goToLogin();
       return;
     }
     setSelectedBasket(basket);
