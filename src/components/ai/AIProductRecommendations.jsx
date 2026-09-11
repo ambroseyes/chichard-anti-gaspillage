@@ -5,8 +5,10 @@ import { motion } from 'framer-motion';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { Card } from "@/components/ui/card";
 import ProductCard from '@/components/ui/ProductCard';
+import { useAiEnabled } from '@/hooks/useAppConfig';
 
 export default function AIProductRecommendations({ user, onAddToCart }) {
+  const aiEnabled = useAiEnabled();
   // Le profil, l'historique et le catalogue sont assemblés côté serveur :
   // le navigateur n'envoie ni prompt ni données d'autres utilisateurs.
   const { data: products = [] } = useQuery({
@@ -21,7 +23,7 @@ export default function AIProductRecommendations({ user, onAddToCart }) {
   } = useQuery({
     queryKey: ['ai-product-recommendations', user?.email],
     queryFn: () => api.ai.productRecommendations(6),
-    enabled: Boolean(user) && products.length > 0,
+    enabled: aiEnabled && Boolean(user) && products.length > 0,
     staleTime: 10 * 60 * 1000,
     retry: false,
   });

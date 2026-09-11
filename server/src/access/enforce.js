@@ -116,7 +116,7 @@ export async function assertWrite(entity, operation, { user, row, req }) {
  * champs système, champs pilotés par le serveur (`protected`), et — si la
  * politique définit une liste blanche `writable` — tout le reste.
  */
-const SYSTEM_FIELDS = new Set(['id', 'created_date', 'updated_date']);
+const SYSTEM_FIELDS = new Set(['id', 'created_date', 'updated_date', 'created_by']);
 
 export function sanitizeWrite(entity, data, { user }) {
   const policy = policyFor(entity);
@@ -141,7 +141,9 @@ export function sanitizeWrite(entity, data, { user }) {
 
 /** Champs injectés depuis la session, jamais depuis le corps de la requête. */
 export function ownershipDefaults(entity, user) {
+  if (!user) return {};
   const policy = policyFor(entity);
-  if (!policy?.owner || !user) return {};
-  return { [policy.owner]: user.email };
+  const auteur = { created_by: user.email };
+  if (!policy?.owner) return auteur;
+  return { ...auteur, [policy.owner]: user.email };
 }

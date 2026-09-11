@@ -30,21 +30,24 @@ import PromotionManager from '@/components/partner/PromotionManager';
 import PartnerChatbot from '@/components/partner/PartnerChatbot';
 import FoodSavingsDashboard from '@/components/partner/FoodSavingsDashboard';
 import { useAuth } from '@/lib/AuthContext';
+import { EMPTY_ARRAY } from '@/lib/stable';
+import { useMyStore } from '@/hooks/useMyStore';
 
 export default function PartnerDashboard() {
+  const { storeId } = useMyStore();
   const { user } = useAuth();
   const [showCustomizer, setShowCustomizer] = useState(false);
   const [alerts, setAlerts] = useState([]);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { data: products = [], isLoading: loadingProducts } = useQuery({
-    queryKey: ['partner-products', user?.store_id],
-    queryFn: () => api.entities.Product.filter({ created_by: user?.email }),
-    enabled: !!user,
+  const { data: products = EMPTY_ARRAY, isLoading: loadingProducts } = useQuery({
+    queryKey: ['partner-products', storeId],
+    queryFn: () => api.entities.Product.filter({ store_id: storeId }),
+    enabled: Boolean(storeId),
   });
 
-  const { data: orders = [], isLoading: loadingOrders } = useQuery({
+  const { data: orders = EMPTY_ARRAY, isLoading: loadingOrders } = useQuery({
     queryKey: ['partner-orders', user?.store_id],
     queryFn: async () => {
       const allOrders = await api.entities.Order.list('-created_date', 100);
@@ -60,7 +63,9 @@ export default function PartnerDashboard() {
         user_email: user.email, 
         dashboard_type: 'partner' 
       });
-      return prefs[0];
+      // `undefined` ferait échouer la requête : l'absence de préférences est
+      // un cas normal, pas une erreur.
+      return prefs[0] ?? null;
     },
     enabled: !!user
   });
@@ -252,10 +257,10 @@ export default function PartnerDashboard() {
         />
 
         {/* Product Bundle Manager */}
-        <ProductBundleManager storeEmail={user.email} />
+        <ProductBundleManager storeId={storeId} />
 
         {/* Promotion Manager */}
-        <PromotionManager storeId={user.store_id} storeEmail={user.email} />
+        <PromotionManager storeId={storeId} />
 
         {/* Food Savings Analytics */}
         <FoodSavingsDashboard products={products} />

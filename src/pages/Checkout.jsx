@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '@/api';
 import { useAuth } from '@/lib/AuthContext';
 import { formatXAF } from '@/lib/format';
+import { useAppConfig } from '@/hooks/useAppConfig';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { 
@@ -20,6 +21,7 @@ import { toast } from 'sonner';
 export default function Checkout() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const appConfig = useAppConfig();
   const queryClient = useQueryClient();
 
   const [deliveryType, setDeliveryType] = useState('pickup');
@@ -215,7 +217,11 @@ export default function Checkout() {
                 <div className="flex-1">
                   <p className="font-medium">Livraison à domicile</p>
                   <p className="text-sm text-gray-500">
-                    {quote?.deliveryFee ? `${formatXAF(quote.deliveryFee)} — sous 24 h` : 'Sous 24 h'}
+                    {/* Le tarif vient de la configuration serveur, et s'affiche
+                        avant le choix : on ne découvre pas le prix après coup. */}
+                    {appConfig?.free_delivery_threshold && quote?.subtotal >= appConfig.free_delivery_threshold
+                      ? 'Offerte — sous 24 h'
+                      : `${formatXAF(appConfig?.delivery_fee ?? 0)} — sous 24 h`}
                   </p>
                 </div>
               </label>

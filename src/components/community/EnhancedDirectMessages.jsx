@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from 'sonner';
+import { EMPTY_ARRAY } from '@/lib/stable';
 
 export default function EnhancedDirectMessages({ user }) {
   const [selectedConversation, setSelectedConversation] = useState(null);
@@ -25,7 +26,7 @@ export default function EnhancedDirectMessages({ user }) {
   const messagesEndRef = useRef(null);
   const queryClient = useQueryClient();
 
-  const { data: messages = [], refetch } = useQuery({
+  const { data: messages = EMPTY_ARRAY, refetch } = useQuery({
     queryKey: ['direct-messages', user?.email],
     queryFn: () => api.entities.Message.filter({ 
       $or: [

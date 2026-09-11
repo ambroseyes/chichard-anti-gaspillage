@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from '@/lib/AuthContext';
+import { EMPTY_ARRAY } from '@/lib/stable';
 
 const categoryConfig = {
   recettes: { icon: ChefHat, color: 'bg-orange-100 text-orange-600', label: 'Recettes' },
@@ -40,7 +41,7 @@ export default function CommunityChat() {
   const messagesEndRef = useRef(null);
   const queryClient = useQueryClient();
 
-  const { data: rooms = [] } = useQuery({
+  const { data: rooms = EMPTY_ARRAY } = useQuery({
     queryKey: ['chat-rooms'],
     queryFn: async () => {
       const existingRooms = await api.entities.ChatRoom.filter({ is_active: true });
@@ -56,7 +57,7 @@ export default function CommunityChat() {
     },
   });
 
-  const { data: messages = [], refetch: refetchMessages } = useQuery({
+  const { data: messages = EMPTY_ARRAY, refetch: refetchMessages } = useQuery({
     queryKey: ['chat-messages', selectedRoom?.id],
     queryFn: () => api.entities.ChatMessage.filter(
       { room_id: selectedRoom?.id },

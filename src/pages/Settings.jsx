@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { api } from '@/api';
 import {
   Settings as SettingsIcon, Bell, Heart,
@@ -8,28 +8,22 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import UserPreferencesForm from '@/components/forms/UserPreferencesForm';
 import StoreForm from '@/components/forms/StoreForm';
-import { goToLogin } from '@/lib/navigation';
 import { useAuth } from '@/lib/AuthContext';
+import { useQuery } from '@tanstack/react-query';
 
 export default function Settings() {
   const { user } = useAuth();
-  const [store, setStore] = useState(null);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const userData = await api.auth.me();
-        
-        if (userData.store_id) {
-          const stores = await api.entities.Store.filter({ id: userData.store_id });
-          if (stores.length > 0) setStore(stores[0]);
-        }
-      } catch (e) {
-        goToLogin();
-      }
-    };
-    loadData();
-  }, []);
+  // Le magasin du partenaire suit l'utilisateur du contexte : plus besoin de
+  // le recharger, ni de rappeler `auth.me()`.
+  const { data: store = null } = useQuery({
+    queryKey: ['store', user?.store_id],
+    queryFn: async () => {
+      const stores = await api.entities.Store.filter({ id: user.store_id });
+      return stores[0] ?? null;
+    },
+    enabled: Boolean(user?.store_id),
+  });
 
   if (!user) {
     return (

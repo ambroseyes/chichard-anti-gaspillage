@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Package, Plus, Trash2, Edit, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function ProductBundleManager({ storeEmail }) {
+export default function ProductBundleManager({ storeId }) {
   const [showDialog, setShowDialog] = useState(false);
   const [editingBundle, setEditingBundle] = useState(null);
   const [bundleData, setBundleData] = useState({
@@ -24,15 +24,15 @@ export default function ProductBundleManager({ storeEmail }) {
   const queryClient = useQueryClient();
 
   const { data: products = [] } = useQuery({
-    queryKey: ['partner-products', storeEmail],
-    queryFn: () => api.entities.Product.filter({ created_by: storeEmail }),
-    enabled: !!storeEmail,
+    queryKey: ['partner-products', storeId],
+    queryFn: () => api.entities.Product.filter({ store_id: storeId }),
+    enabled: !!storeId,
   });
 
   const { data: bundles = [] } = useQuery({
-    queryKey: ['product-bundles', storeEmail],
-    queryFn: () => api.entities.Product.filter({ created_by: storeEmail, is_bundle: true }),
-    enabled: !!storeEmail,
+    queryKey: ['product-bundles', storeId],
+    queryFn: () => api.entities.Product.filter({ store_id: storeId, is_bundle: true }),
+    enabled: !!storeId,
   });
 
   const createBundleMutation = useMutation({

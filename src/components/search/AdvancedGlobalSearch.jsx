@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/lib/AuthContext';
 
 const entityConfig = {
   Product: { 
@@ -42,6 +43,7 @@ const entityConfig = {
 };
 
 export default function AdvancedGlobalSearch({ isOpen, onClose, userRole = 'user' }) {
+  const { user } = useAuth();
   const [query, setQuery] = useState('');
   const [selectedEntities, setSelectedEntities] = useState(['Product']);
   const [showFilters, setShowFilters] = useState(false);
@@ -49,12 +51,6 @@ export default function AdvancedGlobalSearch({ isOpen, onClose, userRole = 'user
   const [searchName, setSearchName] = useState('');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-
-  const { data: user } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => api.auth.me(),
-    enabled: isOpen
-  });
 
   const { data: savedSearches = [] } = useQuery({
     queryKey: ['saved-searches', user?.email],

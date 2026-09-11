@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
@@ -41,13 +41,8 @@ export default function BackofficeUsers() {
   const [showUserDialog, setShowUserDialog] = useState(false);
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    api.auth.me().then(u => {
-      if (!['super_admin', 'admin'].includes(u?.backoffice_role || u?.role)) {
-        toast.error('Accès refusé');
-      }
-    });
-  }, []);
+  // L'accès est tranché par la garde de route puis par le serveur : ce message
+  // ne remplaçait rien et laissait la page se rendre quand même.
 
   /**
    * La liste et l'attribution des rôles passent par /api/backoffice : le

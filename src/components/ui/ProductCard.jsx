@@ -105,8 +105,12 @@ export default function ProductCard({ product, onAddToCart, compact = false }) {
             </div>
           </div>
           
-          <Button 
+          <Button
             size="sm"
+            // Bouton sans texte : sans nom accessible, un lecteur d'écran
+            // n'annonce rien et le contrôle est introuvable au clavier.
+            aria-label={`Ajouter ${product.name} au panier`}
+            title="Ajouter au panier"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();

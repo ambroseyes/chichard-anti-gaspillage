@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProductCard from '@/components/ui/ProductCard';
+import { EMPTY_ARRAY } from '@/lib/stable';
 
 export default function EnhancedPersonalizedFeed({ user, onAddToCart }) {
   const [feedItems, setFeedItems] = useState([]);
@@ -18,39 +19,39 @@ export default function EnhancedPersonalizedFeed({ user, onAddToCart }) {
   const [activeFilter, setActiveFilter] = useState('all');
   const [aiReason, setAiReason] = useState('');
 
-  const { data: products = [] } = useQuery({
+  const { data: products = EMPTY_ARRAY } = useQuery({
     queryKey: ['products'],
     queryFn: () => api.entities.Product.filter({ status: 'active' }, '-created_date', 100),
   });
 
-  const { data: recipes = [] } = useQuery({
+  const { data: recipes = EMPTY_ARRAY } = useQuery({
     queryKey: ['recipes'],
     queryFn: () => api.entities.Recipe.list('-created_date', 30),
   });
 
-  const { data: challenges = [] } = useQuery({
+  const { data: challenges = EMPTY_ARRAY } = useQuery({
     queryKey: ['challenges'],
     queryFn: () => api.entities.Challenge.filter({ is_active: true }),
   });
 
-  const { data: partnerChallenges = [] } = useQuery({
+  const { data: partnerChallenges = EMPTY_ARRAY } = useQuery({
     queryKey: ['partner-challenges'],
     queryFn: () => api.entities.PartnerChallenge.filter({ is_active: true }),
   });
 
-  const { data: orders = [] } = useQuery({
+  const { data: orders = EMPTY_ARRAY } = useQuery({
     queryKey: ['user-orders', user?.email],
     queryFn: () => api.entities.Order.filter({ customer_email: user?.email }, '-created_date', 50),
     enabled: !!user,
   });
 
-  const { data: interactions = [] } = useQuery({
+  const { data: interactions = EMPTY_ARRAY } = useQuery({
     queryKey: ['user-interactions', user?.email],
     queryFn: () => api.entities.UserInteraction.filter({ user_email: user?.email }, '-created_date', 200),
     enabled: !!user,
   });
 
-  const { data: userChallenges = [] } = useQuery({
+  const { data: userChallenges = EMPTY_ARRAY } = useQuery({
     queryKey: ['user-challenges', user?.email],
     queryFn: () => api.entities.UserChallenge.filter({ user_email: user?.email }),
     enabled: !!user,

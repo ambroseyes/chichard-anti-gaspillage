@@ -21,16 +21,6 @@ export default function Catalog() {
   const [sortBy, setSortBy] = useState('discount');
   const [maxPrice, setMaxPrice] = useState([50000]);
   const [urgencyFilter, setUrgencyFilter] = useState('all');
-  React.useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await api.auth.me();
-      } catch {
-        // Visiteur non connecté : la page reste consultable en anonyme.
-      }
-    };
-    loadUser();
-  }, []);
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['products'],

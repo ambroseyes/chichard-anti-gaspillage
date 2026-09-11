@@ -7,8 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertTriangle, Flag, ShieldAlert } from 'lucide-react';
 import { api } from '@/api';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function ReportModal({ entityType, entityId, trigger, entityName }) {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [reason, setReason] = useState('');
@@ -22,9 +24,9 @@ export default function ReportModal({ entityType, entityId, trigger, entityName 
 
     setLoading(true);
     try {
-      const user = await api.auth.me();
+      // `reporter_email` est réécrit par le serveur d'après la session : le
+      // client ne peut pas signaler au nom de quelqu'un d'autre.
       await api.entities.ScamReport.create({
-        reporter_email: user.email,
         reported_entity_type: entityType,
         reported_entity_id: entityId,
         reason,

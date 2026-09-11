@@ -116,7 +116,11 @@ for (const file of files) {
     if (spec.unique) continue;
     if (INDEXED.test(field)) indexes.push(field);
   }
+  indexes.push('created_by');
 
+  // Colonne d'audit posée par le serveur à la création : qui a écrit cette
+  // ligne. Le client ne peut pas la fournir (voir SYSTEM_FIELDS).
+  lines.push('  created_by                   String?');
   lines.push('  created_date                 DateTime @default(now())');
   lines.push('  updated_date                 DateTime @updatedAt');
   for (const idx of indexes) lines.push(`  @@index([${idx}])`);

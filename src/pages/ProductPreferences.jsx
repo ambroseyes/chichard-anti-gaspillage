@@ -40,11 +40,6 @@ export default function ProductPreferences() {
   const [saved, setSaved] = useState(false);
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    api.auth.me().then(u => {
-    }).catch(() => {});
-  }, []);
-
   const { data: prefs } = useQuery({
     queryKey: ['user-prefs', user?.email],
     queryFn: () => api.entities.UserPreference.filter({ user_email: user.email }),

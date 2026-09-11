@@ -1,51 +1,46 @@
-import React, { useState, useEffect } from 'react';
 import { api } from '@/api';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { ChefHat, Sparkles, Clock, Users, Loader2 } from 'lucide-react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { EMPTY_ARRAY } from '@/lib/stable';
+import { useAiEnabled } from '@/hooks/useAppConfig';
 
 export default function AIRecipeRecommendations({ user }) {
-  const [recipes, setRecipes] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  const { data: cartItems = [] } = useQuery({
+  const aiEnabled = useAiEnabled();
+  const { data: cartItems = EMPTY_ARRAY } = useQuery({
     queryKey: ['cart', user?.email],
-    queryFn: () => api.entities.CartItem.filter({ user_email: user?.email }),
-    enabled: !!user,
+    queryFn: () => api.entities.CartItem.filter({ user_email: user?.email }, '-created_date', 50),
+    enabled: Boolean(user),
   });
 
-  const { data: existingRecipes = [] } = useQuery({
+  const { data: existingRecipes = EMPTY_ARRAY } = useQuery({
     queryKey: ['recipes'],
     queryFn: () => api.entities.Recipe.list('-created_date', 20),
   });
 
-  useEffect(() => {
-    const generateRecipes = async () => {
-      setLoading(true);
-      
-      const ingredients = cartItems.map((c) => c.product_name).filter(Boolean).slice(0, 12);
-      if (!ingredients.length) {
-        setRecipes([]);
-        setLoading(false);
-        return;
-      }
+  const ingredients = cartItems.map((c) => c.product_name).filter(Boolean).slice(0, 12);
 
-      try {
-        const recipe = await api.ai.recipeFromIngredients(ingredients);
-        setRecipes([recipe]);
-      } catch {
-        // L'assistance IA peut être désactivée sur l'instance : on retombe
-        // silencieusement sur les recettes publiées par la communauté.
-        setRecipes([]);
-      }
-      
-      setLoading(false);
-    };
+  /**
+   * La suggestion est une donnée serveur comme une autre : une requête, pas un
+   * effet qui écrit dans l'état. La clé porte les ingrédients, si bien que la
+   * requête ne repart que lorsque le panier change réellement.
+   *
+   * L'ancienne version dépendait de `cartItems`, recréé à chaque rendu : elle
+   * bouclait sans fin sur la page d'accueil.
+   */
+  const { data: suggestion, isLoading, isError } = useQuery({
+    queryKey: ['ai-recipe', ingredients.join('|')],
+    queryFn: () => api.ai.recipeFromIngredients(ingredients),
+    enabled: aiEnabled && ingredients.length > 0,
+    staleTime: 10 * 60 * 1000,
+    retry: false,
+  });
 
-    generateRecipes();
-  }, [cartItems, user]);
+  // Sans assistance IA (ou sans panier), on montre les recettes de la communauté.
+  const recipes = suggestion && !isError ? [suggestion] : EMPTY_ARRAY;
+  const loading = ingredients.length > 0 && isLoading && !isError;
 
   const difficultyColors = {
     facile: 'bg-green-100 text-green-700',

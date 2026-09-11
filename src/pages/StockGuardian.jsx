@@ -14,8 +14,10 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from '@/lib/AuthContext';
+import { useMyStore } from '@/hooks/useMyStore';
 
 export default function StockGuardian() {
+  const { storeId } = useMyStore();
   const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
@@ -24,9 +26,9 @@ export default function StockGuardian() {
   const messagesEndRef = useRef(null);
 
   const { data: products = [] } = useQuery({
-    queryKey: ['partner-products', user?.email],
-    queryFn: () => api.entities.Product.filter({ created_by: user?.email }),
-    enabled: !!user,
+    queryKey: ['partner-products', storeId],
+    queryFn: () => api.entities.Product.filter({ store_id: storeId }),
+    enabled: Boolean(storeId),
   });
 
   // Calculate stats

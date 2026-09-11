@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { api } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { differenceInHours, format, startOfWeek, endOfWeek } from 'date-fns';
@@ -13,8 +13,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from 'sonner';
-import { goToLogin } from '@/lib/navigation';
 import { useAuth } from '@/lib/AuthContext';
+import { EMPTY_ARRAY } from '@/lib/stable';
 
 // --- Pricing suggestion engine (rule-based, no external API needed) ---
 function getSuggestedPrice(product) {
@@ -49,20 +49,21 @@ const colorConfig = {
 
 export default function PartnerPredictiveDashboard() {
   const { user } = useAuth();
-  const [store, setStore] = useState(null);
   const [filterColor, setFilterColor] = useState('all');
   const [generatingReport, setGeneratingReport] = useState(false);
   const [weeklyReport, setWeeklyReport] = useState(null);
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    api.auth.me().then(async u => {
-      const stores = await api.entities.Store.filter({ owner_email: u.email });
-      if (stores[0]) setStore(stores[0]);
-    }).catch(() => goToLogin());
-  }, []);
+  const { data: store = null } = useQuery({
+    queryKey: ['store', 'mine', user?.email],
+    queryFn: async () => {
+      const stores = await api.entities.Store.filter({ owner_email: user.email });
+      return stores[0] ?? null;
+    },
+    enabled: Boolean(user),
+  });
 
-  const { data: products = [], isLoading } = useQuery({
+  const { data: products = EMPTY_ARRAY, isLoading } = useQuery({
     queryKey: ['partner-products-predictive', store?.id],
     queryFn: () => api.entities.Product.filter({ store_id: store.id }, 'expiration_date', 200),
     enabled: !!store?.id,
