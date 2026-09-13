@@ -22,6 +22,11 @@
       "type": "number",
       "description": "Prix suggéré par StockGuardian"
     },
+    "discount_percent": {
+      "type": "integer",
+      "default": 0,
+      "description": "Remise en % recalculée à chaque écriture des prix (permet le tri en base)"
+    },
     "category": {
       "type": "string",
       "enum": [

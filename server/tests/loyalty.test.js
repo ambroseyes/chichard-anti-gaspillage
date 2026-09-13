@@ -56,8 +56,12 @@ describe('fidélité', () => {
       request(app).post('/api/loyalty/redeem').set(auth(token)).send(body),
     ]);
 
-    expect([a.status, b.status].sort()).toEqual([200, 409]);
+    // Un seul échange aboutit ; le second est refusé faute de points — le même
+    // refus que hors concurrence, et donc le même code.
+    expect([a.status, b.status].sort()).toEqual([200, 400]);
     const apres = await prisma.user.findUnique({ where: { id: user.id } });
     expect(apres.loyalty_points).toBe(100);
+    // L'invariant qui compte : un seul coupon émis, pas deux.
+    expect(await prisma.coupon.count({ where: { user_email: user.email } })).toBe(1);
   });
 });

@@ -3,6 +3,7 @@ import { env } from '../config/env.js';
 import { ECO_LEVELS, LOYALTY_TIERS } from '../domain/loyalty.js';
 import { DISCOUNT_LADDER } from '../domain/pricing.js';
 import { definitions } from '../entities/schema.js';
+import { CATEGORY_LABELS, SORT_OPTIONS } from '../domain/catalog.js';
 
 export const configRouter = Router();
 
@@ -29,6 +30,7 @@ configRouter.get('/', (_req, res) => {
         id,
         label: CATEGORY_LABELS[id] ?? id,
       })),
+      product_sorts: SORT_OPTIONS,
       urgency_levels: DISCOUNT_LADDER,
       loyalty_tiers: LOYALTY_TIERS,
       eco_levels: ECO_LEVELS,
@@ -40,16 +42,3 @@ configRouter.get('/', (_req, res) => {
     },
   });
 });
-
-const CATEGORY_LABELS = {
-  fruits_legumes: 'Fruits & légumes',
-  produits_laitiers: 'Produits laitiers',
-  viandes_poissons: 'Viandes & poissons',
-  boulangerie: 'Boulangerie',
-  epicerie: 'Épicerie',
-  boissons: 'Boissons',
-  surgeles: 'Surgelés',
-  hygiene: 'Hygiène',
-  conserves: 'Conserves',
-  condiments: 'Condiments',
-};

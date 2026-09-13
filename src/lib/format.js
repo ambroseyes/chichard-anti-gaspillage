@@ -62,3 +62,33 @@ export function expiryLabel(value, now = new Date()) {
   if (days === 1) return 'Demain';
   return `Dans ${days} jours`;
 }
+
+/**
+ * Prix ramené à l'unité de référence : « 1 120 FCFA / kg ».
+ *
+ * C'est la seule façon de comparer deux articles de conditionnements
+ * différents — et c'est obligatoire à l'affichage dans la plupart des pays.
+ * Renvoie `null` quand le poids manque ou ne veut rien dire.
+ */
+const REFERENCE_UNITS = {
+  g: { factor: 1000, unit: 'kg' },
+  kg: { factor: 1, unit: 'kg' },
+  mL: { factor: 1000, unit: 'L' },
+  L: { factor: 1, unit: 'L' },
+};
+
+export function unitPrice(product) {
+  const reference = REFERENCE_UNITS[product?.weight_unit];
+  const weight = Number(product?.weight);
+  const price = Number(product?.discounted_price);
+
+  if (!reference || !Number.isFinite(weight) || weight <= 0) return null;
+  if (!Number.isFinite(price) || price <= 0) return null;
+
+  const amount = (price * reference.factor) / weight;
+  // Un prix au kilo qui dépasse le prix de l'article signale un poids saisi
+  // dans la mauvaise unité : mieux vaut ne rien afficher qu'un chiffre faux.
+  if (!Number.isFinite(amount) || amount > price * 10_000) return null;
+
+  return { amount, unit: reference.unit, label: `${formatXAF(amount)} / ${reference.unit}` };
+}

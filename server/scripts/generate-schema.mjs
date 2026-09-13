@@ -76,8 +76,12 @@ function defaultFor(type, value) {
   return '';
 }
 
-/** Champs indexés : clés étrangères logiques et colonnes de filtrage courantes. */
-const INDEXED = /(_email$|_id$|^status$|^code$|^is_read$|^category$|^expiration_date$|^pickup_date$)/;
+/**
+ * Champs indexés : clés étrangères logiques, colonnes de filtrage courantes et
+ * colonnes sur lesquelles le catalogue trie (une recherche paginée qui trie
+ * sans index relit toute la table à chaque page).
+ */
+const INDEXED = /(_email$|_id$|^status$|^code$|^is_read$|^category$|^expiration_date$|^pickup_date$|^discounted_price$|^discount_percent$|^avg_rating$|^brand$)/;
 
 const header = `// ⚠️  FICHIER GÉNÉRÉ — ne pas éditer à la main.
 // Source de vérité : server/entities/*.json

@@ -269,6 +269,7 @@ model ClickCollectBasket {
   updated_date       DateTime                     @updatedAt
 
   @@index([store_id])
+  @@index([discounted_price])
   @@index([pickup_date])
   @@index([category])
   @@index([status])
@@ -771,6 +772,7 @@ model PriceComparison {
   created_date  DateTime  @default(now())
   updated_date  DateTime  @updatedAt
 
+  @@index([brand])
   @@index([category])
   @@index([created_by])
 }
@@ -782,6 +784,7 @@ model Product {
   original_price     Float
   discounted_price   Float
   ai_suggested_price Float?
+  discount_percent   Int                 @default(0)
   category           ProductCategory
   expiration_date    DateTime
   quantity_available Int                 @default(0)
@@ -813,10 +816,14 @@ model Product {
   created_date       DateTime            @default(now())
   updated_date       DateTime            @updatedAt
 
+  @@index([discounted_price])
+  @@index([discount_percent])
   @@index([category])
   @@index([expiration_date])
   @@index([store_id])
   @@index([status])
+  @@index([brand])
+  @@index([avg_rating])
   @@index([created_by])
 }
 

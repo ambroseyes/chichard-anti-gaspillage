@@ -12,13 +12,20 @@ const PATH_BY_NAME = new Map(
 );
 
 export function createPageUrl(pageName) {
-  const path = PATH_BY_NAME.get(pageName);
-  if (path) return path;
+  // `ProductDetail?id=42` : le nom s'arrête au premier « ? » ou « # ». Sans
+  // cette coupure, la carte produit demandait une page nommée
+  // « ProductDetail?id=42 », introuvable, et renvoyait à l'accueil.
+  const cut = String(pageName ?? '').search(/[?#]/);
+  const name = cut === -1 ? String(pageName ?? '') : String(pageName).slice(0, cut);
+  const suffix = cut === -1 ? '' : String(pageName).slice(cut);
+
+  const path = PATH_BY_NAME.get(name);
+  if (path) return `${path}${suffix}`;
 
   // Un nom inconnu signale une faute de frappe ou une page supprimée : on le
   // dit en développement plutôt que de fabriquer une adresse plausible.
   if (import.meta.env.DEV) {
-    console.warn(`createPageUrl : page inconnue « ${pageName} »`);
+    console.warn(`createPageUrl : page inconnue « ${name} »`);
   }
   return '/';
 }

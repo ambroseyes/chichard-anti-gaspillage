@@ -2,6 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  /*
+   * Rangées horizontales défilantes (rayons, onglets) : la barre de défilement
+   * native coupe la rangée en deux sur mobile. Déclarée ici plutôt que dans une
+   * balise <style> du gabarit, où Tailwind ne la voyait pas.
+   */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 
 /* :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;

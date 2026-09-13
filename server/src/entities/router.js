@@ -11,6 +11,7 @@ import {
   sanitizeWrite,
 } from '../access/enforce.js';
 import { definitions, fieldsOf, schemaFor, stripHidden } from './schema.js';
+import { derivedFields, stripDerived } from './derived.js';
 import {
   decodeFilterParam,
   listQuerySchema,
@@ -99,7 +100,7 @@ entitiesRouter.post(
 
     const defaults = ownershipDefaults(entity, req.user);
     const { data: cleaned, rejected } = sanitizeWrite(entity, req.body, { user: req.user });
-    const payload = { ...cleaned, ...defaults };
+    const payload = { ...stripDerived(entity, cleaned), ...defaults };
 
     await assertWrite(entity, 'create', { user: req.user, row: payload, req });
 
@@ -107,7 +108,9 @@ entitiesRouter.post(
     const parsed = schema.safeParse(payload);
     if (!parsed.success) throw badRequest('Données invalides', parsed.error.issues);
 
-    const row = await delegate.create({ data: parsed.data });
+    const row = await delegate.create({
+      data: { ...parsed.data, ...derivedFields(entity, parsed.data) },
+    });
 
     await recordAudit(req, { action: 'create', module: entity, entity_id: row.id });
     publish(entity, { type: 'create', id: row.id, data: stripHidden(entity, row) });
@@ -128,6 +131,7 @@ entitiesRouter.patch(
     await assertWrite(entity, 'update', { user: req.user, row: existing, req });
 
     const { data: cleaned, rejected } = sanitizeWrite(entity, req.body, { user: req.user });
+    stripDerived(entity, cleaned);
     // Le propriétaire d'une ligne ne peut pas la transférer à quelqu'un d'autre.
     const policy = policyFor(entity);
     if (policy?.owner) delete cleaned[policy.owner];
@@ -136,7 +140,10 @@ entitiesRouter.patch(
     const parsed = schema.safeParse(cleaned);
     if (!parsed.success) throw badRequest('Données invalides', parsed.error.issues);
 
-    const row = await delegate.update({ where: { id: req.params.id }, data: parsed.data });
+    const row = await delegate.update({
+      where: { id: req.params.id },
+      data: { ...parsed.data, ...derivedFields(entity, parsed.data, existing) },
+    });
 
     await recordAudit(req, { action: 'update', module: entity, entity_id: row.id });
     publish(entity, { type: 'update', id: row.id, data: stripHidden(entity, row) });

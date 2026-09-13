@@ -22,6 +22,7 @@ import { partnerRouter, partnerSignupRouter } from './routes/partner.js';
 import { paymentsRouter } from './routes/payments.js';
 import { realtimeRouter } from './routes/realtime.js';
 import { aiRouter } from './routes/ai.js';
+import { catalogRouter } from './routes/catalog.js';
 import { configRouter } from './routes/config.js';
 import { uploadsRouter } from './routes/uploads.js';
 
@@ -87,6 +88,7 @@ export function createApp() {
   app.use(attachUser);
 
   app.use('/api/config', configRouter);
+  app.use('/api/catalog', catalogRouter);
   app.use('/api/auth', authRouter);
   app.use('/api/entities', entitiesRouter);
   app.use('/api/orders', ordersRouter);
