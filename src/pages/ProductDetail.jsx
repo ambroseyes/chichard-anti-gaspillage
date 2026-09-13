@@ -1,400 +1,497 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
-import { api } from '@/api';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-import { 
-  ArrowLeft, Clock, MapPin, ShoppingCart, Plus, Minus, 
-  CheckCircle, Shield, Truck, Store, Share2, Heart,
-  Leaf, AlertTriangle
+import {
+  AlertTriangle,
+  Award,
+  Check,
+  Clock,
+  Heart,
+  Leaf,
+  MapPin,
+  Minus,
+  Plus,
+  ShieldCheck,
+  Share2,
+  ShoppingCart,
+  Star,
+  Store,
+  Truck,
 } from 'lucide-react';
-import ReportModal from '@/components/safety/ReportModal';
-import TrustBadge from '@/components/safety/TrustBadge';
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Card } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { toast } from 'sonner';
-import { goToLogin } from '@/lib/navigation';
-import { useAuth } from '@/lib/AuthContext';
+import { api } from '@/api';
+import { createPageUrl } from '@/utils';
+import { formatXAF, expiryLabel, daysUntil, unitPrice, formatDate } from '@/lib/format';
+import { CATEGORY_EMOJI, CATEGORY_LABEL } from '@/lib/constants';
+import { useCart } from '@/hooks/useCart';
+import { useAppConfig } from '@/hooks/useAppConfig';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import ProductCard from '@/components/ui/ProductCard';
+import ReportModal from '@/components/safety/ReportModal';
 
+/**
+ * Fiche produit.
+ *
+ * Deux colonnes : la galerie à gauche, le bloc d'achat à droite qui reste
+ * visible pendant qu'on lit. Le détail (caractéristiques, allergènes, avis)
+ * passe sous des onglets pour ne pas repousser le bouton d'achat hors écran.
+ */
 export default function ProductDetail() {
-  const { user } = useAuth();
+  const [params] = useSearchParams();
+  const productId = params.get('id');
+  const { addToCart, isAdding } = useCart();
+  const config = useAppConfig();
   const [quantity, setQuantity] = useState(1);
-  const [isAddingToCart, setIsAddingToCart] = useState(false);
-
-  const urlParams = new URLSearchParams(window.location.search);
-  const productId = urlParams.get('id');
+  const [activeImage, setActiveImage] = useState(0);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', productId],
-    queryFn: () => api.entities.Product.filter({ id: productId }),
-    select: (data) => data[0],
-    enabled: !!productId,
+    queryFn: () => api.entities.Product.get(productId),
+    enabled: Boolean(productId),
   });
 
-  if (isLoading) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        <Skeleton className="w-full aspect-square rounded-2xl mb-6" />
-        <Skeleton className="h-8 w-3/4 mb-4" />
-        <Skeleton className="h-6 w-1/2" />
-      </div>
-    );
-  }
+  const { data: similar } = useQuery({
+    queryKey: ['product-similar', product?.category, product?.id],
+    queryFn: () => api.catalog.search({ category: [product.category], per_page: 8 }),
+    enabled: Boolean(product?.category),
+    select: (page) => page.items.filter((item) => item.id !== product.id).slice(0, 4),
+  });
 
-  if (!product) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center">
-        <h2 className="text-xl font-semibold mb-2">Produit non trouvé</h2>
-        <Link to={createPageUrl('Catalog')}>
-          <Button>Retour au catalogue</Button>
-        </Link>
-      </div>
-    );
-  }
+  if (isLoading) return <DetailSkeleton />;
+  if (!product) return <NotFound />;
 
-  const daysLeft = Math.ceil((new Date(product.expiration_date) - new Date()) / (1000 * 60 * 60 * 24));
-  const discount = Math.round((1 - product.discounted_price / product.original_price) * 100);
-  const savings = (product.original_price - product.discounted_price) * quantity;
+  const images = [product.image_url, ...(product.images ?? [])].filter(Boolean);
+  const days = daysUntil(product.expiration_date);
+  const perUnit = unitPrice(product);
+  const savings = Math.max(0, (product.original_price ?? 0) - (product.discounted_price ?? 0));
+  const discount = product.discount_percent ?? 0;
+  const stock = product.quantity_available ?? 0;
+  const maxQuantity = Math.max(1, Math.min(stock, 20));
 
-  const getUrgencyColor = () => {
-    if (daysLeft <= 1) return 'bg-red-500';
-    if (daysLeft <= 3) return 'bg-orange-500';
-    if (daysLeft <= 5) return 'bg-yellow-500';
-    return 'bg-emerald-500';
+  const add = () => {
+    if (addToCart(product, quantity)) {
+      toast.success(`${quantity} × ${product.name} ajouté au panier`);
+    }
   };
 
-  const categoryLabels = {
-    fruits_legumes: '🥬 Fruits & Légumes',
-    produits_laitiers: '🥛 Produits laitiers',
-    viandes_poissons: '🥩 Viandes & Poissons',
-    boulangerie: '🥖 Boulangerie',
-    epicerie: '🛒 Épicerie',
-    boissons: '🥤 Boissons',
-    surgeles: '❄️ Surgelés',
-    hygiene: '🧴 Hygiène'
-  };
-
-  const addToCart = async () => {
-    if (!user) {
-      goToLogin();
-      return;
+  const share = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) await navigator.share({ title: product.name, url });
+      else {
+        await navigator.clipboard.writeText(url);
+        toast.success('Lien copié');
+      }
+    } catch {
+      // L'utilisateur a annulé le partage : rien à signaler.
     }
-
-    setIsAddingToCart(true);
-    
-    const existingItems = await api.entities.CartItem.filter({ 
-      user_email: user.email, 
-      product_id: product.id 
-    });
-    
-    if (existingItems.length > 0) {
-      await api.entities.CartItem.update(existingItems[0].id, {
-        quantity: (existingItems[0].quantity || 1) + quantity
-      });
-    } else {
-      await api.entities.CartItem.create({
-        user_email: user.email,
-        product_id: product.id,
-        product_name: product.name,
-        product_image: product.image_url,
-        quantity: quantity,
-        unit_price: product.discounted_price,
-        original_price: product.original_price,
-        store_name: product.store_name,
-        expiration_date: product.expiration_date
-      });
-    }
-
-    setIsAddingToCart(false);
-    toast.success('Ajouté au panier !');
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-32">
-      {/* Header */}
-      <div className="bg-white sticky top-14 md:top-16 z-30 border-b">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to={createPageUrl('Catalog')} className="flex items-center gap-2 text-gray-600">
-            <ArrowLeft className="w-5 h-5" />
-            <span className="hidden md:inline">Retour</span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <ReportModal 
-              entityType="product" 
-              entityId={product.id} 
-              entityName={product.name}
-            />
-            <Button variant="ghost" size="icon">
-              <Share2 className="w-5 h-5" />
-            </Button>
-            <Button variant="ghost" size="icon">
-              <Heart className="w-5 h-5" />
-            </Button>
-          </div>
-        </div>
-      </div>
+    <div className="bg-gray-50 pb-10">
+      <div className="max-w-7xl mx-auto px-4 lg:px-6 py-5">
+        <Breadcrumbs
+          trail={[
+            { label: 'Catalogue', to: createPageUrl('Catalog') },
+            {
+              label: CATEGORY_LABEL[product.category] ?? product.category,
+              to: createPageUrl(`Catalog?category=${product.category}`),
+            },
+            { label: product.name },
+          ]}
+          className="mb-4"
+        />
 
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Image */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="relative"
-          >
-            <div className="aspect-square rounded-2xl overflow-hidden bg-white shadow-sm">
-              {product.image_url ? (
-                <img 
-                  src={product.image_url} 
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-8xl">
-                  {categoryLabels[product.category]?.split(' ')[0] || '🛒'}
+        <div className="grid lg:grid-cols-[minmax(0,1fr)_22rem] gap-6">
+          <div className="space-y-6">
+            {/* Galerie + identité */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4 lg:p-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <div className="relative aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+                    {images[activeImage] ? (
+                      <img
+                        src={images[activeImage]}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="w-full h-full grid place-items-center text-7xl" aria-hidden="true">
+                        {CATEGORY_EMOJI[product.category] ?? '🛒'}
+                      </span>
+                    )}
+
+                    {discount > 0 && (
+                      <span className="absolute top-3 left-3 px-2.5 py-1 rounded bg-orange-500 text-white text-sm font-bold">
+                        −{discount}%
+                      </span>
+                    )}
+                  </div>
+
+                  {images.length > 1 && (
+                    <ul className="flex gap-2 mt-3">
+                      {images.map((image, index) => (
+                        <li key={image}>
+                          <button
+                            type="button"
+                            onClick={() => setActiveImage(index)}
+                            aria-label={`Voir l'image ${index + 1}`}
+                            aria-current={index === activeImage}
+                            className={`w-16 h-16 rounded-md overflow-hidden border-2 ${
+                              index === activeImage ? 'border-emerald-500' : 'border-transparent'
+                            }`}
+                          >
+                            <img src={image} alt="" className="w-full h-full object-cover" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* Badges */}
-            <div className="absolute top-4 left-4 flex flex-col gap-2">
-              <Badge className="bg-orange-500 text-white font-bold text-lg px-3 py-1.5">
-                -{discount}%
-              </Badge>
-              <Badge className={`${getUrgencyColor()} text-white flex items-center gap-1.5`}>
-                <Clock className="w-3.5 h-3.5" />
-                {daysLeft <= 1 ? "Expire aujourd'hui" : `${daysLeft}j restants`}
-              </Badge>
-            </div>
+                <div>
+                  {product.brand && (
+                    <p className="text-xs uppercase tracking-wide text-gray-400">{product.brand}</p>
+                  )}
+                  <h1 className="text-xl lg:text-2xl font-bold text-gray-900 mt-1">{product.name}</h1>
 
-            {product.is_verified && (
-              <div className="absolute top-4 right-4 bg-white rounded-full p-2 shadow-lg">
-                <CheckCircle className="w-6 h-6 text-emerald-500" />
+                  <div className="flex items-center gap-2 mt-2">
+                    <Rating value={product.avg_rating} />
+                    <span className="text-sm text-gray-500">
+                      {product.reviews_count > 0
+                        ? `${product.avg_rating?.toFixed(1)} · ${product.reviews_count} avis`
+                        : 'Pas encore d’avis'}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    <Tag icon={Clock} tone={days <= 1 ? 'danger' : days <= 3 ? 'warning' : 'neutral'}>
+                      {expiryLabel(product.expiration_date)} — {formatDate(product.expiration_date)}
+                    </Tag>
+                    {product.is_verified && (
+                      <Tag icon={ShieldCheck} tone="success">
+                        Date vérifiée par la boutique
+                      </Tag>
+                    )}
+                    {product.co2_saved > 0 && (
+                      <Tag icon={Leaf} tone="success">
+                        {product.co2_saved} kg de CO₂ évités
+                      </Tag>
+                    )}
+                  </div>
+
+                  {product.description && (
+                    <p className="text-sm text-gray-600 mt-4 leading-relaxed">{product.description}</p>
+                  )}
+
+                  <div className="flex items-center gap-3 mt-5 pt-4 border-t border-gray-100">
+                    <button
+                      type="button"
+                      onClick={share}
+                      className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900"
+                    >
+                      <Share2 className="w-4 h-4" /> Partager
+                    </button>
+                    <button
+                      type="button"
+                      className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900"
+                    >
+                      <Heart className="w-4 h-4" /> Ajouter aux favoris
+                    </button>
+                    <ReportModal entityType="product" entityId={product.id} entityName={product.name} />
+                  </div>
+                </div>
               </div>
-            )}
-          </motion.div>
-
-          {/* Details */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
-          >
-            <div>
-              <Badge variant="secondary" className="mb-3">
-                {categoryLabels[product.category]}
-              </Badge>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-                {product.name}
-              </h1>
-              <div className="flex items-center gap-2 text-gray-500">
-                <Store className="w-4 h-4" />
-                <span>{product.store_name}</span>
-                {product.store_location && (
-                  <>
-                    <span>•</span>
-                    <MapPin className="w-4 h-4" />
-                    <span>{product.store_location}</span>
-                  </>
-                )}
-              </div>
             </div>
 
-            {/* Price */}
-            <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-6">
-              <div className="flex items-baseline gap-3 mb-2">
-                <span className="text-3xl font-bold text-emerald-600">
-                  {product.discounted_price?.toLocaleString()} FCFA
-                </span>
-                <span className="text-lg text-gray-400 line-through">
-                  {product.original_price?.toLocaleString()} FCFA
-                </span>
-              </div>
-              <p className="text-emerald-700 font-medium">
-                Vous économisez {savings.toLocaleString()} FCFA
-              </p>
-            </div>
+            {/* Onglets de détail */}
+            <div className="bg-white rounded-xl border border-gray-200">
+              <Tabs defaultValue="caracteristiques">
+                <TabsList className="w-full justify-start rounded-none border-b bg-transparent px-4 h-auto py-0">
+                  <TabsTrigger value="caracteristiques" className="rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 py-3">
+                    Caractéristiques
+                  </TabsTrigger>
+                  <TabsTrigger value="boutique" className="rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 py-3">
+                    La boutique
+                  </TabsTrigger>
+                  <TabsTrigger value="avis" className="rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 py-3">
+                    Avis ({product.reviews_count ?? 0})
+                  </TabsTrigger>
+                </TabsList>
 
-            {/* Description */}
-            {product.description && (
+                <TabsContent value="caracteristiques" className="p-4 lg:p-6 mt-0">
+                  <dl className="divide-y divide-gray-100">
+                    <Row label="Rayon">{CATEGORY_LABEL[product.category] ?? product.category}</Row>
+                    {product.brand && <Row label="Marque">{product.brand}</Row>}
+                    {product.weight && (
+                      <Row label="Conditionnement">
+                        {product.weight} {product.weight_unit}
+                        {perUnit && <span className="text-gray-500"> — soit {perUnit.label}</span>}
+                      </Row>
+                    )}
+                    <Row label="Date limite">{formatDate(product.expiration_date)}</Row>
+                    <Row label="Disponibilité">
+                      {stock > 0 ? `${stock} en stock` : 'Épuisé'}
+                    </Row>
+                    {product.barcode && <Row label="Code-barres">{product.barcode}</Row>}
+                    {product.allergens?.length > 0 && (
+                      <Row label="Allergènes">
+                        <span className="flex items-center gap-1.5 text-amber-700">
+                          <AlertTriangle className="w-4 h-4" />
+                          {product.allergens.join(', ')}
+                        </span>
+                      </Row>
+                    )}
+                  </dl>
+
+                  {product.nutritional_info && Object.keys(product.nutritional_info).length > 0 && (
+                    <>
+                      <h3 className="text-sm font-semibold text-gray-900 mt-6 mb-2">
+                        Valeurs nutritionnelles
+                      </h3>
+                      <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {Object.entries(product.nutritional_info).map(([key, value]) => (
+                          <div key={key} className="bg-gray-50 rounded-lg p-3">
+                            <dt className="text-xs text-gray-500 capitalize">{key.replace(/_/g, ' ')}</dt>
+                            <dd className="text-sm font-semibold text-gray-900">{String(value)}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="boutique" className="p-4 lg:p-6 mt-0">
+                  <div className="flex items-start gap-4">
+                    <span className="w-12 h-12 rounded-lg bg-emerald-50 grid place-items-center shrink-0">
+                      <Store className="w-6 h-6 text-emerald-600" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-gray-900">{product.store_name}</p>
+                      {product.store_location && (
+                        <p className="flex items-center gap-1 text-sm text-gray-500 mt-0.5">
+                          <MapPin className="w-3.5 h-3.5" /> {product.store_location}
+                        </p>
+                      )}
+                      <Link
+                        to={createPageUrl(`Catalog?store=${encodeURIComponent(product.store_name)}`)}
+                        className="inline-block mt-3 text-sm font-medium text-emerald-700 hover:underline"
+                      >
+                        Voir tous les articles de cette boutique
+                      </Link>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="avis" className="p-4 lg:p-6 mt-0">
+                  {product.reviews_count > 0 ? (
+                    <div className="flex items-center gap-4">
+                      <span className="text-3xl font-bold text-gray-900">
+                        {product.avg_rating?.toFixed(1)}
+                      </span>
+                      <div>
+                        <Rating value={product.avg_rating} />
+                        <p className="text-sm text-gray-500 mt-1">
+                          Moyenne sur {product.reviews_count} avis clients
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">
+                      Ce produit n'a pas encore d'avis. Le vôtre sera le premier.
+                    </p>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </div>
+          </div>
+
+          {/* Bloc d'achat */}
+          <aside className="lg:sticky lg:top-40 lg:self-start">
+            <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
               <div>
-                <h3 className="font-semibold text-gray-900 mb-2">Description</h3>
-                <p className="text-gray-600">{product.description}</p>
-              </div>
-            )}
-
-            {/* Trust badges */}
-            <div className="space-y-3">
-                <div className="flex items-center gap-2 mb-2">
-                    <TrustBadge 
-                        verificationStatus={product.is_verified ? 'verified' : 'unverified'} 
-                        trustScore={95} // Mock score for now, would come from store entity
-                        showScore={true}
-                    />
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                <div className="bg-white rounded-xl p-3 text-center border">
-                    <Shield className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
-                    <span className="text-xs text-gray-600">Paiement Sécurisé</span>
-                </div>
-                <div className="bg-white rounded-xl p-3 text-center border">
-                    <Clock className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
-                    <span className="text-xs text-gray-600">Frais garanti</span>
-                </div>
-                <div className="bg-white rounded-xl p-3 text-center border">
-                    <Truck className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
-                    <span className="text-xs text-gray-600">Suivi Livraison</span>
-                </div>
-                </div>
-            </div>
-
-            {/* Quantity selector */}
-            <div className="flex items-center gap-4">
-              <span className="text-gray-700 font-medium">Quantité</span>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  disabled={quantity <= 1}
-                >
-                  <Minus className="w-4 h-4" />
-                </Button>
-                <span className="w-12 text-center text-lg font-semibold">{quantity}</span>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setQuantity(Math.min(product.quantity_available || 10, quantity + 1))}
-                  disabled={quantity >= (product.quantity_available || 10)}
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-              <span className="text-sm text-gray-500">
-                {product.quantity_available || 10} disponibles
-              </span>
-            </div>
-
-            {/* Freshness score */}
-            {product.freshness_score && (
-              <div className="bg-emerald-50 rounded-xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <Leaf className="w-4 h-4 text-emerald-500" />
-                    Score de fraîcheur
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <span className="text-3xl font-bold text-gray-900">
+                    {formatXAF(product.discounted_price)}
                   </span>
-                  <span className="font-bold text-emerald-600">{product.freshness_score}/100</span>
+                  {savings > 0 && (
+                    <span className="text-base text-gray-400 line-through">
+                      {formatXAF(product.original_price)}
+                    </span>
+                  )}
                 </div>
-                <Progress value={product.freshness_score} className="h-2" />
-              </div>
-            )}
-
-            {/* CO2 impact */}
-            {product.co2_saved && (
-              <div className="flex items-center gap-3 p-3 bg-teal-50 rounded-xl">
-                <div className="p-2 bg-teal-100 rounded-lg">
-                  <Leaf className="w-5 h-5 text-teal-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-teal-800">Impact écologique</p>
-                  <p className="text-xs text-teal-600">En achetant ce produit, vous évitez {product.co2_saved}kg de CO2</p>
-                </div>
-              </div>
-            )}
-
-            {/* Allergens warning */}
-            {product.allergens?.length > 0 && (
-              <div className="flex items-center gap-3 p-3 bg-amber-50 rounded-xl border border-amber-200">
-                <AlertTriangle className="w-5 h-5 text-amber-600" />
-                <div>
-                  <p className="text-sm font-medium text-amber-800">Allergènes</p>
-                  <p className="text-xs text-amber-600">{product.allergens.join(', ')}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Additional product info */}
-            {product.weight && (
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm text-gray-600">Poids / Volume</span>
-                <span className="font-medium">{product.weight} {product.weight_unit}</span>
-              </div>
-            )}
-
-            {product.brand && (
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm text-gray-600">Marque</span>
-                <span className="font-medium">{product.brand}</span>
-              </div>
-            )}
-          </motion.div>
-        </div>
-
-        {/* Store Info Section */}
-        <Card className="p-6 mt-6">
-          <h3 className="font-bold text-lg mb-4">À propos du magasin</h3>
-          <div className="flex items-start gap-4">
-            <div className="w-16 h-16 bg-emerald-100 rounded-lg flex items-center justify-center">
-              <Store className="w-8 h-8 text-emerald-600" />
-            </div>
-            <div className="flex-1">
-              <h4 className="font-semibold text-lg">{product.store_name}</h4>
-              {product.store_location && (
-                <p className="text-gray-500 flex items-center gap-1 mt-1">
-                  <MapPin className="w-4 h-4" />
-                  {product.store_location}
-                </p>
-              )}
-              <div className="flex gap-2 mt-3">
-                <Badge variant="outline">Partenaire vérifié</Badge>
-                {product.quantity_available > 10 && (
-                  <Badge className="bg-green-100 text-green-700">En stock</Badge>
+                {perUnit && <p className="text-xs text-gray-500 mt-0.5">{perUnit.label}</p>}
+                {savings > 0 && (
+                  <p className="inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 text-sm font-medium">
+                    <Award className="w-3.5 h-3.5" />
+                    Vous économisez {formatXAF(savings)}
+                  </p>
                 )}
               </div>
-            </div>
-          </div>
-        </Card>
 
-        {/* Nutritional Info */}
-        {product.nutritional_info && (
-          <Card className="p-6 mt-6">
-            <h3 className="font-bold text-lg mb-4">Informations nutritionnelles</h3>
-            <div className="grid grid-cols-2 gap-4">
-              {Object.entries(product.nutritional_info).map(([key, value]) => (
-                <div key={key} className="flex justify-between p-2 border-b">
-                  <span className="text-gray-600 capitalize">{key}</span>
-                  <span className="font-medium">{value}</span>
+              <StockLine stock={stock} />
+
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-gray-600">Quantité</span>
+                <div className="flex items-center border border-gray-200 rounded-md">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+                    disabled={quantity <= 1}
+                    aria-label="Diminuer la quantité"
+                    className="px-3 py-2 text-gray-500 disabled:opacity-30"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <span className="w-10 text-center font-medium tabular-nums">{quantity}</span>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((value) => Math.min(maxQuantity, value + 1))}
+                    disabled={quantity >= maxQuantity}
+                    aria-label="Augmenter la quantité"
+                    className="px-3 py-2 text-gray-500 disabled:opacity-30"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
                 </div>
+              </div>
+
+              <Button
+                onClick={add}
+                disabled={stock === 0 || isAdding}
+                className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-base"
+              >
+                <ShoppingCart className="w-5 h-5 mr-2" />
+                {stock === 0 ? 'Produit épuisé' : `Ajouter — ${formatXAF(product.discounted_price * quantity)}`}
+              </Button>
+
+              <ul className="space-y-2 pt-2 border-t border-gray-100 text-sm text-gray-600">
+                <li className="flex items-start gap-2">
+                  <Store className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                  <span>
+                    Retrait gratuit chez <strong className="font-medium">{product.store_name}</strong>
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Truck className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                  <span>
+                    Livraison {formatXAF(config?.delivery_fee ?? 0)}
+                    {config?.free_delivery_threshold
+                      ? `, offerte dès ${formatXAF(config.free_delivery_threshold)} d'achat`
+                      : ''}
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                  <span>Paiement Orange Money, MTN MoMo ou à la livraison</span>
+                </li>
+              </ul>
+            </div>
+          </aside>
+        </div>
+
+        {similar?.length > 0 && (
+          <section className="mt-10">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Dans le même rayon</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 lg:gap-4">
+              {similar.map((item) => (
+                <ProductCard key={item.id} product={item} onAddToCart={addToCart} />
               ))}
             </div>
-          </Card>
+          </section>
         )}
       </div>
+    </div>
+  );
+}
 
-      {/* Fixed bottom bar */}
-      <div className="fixed bottom-16 md:bottom-0 left-0 right-0 bg-white border-t p-4 z-40">
-        <div className="max-w-4xl mx-auto flex items-center gap-4">
-          <div className="flex-1">
-            <div className="text-sm text-gray-500">Total</div>
-            <div className="text-xl font-bold text-gray-900">
-              {(product.discounted_price * quantity).toLocaleString()} FCFA
-            </div>
-          </div>
-          <Button
-            size="lg"
-            onClick={addToCart}
-            disabled={isAddingToCart}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 rounded-xl"
-          >
-            <ShoppingCart className="w-5 h-5 mr-2" />
-            {isAddingToCart ? 'Ajout...' : 'Ajouter au panier'}
-          </Button>
+function StockLine({ stock }) {
+  if (stock === 0) {
+    return <p className="text-sm font-medium text-red-600">Épuisé pour le moment</p>;
+  }
+  if (stock <= 5) {
+    return (
+      <p className="text-sm font-medium text-orange-600">
+        Plus que {stock} en stock — commandez vite
+      </p>
+    );
+  }
+  return (
+    <p className="flex items-center gap-1.5 text-sm font-medium text-emerald-700">
+      <Check className="w-4 h-4" /> En stock ({stock} disponibles)
+    </p>
+  );
+}
+
+function Row({ label, children }) {
+  return (
+    <div className="flex gap-4 py-2.5 text-sm">
+      <dt className="w-40 shrink-0 text-gray-500">{label}</dt>
+      <dd className="text-gray-900">{children}</dd>
+    </div>
+  );
+}
+
+function Tag({ icon: Icon, tone = 'neutral', children }) {
+  const tones = {
+    neutral: 'bg-gray-100 text-gray-700',
+    success: 'bg-emerald-50 text-emerald-700',
+    warning: 'bg-amber-50 text-amber-700',
+    danger: 'bg-red-50 text-red-700',
+  };
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium ${tones[tone]}`}>
+      <Icon className="w-3.5 h-3.5" aria-hidden="true" />
+      {children}
+    </span>
+  );
+}
+
+function Rating({ value = 0 }) {
+  const rounded = Math.round(Number(value) || 0);
+  return (
+    <span className="flex items-center" aria-label={`Noté ${rounded} sur 5`}>
+      {[1, 2, 3, 4, 5].map((index) => (
+        <Star
+          key={index}
+          className={`w-4 h-4 ${index <= rounded ? 'text-amber-400 fill-amber-400' : 'text-gray-200'}`}
+          aria-hidden="true"
+        />
+      ))}
+    </span>
+  );
+}
+
+function DetailSkeleton() {
+  return (
+    <div className="max-w-7xl mx-auto px-4 lg:px-6 py-6 grid lg:grid-cols-[minmax(0,1fr)_22rem] gap-6">
+      <div className="bg-white rounded-xl border border-gray-200 p-6 grid md:grid-cols-2 gap-6">
+        <Skeleton className="aspect-square rounded-lg" />
+        <div className="space-y-3">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-7 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
+          <Skeleton className="h-20 w-full" />
         </div>
       </div>
+      <Skeleton className="h-72 rounded-xl" />
+    </div>
+  );
+}
+
+function NotFound() {
+  return (
+    <div className="max-w-3xl mx-auto px-4 py-20 text-center">
+      <h1 className="text-xl font-semibold text-gray-900 mb-2">Ce produit n'est plus disponible</h1>
+      <p className="text-sm text-gray-500 mb-6">
+        Il a peut-être été vendu — le catalogue anti-gaspillage tourne vite.
+      </p>
+      <Button asChild className="bg-emerald-600 hover:bg-emerald-700">
+        <Link to={createPageUrl('Catalog')}>Retour au catalogue</Link>
+      </Button>
     </div>
   );
 }

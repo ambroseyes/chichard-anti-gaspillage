@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from '@/lib/AuthContext';
+import { useMyStore } from '@/hooks/useMyStore';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell
 } from 'recharts';
@@ -18,13 +19,14 @@ import {
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 export default function PartnerStats() {
+  const { storeId } = useMyStore();
   const { user } = useAuth();
   const [period, setPeriod] = useState('month');
 
   const { data: products = [] } = useQuery({
-    queryKey: ['partner-products', user?.email],
-    queryFn: () => api.entities.Product.filter({ created_by: user?.email }),
-    enabled: !!user,
+    queryKey: ['partner-products', storeId],
+    queryFn: () => api.entities.Product.filter({ store_id: storeId }),
+    enabled: Boolean(storeId),
   });
 
   const { data: allOrders = [] } = useQuery({

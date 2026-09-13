@@ -12,6 +12,7 @@ import { logger } from '../lib/logger.js';
 import { badRequest, notFound } from '../lib/errors.js';
 import { withStoreContext } from '../access/context.js';
 import { urgencyFor, suggestedPrice } from '../domain/pricing.js';
+import { derivedFields } from '../entities/derived.js';
 
 export const partnerRouter = Router();
 
@@ -253,6 +254,7 @@ partnerRouter.post(
         data: {
           discounted_price: price,
           ai_suggested_price: price,
+          ...derivedFields('Product', { discounted_price: price }, p),
           urgency_level: urgencyFor(p.expiration_date, now).urgency === 'expired'
             ? 'critical'
             : urgencyFor(p.expiration_date, now).urgency,

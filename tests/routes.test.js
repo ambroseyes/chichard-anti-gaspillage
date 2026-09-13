@@ -25,6 +25,16 @@ describe('table des routes', () => {
     }
   });
 
+  it('conserve les paramètres accolés au nom de page', () => {
+    // Régression : la carte produit passait « ProductDetail?id=42 ». Le nom
+    // étant introuvable, chaque clic sur un produit ramenait à l'accueil.
+    expect(createPageUrl('ProductDetail?id=42')).toBe('/ProductDetail?id=42');
+    expect(createPageUrl('Catalog?category=epicerie&page=2')).toBe(
+      '/Catalog?category=epicerie&page=2',
+    );
+    expect(createPageUrl('Home')).toBe('/');
+  });
+
   it('ouvre le catalogue sans compte', () => {
     const catalogue = routes.find((r) => r.name === 'Catalog');
     expect(catalogue.role).toBeUndefined();

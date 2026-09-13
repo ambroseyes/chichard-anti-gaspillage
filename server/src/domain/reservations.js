@@ -15,7 +15,11 @@ import { publish } from '../realtime/bus.js';
 export async function createReservation({ user, input }) {
   const basket = await prisma.clickCollectBasket.findUnique({ where: { id: input.basket_id } });
   if (!basket) throw notFound('Panier introuvable');
-  if (basket.status !== 'active') throw badRequest("Ce panier n'est plus disponible");
+  // Épuisé ou retiré de la vente : c'est l'état de la ressource qui s'y
+  // oppose, pas la requête. Renvoyer 400 ici rendait le code de réponse
+  // dépendant du hasard — deux réservations simultanées sur le dernier panier
+  // recevaient 409 ou 400 selon l'instant où le perdant relisait la ligne.
+  if (basket.status !== 'active') throw conflict("Ce panier n'est plus disponible");
 
   const quantity = input.quantity ?? 1;
   const remaining = (basket.quantity_available ?? 0) - (basket.quantity_reserved ?? 0);

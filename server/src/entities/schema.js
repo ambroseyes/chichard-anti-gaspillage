@@ -64,6 +64,10 @@ export function schemaFor(entity, { partial = false } = {}) {
     shape[field] = partial || !required.has(field) ? s.optional().nullable() : s;
   }
 
+  // `created_by` est posé par le serveur : le schéma l'accepte, la liste des
+  // champs système empêche le client de le fournir.
+  shape.created_by = z.string().optional().nullable();
+
   const schema = z.object(shape).strict();
   cache.set(key, schema);
   return schema;
@@ -73,7 +77,13 @@ export function schemaFor(entity, { partial = false } = {}) {
 export function fieldsOf(entity) {
   const def = definitions.get(entity);
   if (!def) return new Set();
-  return new Set([...Object.keys(def.properties ?? {}), 'id', 'created_date', 'updated_date']);
+  return new Set([
+    ...Object.keys(def.properties ?? {}),
+    'id',
+    'created_by',
+    'created_date',
+    'updated_date',
+  ]);
 }
 
 /** Colonnes jamais renvoyées au client. */

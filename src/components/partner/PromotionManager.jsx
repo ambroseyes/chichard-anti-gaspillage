@@ -16,7 +16,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
 
-export default function PromotionManager({ storeId, storeEmail }) {
+export default function PromotionManager({ storeId }) {
   const [showDialog, setShowDialog] = useState(false);
   const [editingPromo, setEditingPromo] = useState(null);
   const [promoData, setPromoData] = useState({
@@ -32,9 +32,9 @@ export default function PromotionManager({ storeId, storeEmail }) {
   const queryClient = useQueryClient();
 
   const { data: products = [] } = useQuery({
-    queryKey: ['partner-products', storeEmail],
-    queryFn: () => api.entities.Product.filter({ created_by: storeEmail }),
-    enabled: !!storeEmail,
+    queryKey: ['partner-products', storeId],
+    queryFn: () => api.entities.Product.filter({ store_id: storeId }),
+    enabled: !!storeId,
   });
 
   const { data: promotions = [] } = useQuery({

@@ -2,6 +2,7 @@ import request from 'supertest';
 import argon2 from 'argon2';
 import { createApp } from '../src/app.js';
 import { prisma } from '../src/lib/prisma.js';
+import { derivedFields } from '../src/entities/derived.js';
 
 export const app = createApp();
 
@@ -54,8 +55,7 @@ export async function createStore(ownerEmail, overrides = {}) {
 }
 
 export async function createProduct(storeId, overrides = {}) {
-  return prisma.product.create({
-    data: {
+  const data = {
       name: 'Produit de test',
       category: 'epicerie',
       original_price: 2000,
@@ -68,6 +68,9 @@ export async function createProduct(storeId, overrides = {}) {
       weight: 1,
       weight_unit: 'kg',
       ...overrides,
-    },
-  });
+  };
+  // Le serveur pose les champs dérivés à l'écriture ; un produit fabriqué
+  // directement en base doit les porter aussi, sinon les tests valident un
+  // état que l'application ne produit jamais.
+  return prisma.product.create({ data: { ...data, ...derivedFields('Product', data) } });
 }

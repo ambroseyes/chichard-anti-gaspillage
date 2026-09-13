@@ -45,7 +45,11 @@ export async function redeemReward({ user, rewardId }) {
       where: { id: user.id, loyalty_points: { gte: cost } },
       data: { loyalty_points: { decrement: cost } },
     });
-    if (debited.count !== 1) throw conflict('Solde de points insuffisant');
+    // Même refus que le contrôle préalable, donc même code : le perdant d'un
+    // double envoi n'a pas « rencontré un conflit », il n'a simplement plus
+    // les points. Deux codes pour une seule cause rendait la réponse
+    // dépendante de l'ordre d'arrivée des requêtes.
+    if (debited.count !== 1) throw badRequest('Points insuffisants');
 
     if (reward.stock !== null && reward.stock !== undefined) {
       await tx.loyaltyReward.updateMany({
@@ -113,7 +117,7 @@ export async function bookExperience({ user, experienceId }) {
       where: { id: user.id, loyalty_points: { gte: cost } },
       data: { loyalty_points: { decrement: cost } },
     });
-    if (debited.count !== 1) throw conflict('Solde de points insuffisant');
+    if (debited.count !== 1) throw badRequest('Points insuffisants');
 
     await tx.loyaltyTransaction.create({
       data: {

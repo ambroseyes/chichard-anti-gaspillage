@@ -167,6 +167,32 @@ describe("contrôle d'accès", () => {
     expect(apres.description).toBe('Nouvelle description');
   });
 
+  it("pose l'auteur d'après la session, sans le croire sur parole", async () => {
+    const res = await request(app)
+      .post('/api/entities/Favorite')
+      .set(auth(clientToken))
+      .send({ product_id: 'p1', created_by: 'quelqun@dautre.cm' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.created_by).toBe('client@test.cm');
+  });
+
+  it("n'accepte pas non plus de réécrire l'auteur après coup", async () => {
+    const cree = await request(app)
+      .post('/api/entities/Favorite')
+      .set(auth(clientToken))
+      .send({ product_id: 'p2' });
+
+    const res = await request(app)
+      .patch(`/api/entities/Favorite/${cree.body.data.id}`)
+      .set(auth(clientToken))
+      .send({ created_by: 'quelqun@dautre.cm' });
+
+    expect(res.status).toBe(200);
+    const apres = await prisma.favorite.findUnique({ where: { id: cree.body.data.id } });
+    expect(apres.created_by).toBe('client@test.cm');
+  });
+
   it('laisse le catalogue accessible sans compte', async () => {
     const res = await request(app).get('/api/entities/Product');
     expect(res.status).toBe(200);

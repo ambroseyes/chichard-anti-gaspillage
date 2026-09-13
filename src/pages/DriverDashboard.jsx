@@ -24,6 +24,7 @@ import DeliveryChat from '@/components/delivery/DeliveryChat';
 import MultiBulkScanner from '@/components/delivery/MultiBulkScanner';
 import GoogleDirectionsMap from '@/components/delivery/GoogleDirectionsMap';
 import { useAuth } from '@/lib/AuthContext';
+import { EMPTY_ARRAY } from '@/lib/stable';
 
 const STATUS_FLOW = {
   assigned:    { next: 'picked_up',   label: 'Récupérer',    btnClass: 'bg-blue-500 hover:bg-blue-600' },
@@ -176,7 +177,7 @@ export default function DriverDashboard() {
     }, 0);
   }, []);
 
-  const { data: orders = [], isLoading } = useQuery({
+  const { data: orders = EMPTY_ARRAY, isLoading } = useQuery({
     queryKey: ['driver-orders', user?.email],
     queryFn: async () => {
       const allOrders = await api.entities.Order.filter(
@@ -200,7 +201,7 @@ export default function DriverDashboard() {
     }
   }, [orders, courierPos, runOptimization]);
 
-  const { data: deliveredToday = [] } = useQuery({
+  const { data: deliveredToday = EMPTY_ARRAY } = useQuery({
     queryKey: ['driver-delivered-today', user?.email],
     queryFn: async () => {
       const all = await api.entities.Order.filter({ driver_email: user.email, status: 'delivered' }, '-created_date', 50);

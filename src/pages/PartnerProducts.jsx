@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+import { useMyStore } from '@/hooks/useMyStore';
 
 const categories = [
   { id: 'fruits_legumes', label: 'Fruits & Légumes', emoji: '🥬' },
@@ -45,6 +46,7 @@ const emptyProduct = {
 };
 
 export default function PartnerProducts() {
+  const { storeId } = useMyStore();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [showDialog, setShowDialog] = useState(false);
@@ -57,15 +59,15 @@ export default function PartnerProducts() {
   const queryClient = useQueryClient();
 
   const { data: products = [], isLoading } = useQuery({
-    queryKey: ['partner-products', user?.email],
-    queryFn: () => api.entities.Product.filter({ created_by: user?.email }, '-created_date'),
-    enabled: !!user,
+    queryKey: ['partner-products', storeId],
+    queryFn: () => api.entities.Product.filter({ store_id: storeId }, '-created_date'),
+    enabled: Boolean(storeId),
   });
 
   const createMutation = useMutation({
     mutationFn: (data) => api.entities.Product.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['partner-products'] });
+      queryClient.invalidateQueries({ queryKey: ['partner-products', storeId] });
       toast.success('Produit ajouté');
       closeDialog();
     },
@@ -74,7 +76,7 @@ export default function PartnerProducts() {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => api.entities.Product.update(id, data),
     onSuccess: async (_, { id, data }) => {
-      queryClient.invalidateQueries({ queryKey: ['partner-products'] });
+      queryClient.invalidateQueries({ queryKey: ['partner-products', storeId] });
       toast.success('Produit mis à jour');
       
       // Check for low stock alert
@@ -89,7 +91,7 @@ export default function PartnerProducts() {
   const deleteMutation = useMutation({
     mutationFn: (id) => api.entities.Product.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['partner-products'] });
+      queryClient.invalidateQueries({ queryKey: ['partner-products', storeId] });
       toast.success('Produit supprimé');
     },
   });

@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { api } from '@/api';
 import { Bell, Clock, Tag, Leaf, Save, ChevronLeft } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { goToLogin } from '@/lib/navigation';
 import { useAuth } from '@/lib/AuthContext';
 
 const DIETARY_OPTIONS = ['Végétarien', 'Vegan', 'Halal', 'Sans gluten', 'Sans lactose', 'Kasher', 'Bio uniquement'];
@@ -27,16 +25,12 @@ export default function NotificationSettings() {
     dietary_preferences: [],
   });
 
+  // Les préférences sont dans le profil déjà chargé par le contexte.
   useEffect(() => {
-    api.auth.me().then(u => {
-      setSettings({
-        dlc_alert_days: u.dlc_alert_days || 2,
-        push_notifications_enabled: u.push_notifications_enabled || false,
-        offer_categories: u.offer_categories || [],
-        dietary_preferences: u.dietary_preferences || [],
-      });
-    }).catch(() => goToLogin());
-  }, []);
+    if (!user) return;
+    const enregistrees = user.preferences?.notifications ?? {};
+    setSettings((actuelles) => ({ ...actuelles, ...enregistrees }));
+  }, [user]);
 
   const toggleArr = (key, value) => {
     setSettings(prev => ({

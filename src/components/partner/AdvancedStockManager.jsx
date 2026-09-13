@@ -16,6 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from 'sonner';
+import { EMPTY_ARRAY } from '@/lib/stable';
 
 export default function AdvancedStockManager({ products, user }) {
   const [showBatchForm, setShowBatchForm] = useState(null);
@@ -48,13 +49,13 @@ export default function AdvancedStockManager({ products, user }) {
     }
   }, [store]);
 
-  const { data: batches = [] } = useQuery({
+  const { data: batches = EMPTY_ARRAY } = useQuery({
     queryKey: ['product-batches', user?.store_id],
     queryFn: () => api.entities.ProductBatch.filter({ store_id: user?.store_id }),
     enabled: !!user?.store_id,
   });
 
-  const { data: orders = [] } = useQuery({
+  const { data: orders = EMPTY_ARRAY } = useQuery({
     queryKey: ['store-orders'],
     queryFn: () => api.entities.Order.list('-created_date', 100),
   });
@@ -123,21 +124,25 @@ export default function AdvancedStockManager({ products, user }) {
       }, 0);
       
       const dailyVelocity = soldUnits / 30;
-      const daysOfStock = dailyVelocity > 0 ? product.quantity_available / dailyVelocity : Infinity;
+      // Sans vente observée, la couverture de stock n'a pas de valeur : `null`
+      // le dit, là où `Infinity` produisait plus loin une date invalide qui
+      // faisait tomber toute la page — le cas de tout nouveau partenaire.
+      const daysOfStock = dailyVelocity > 0 ? product.quantity_available / dailyVelocity : null;
       
       // Days until expiration
       const daysToExpire = Math.ceil((new Date(product.expiration_date) - new Date()) / 86400000);
       
       // Suggest reorder based on thresholds
-      const needsReorder = daysOfStock < 7 || 
+      const needsReorder = (daysOfStock !== null && daysOfStock < 7) || 
                           product.quantity_available <= alertSettings.low_stock_threshold ||
                           daysToExpire <= alertSettings.expiration_warning_days;
       
       // Calculate optimal reorder quantity (14 days of stock)
       const suggestedQuantity = Math.ceil(dailyVelocity * 14) - product.quantity_available;
       
-      // Optimal restock date
-      const optimalRestockDate = addDays(new Date(), Math.max(0, daysOfStock - 3));
+      // Date de réapprovisionnement conseillée, seulement si l'écoulement est mesurable.
+      const optimalRestockDate =
+        daysOfStock === null ? null : addDays(new Date(), Math.max(0, Math.round(daysOfStock) - 3));
 
       // Determine urgency
       let urgency = 'normal';
@@ -150,7 +155,7 @@ export default function AdvancedStockManager({ products, user }) {
       return {
         product,
         dailyVelocity: Math.round(dailyVelocity * 10) / 10,
-        daysOfStock: Math.round(daysOfStock),
+        daysOfStock: daysOfStock === null ? null : Math.round(daysOfStock),
         daysToExpire,
         needsReorder,
         suggestedQuantity: Math.max(0, suggestedQuantity),
@@ -257,7 +262,7 @@ export default function AdvancedStockManager({ products, user }) {
                       </div>
                       <div className="bg-white/50 rounded-lg p-2 text-center">
                         <p className="text-xs text-gray-500">Jours de stock</p>
-                        <p className="font-semibold">{suggestion.daysOfStock === Infinity ? '∞' : suggestion.daysOfStock}</p>
+                        <p className="font-semibold">{suggestion.daysOfStock ?? '—'}</p>
                       </div>
                       <div className="bg-white/50 rounded-lg p-2 text-center">
                         <p className="text-xs text-gray-500">Expire dans</p>
@@ -272,7 +277,9 @@ export default function AdvancedStockManager({ products, user }) {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Calendar className="w-4 h-4" />
-                        Réappro idéale: {format(suggestion.optimalRestockDate, 'd MMM', { locale: fr })}
+                        {suggestion.optimalRestockDate
+                          ? `Réappro idéale : ${format(suggestion.optimalRestockDate, 'd MMM', { locale: fr })}`
+                          : 'Pas encore assez de ventes pour estimer'}
                       </div>
                       <Button size="sm" onClick={() => setShowBatchForm(suggestion.product)}>
                         <Plus className="w-4 h-4 mr-1" />

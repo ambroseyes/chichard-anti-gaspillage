@@ -1,5 +1,30 @@
 import { request } from './http';
 
+/**
+ * Catalogue : la recherche, les facettes et la pagination sont faites par le
+ * serveur. L'écran envoie des critères et reçoit une page — il ne détient
+ * jamais le catalogue entier, donc il ne peut plus en oublier une partie.
+ */
+export const catalog = {
+  search: (criteria = {}) => request(`/api/catalog/search${toQuery(criteria)}`).then((r) => r.data),
+  suggest: (q) => request(`/api/catalog/suggest${toQuery({ q })}`).then((r) => r.data),
+};
+
+/** Sérialise des critères : les listes deviennent « a,b », les vides disparaissent. */
+function toQuery(criteria) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(criteria)) {
+    if (value === undefined || value === null || value === '' || value === false) continue;
+    if (Array.isArray(value)) {
+      if (value.length) params.set(key, value.join(','));
+      continue;
+    }
+    params.set(key, value === true ? '1' : String(value));
+  }
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
+
 /** Commandes : devis, création, annulation, validation de remise. */
 export const orders = {
   quote: (payload) => request('/api/orders/quote', { method: 'POST', body: payload }).then((r) => r.data),

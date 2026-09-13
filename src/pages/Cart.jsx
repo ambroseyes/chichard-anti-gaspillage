@@ -3,7 +3,10 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { api } from '@/api';
 import { useAuth } from '@/lib/AuthContext';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useCart } from '@/hooks/useCart';
+import { formatXAF } from '@/lib/format';
+import { EMPTY_ARRAY } from '@/lib/stable';
+import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShoppingCart, Trash2, Plus, Minus, ArrowRight, 
@@ -20,30 +23,27 @@ export default function Cart() {
   const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState('');
   const [couponError, setCouponError] = useState('');
-  const queryClient = useQueryClient();
   const { user } = useAuth();
 
 
-  const { data: cartItems = [], isLoading } = useQuery({
-    queryKey: ['cart', user?.email],
-    queryFn: () => api.entities.CartItem.filter({ user_email: user.email }),
-    enabled: !!user,
-  });
+  /*
+   * Le panier vient du hook partagé. Cet écran interrogeait la même clé de
+   * cache que l'en-tête avec une requête différente : selon celui qui se
+   * montait le premier, les deux affichaient un panier différent.
+   */
+  const { items: cartItems, isLoading, setQuantity, remove } = useCart();
 
-  const updateQuantityMutation = useMutation({
-    mutationFn: ({ id, quantity }) => api.entities.CartItem.update(id, { quantity }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cart'] }),
-  });
-
-  const deleteItemMutation = useMutation({
-    mutationFn: (id) => api.entities.CartItem.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
+  const updateQuantityMutation = { mutate: ({ id, quantity }) => setQuantity(id, quantity) };
+  const deleteItemMutation = {
+    mutate: (id) => {
+      remove(id);
       toast.success('Article supprimé');
     },
-  });
+  };
 
-  const { data: userCoupons = [] } = useQuery({
+  // Codes déjà gagnés par l'utilisateur : ils étaient chargés puis jamais
+  // affichés — une requête pour rien. Ils sont maintenant proposés en un clic.
+  const { data: userCoupons = EMPTY_ARRAY } = useQuery({
     queryKey: ['user-coupons', user?.email],
     queryFn: () => api.entities.Coupon.filter({ user_email: user.email, status: 'ACTIVE' }),
     enabled: !!user,
@@ -140,7 +140,7 @@ export default function Cart() {
               <Leaf className="w-5 h-5" />
             </div>
             <div>
-              <p className="font-semibold">Vous économisez {totalSavings.toLocaleString()} FCFA</p>
+              <p className="font-semibold">Vous économisez {formatXAF(totalSavings)}</p>
               <p className="text-sm text-emerald-100">sur cette commande</p>
             </div>
           </div>
@@ -166,15 +166,38 @@ export default function Cart() {
           ) : (
             <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
               <Tag className="w-4 h-4 text-emerald-600" />
+              {/* `appliedCoupon` ne porte qu'un code : la remise, elle, est
+                  annoncée par le serveur dans le devis. Lire `.value` ici
+                  faisait planter la page dès qu'un code était appliqué. */}
               <span className="text-sm font-medium text-emerald-700 flex-1">
-                {appliedCoupon.code} — {appliedCoupon.type === 'PERCENT' ? `-${appliedCoupon.value}%` : `-${appliedCoupon.value.toLocaleString()} FCFA`}
+                {quote?.coupon_applied ?? appliedCoupon}
+                {couponDiscount > 0 && ` — −${formatXAF(couponDiscount)}`}
               </span>
-              <button onClick={() => { setAppliedCoupon(null); setCouponInput(''); }} className="text-gray-400 hover:text-red-500">
+              <button onClick={() => { setAppliedCoupon(''); setCouponInput(''); }} className="text-gray-400 hover:text-red-500" aria-label="Retirer le code promo">
                 <X className="w-4 h-4" />
               </button>
             </div>
           )}
           {couponError && <p className="text-xs text-red-500 mt-1 pl-1">{couponError}</p>}
+
+          {!appliedCoupon && userCoupons.length > 0 && (
+            <div className="mt-2">
+              <p className="text-xs text-gray-500 mb-1.5">Vos codes disponibles</p>
+              <ul className="flex flex-wrap gap-1.5">
+                {userCoupons.slice(0, 4).map((coupon) => (
+                  <li key={coupon.id}>
+                    <button
+                      type="button"
+                      onClick={() => { setCouponInput(coupon.code); setAppliedCoupon(coupon.code); setCouponError(''); }}
+                      className="px-2.5 py-1 rounded-full border border-emerald-200 bg-emerald-50 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+                    >
+                      {coupon.code}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
         {/* Smart Cart AI */}
@@ -295,22 +318,25 @@ export default function Cart() {
         <div className="max-w-2xl mx-auto p-4 space-y-3">
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-500">Sous-total</span>
-            <span className="font-medium">{totalAmount.toLocaleString()} FCFA</span>
-          </div>
-          <div className="flex items-center justify-between text-sm text-emerald-600">
-            <span>Économies anti-gaspi</span>
-            <span className="font-medium">-{totalSavings.toLocaleString()} FCFA</span>
+            <span className="font-medium">{formatXAF(totalAmount)}</span>
           </div>
           {appliedCoupon && (
             <div className="flex items-center justify-between text-sm text-purple-600">
-              <span>Coupon {appliedCoupon.code}</span>
-              <span className="font-medium">-{couponDiscount.toLocaleString()} FCFA</span>
+              <span>Coupon {quote?.coupon_applied ?? appliedCoupon}</span>
+              <span className="font-medium">−{formatXAF(couponDiscount)}</span>
             </div>
           )}
           <div className="flex items-center justify-between text-lg font-bold">
             <span>Total</span>
-            <span>{finalTotal.toLocaleString()} FCFA</span>
+            <span>{formatXAF(finalTotal)}</span>
           </div>
+          {/* Comparaison au prix d'origine, pas une déduction : alignée avec
+              les autres lignes, elle laissait croire à un total plus bas. */}
+          {totalSavings > 0 && (
+            <p className="text-sm text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2">
+              Vous économisez <strong>{formatXAF(totalSavings)}</strong> par rapport au prix d'origine.
+            </p>
+          )}
           <Link to={createPageUrl('Checkout')}>
             <Button className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-base">
               Passer commande

@@ -76,8 +76,12 @@ function defaultFor(type, value) {
   return '';
 }
 
-/** Champs indexés : clés étrangères logiques et colonnes de filtrage courantes. */
-const INDEXED = /(_email$|_id$|^status$|^code$|^is_read$|^category$|^expiration_date$|^pickup_date$)/;
+/**
+ * Champs indexés : clés étrangères logiques, colonnes de filtrage courantes et
+ * colonnes sur lesquelles le catalogue trie (une recherche paginée qui trie
+ * sans index relit toute la table à chaque page).
+ */
+const INDEXED = /(_email$|_id$|^status$|^code$|^is_read$|^category$|^expiration_date$|^pickup_date$|^discounted_price$|^discount_percent$|^avg_rating$|^brand$)/;
 
 const header = `// ⚠️  FICHIER GÉNÉRÉ — ne pas éditer à la main.
 // Source de vérité : server/entities/*.json
@@ -116,7 +120,11 @@ for (const file of files) {
     if (spec.unique) continue;
     if (INDEXED.test(field)) indexes.push(field);
   }
+  indexes.push('created_by');
 
+  // Colonne d'audit posée par le serveur à la création : qui a écrit cette
+  // ligne. Le client ne peut pas la fournir (voir SYSTEM_FIELDS).
+  lines.push('  created_by                   String?');
   lines.push('  created_date                 DateTime @default(now())');
   lines.push('  updated_date                 DateTime @updatedAt');
   for (const idx of indexes) lines.push(`  @@index([${idx}])`);

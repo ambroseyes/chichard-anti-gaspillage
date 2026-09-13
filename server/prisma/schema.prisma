@@ -100,6 +100,7 @@ model BasketReview {
   comment          String?
   tags             String[]
   would_recommend  Boolean?
+  created_by       String?
   created_date     DateTime @default(now())
   updated_date     DateTime @updatedAt
 
@@ -107,6 +108,7 @@ model BasketReview {
   @@index([basket_id])
   @@index([store_id])
   @@index([customer_email])
+  @@index([created_by])
 }
 
 model BrandPartnership {
@@ -126,10 +128,12 @@ model BrandPartnership {
   total_commissions_paid Float                             @default(0)
   start_date             DateTime?
   end_date               DateTime?
+  created_by             String?
   created_date           DateTime                          @default(now())
   updated_date           DateTime                          @updatedAt
 
   @@index([contact_email])
+  @@index([created_by])
 }
 
 model CampaignMetrics {
@@ -149,11 +153,13 @@ model CampaignMetrics {
   average_order_value Float     @default(0)
   products_sold       Float     @default(0)
   customer_segments   Json?
+  created_by          String?
   created_date        DateTime  @default(now())
   updated_date        DateTime  @updatedAt
 
   @@index([store_id])
   @@index([campaign_id])
+  @@index([created_by])
 }
 
 model CartItem {
@@ -167,12 +173,14 @@ model CartItem {
   original_price  Float?
   store_name      String?
   expiration_date DateTime?
+  created_by      String?
   created_date    DateTime  @default(now())
   updated_date    DateTime  @updatedAt
 
   @@index([user_email])
   @@index([product_id])
   @@index([expiration_date])
+  @@index([created_by])
 }
 
 model Challenge {
@@ -189,8 +197,11 @@ model Challenge {
   end_date           DateTime
   participants_count Int                    @default(0)
   is_active          Boolean                @default(true)
+  created_by         String?
   created_date       DateTime               @default(now())
   updated_date       DateTime               @updatedAt
+
+  @@index([created_by])
 }
 
 model ChatMessage {
@@ -204,11 +215,13 @@ model ChatMessage {
   attachment_url String?
   reactions      Json?
   is_pinned      Boolean                @default(false)
+  created_by     String?
   created_date   DateTime               @default(now())
   updated_date   DateTime               @updatedAt
 
   @@index([room_id])
   @@index([sender_email])
+  @@index([created_by])
 }
 
 model ChatRoom {
@@ -222,10 +235,12 @@ model ChatRoom {
   last_message      String?
   last_message_date DateTime?
   is_active         Boolean          @default(true)
+  created_by        String?
   created_date      DateTime         @default(now())
   updated_date      DateTime         @updatedAt
 
   @@index([category])
+  @@index([created_by])
 }
 
 model ClickCollectBasket {
@@ -249,13 +264,16 @@ model ClickCollectBasket {
   weight_kg          Float?
   co2_saved_kg       Float?
   status             ClickCollectBasketStatus     @default(active)
+  created_by         String?
   created_date       DateTime                     @default(now())
   updated_date       DateTime                     @updatedAt
 
   @@index([store_id])
+  @@index([discounted_price])
   @@index([pickup_date])
   @@index([category])
   @@index([status])
+  @@index([created_by])
 }
 
 model ClickCollectReservation {
@@ -283,6 +301,7 @@ model ClickCollectReservation {
   confirmation_code_hash String?
   payment_reference      String?
   collected_at           DateTime?
+  created_by             String?
   created_date           DateTime                             @default(now())
   updated_date           DateTime                             @updatedAt
 
@@ -291,6 +310,7 @@ model ClickCollectReservation {
   @@index([store_id])
   @@index([pickup_date])
   @@index([status])
+  @@index([created_by])
 }
 
 model Comment {
@@ -300,11 +320,13 @@ model Comment {
   author_name  String?
   content      String
   likes_count  Int      @default(0)
+  created_by   String?
   created_date DateTime @default(now())
   updated_date DateTime @updatedAt
 
   @@index([post_id])
   @@index([author_email])
+  @@index([created_by])
 }
 
 model CommissionTransaction {
@@ -322,6 +344,7 @@ model CommissionTransaction {
   transaction_date  DateTime?
   payment_date      DateTime?
   customer_email    String?
+  created_by        String?
   created_date      DateTime                    @default(now())
   updated_date      DateTime                    @updatedAt
 
@@ -331,6 +354,7 @@ model CommissionTransaction {
   @@index([product_id])
   @@index([status])
   @@index([customer_email])
+  @@index([created_by])
 }
 
 model Coupon {
@@ -345,6 +369,7 @@ model Coupon {
   points_cost       Int?
   status            CouponStatus @default(ACTIVE)
   redeemed_order_id String?
+  created_by        String?
   created_date      DateTime     @default(now())
   updated_date      DateTime     @updatedAt
 
@@ -352,6 +377,7 @@ model Coupon {
   @@index([user_email])
   @@index([status])
   @@index([redeemed_order_id])
+  @@index([created_by])
 }
 
 model CustomerSegment {
@@ -370,10 +396,12 @@ model CustomerSegment {
   churn_risk               Float                            @default(0)
   lifetime_value           Float                            @default(0)
   recommended_offers       String[]
+  created_by               String?
   created_date             DateTime                         @default(now())
   updated_date             DateTime                         @updatedAt
 
   @@index([user_email])
+  @@index([created_by])
 }
 
 model DashboardPreference {
@@ -384,10 +412,12 @@ model DashboardPreference {
   widget_order      Json[]
   alerts_config     Json?
   chart_preferences Json?
+  created_by        String?
   created_date      DateTime                         @default(now())
   updated_date      DateTime                         @updatedAt
 
   @@index([user_email])
+  @@index([created_by])
 }
 
 model DeliveryAddress {
@@ -403,10 +433,12 @@ model DeliveryAddress {
   country       String   @default("Cameroun")
   is_default    Boolean  @default(false)
   is_billing    Boolean  @default(false)
+  created_by    String?
   created_date  DateTime @default(now())
   updated_date  DateTime @updatedAt
 
   @@index([user_email])
+  @@index([created_by])
 }
 
 model DeliveryRoute {
@@ -422,11 +454,13 @@ model DeliveryRoute {
   start_time                 String?
   end_time                   String?
   optimization_score         Float?
+  created_by                 String?
   created_date               DateTime            @default(now())
   updated_date               DateTime            @updatedAt
 
   @@index([driver_email])
   @@index([status])
+  @@index([created_by])
 }
 
 model DigitalReceipt {
@@ -444,11 +478,13 @@ model DigitalReceipt {
   points_earned     Int                          @default(0)
   verified          Boolean                      @default(false)
   cashback_status   DigitalReceiptCashbackStatus @default(pending)
+  created_by        String?
   created_date      DateTime                     @default(now())
   updated_date      DateTime                     @updatedAt
 
   @@index([user_email])
   @@index([store_id])
+  @@index([created_by])
 }
 
 model Experience {
@@ -468,10 +504,12 @@ model Experience {
   location             String?
   is_active            Boolean                  @default(true)
   tier_required        ExperienceTierRequired   @default(bronze)
+  created_by           String?
   created_date         DateTime                 @default(now())
   updated_date         DateTime                 @updatedAt
 
   @@index([store_id])
+  @@index([created_by])
 }
 
 model ExperienceBooking {
@@ -488,12 +526,14 @@ model ExperienceBooking {
   store_name        String?
   reminder_sent     Boolean                 @default(false)
   confirmation_sent Boolean                 @default(false)
+  created_by        String?
   created_date      DateTime                @default(now())
   updated_date      DateTime                @updatedAt
 
   @@index([experience_id])
   @@index([user_email])
   @@index([status])
+  @@index([created_by])
 }
 
 model Favorite {
@@ -503,11 +543,13 @@ model Favorite {
   product_name  String?
   product_image String?
   store_name    String?
+  created_by    String?
   created_date  DateTime @default(now())
   updated_date  DateTime @updatedAt
 
   @@index([user_email])
   @@index([product_id])
+  @@index([created_by])
 }
 
 model IdentityVerification {
@@ -520,11 +562,13 @@ model IdentityVerification {
   expires_at         DateTime?
   reviewer_notes     String?
   verification_level IdentityVerificationVerificationLevel @default(basic)
+  created_by         String?
   created_date       DateTime                              @default(now())
   updated_date       DateTime                              @updatedAt
 
   @@index([user_email])
   @@index([status])
+  @@index([created_by])
 }
 
 model LoyaltyReward {
@@ -538,8 +582,11 @@ model LoyaltyReward {
   is_active       Boolean                   @default(true)
   tier_required   LoyaltyRewardTierRequired @default(bronze)
   stock           Int?
+  created_by      String?
   created_date    DateTime                  @default(now())
   updated_date    DateTime                  @updatedAt
+
+  @@index([created_by])
 }
 
 model LoyaltyTransaction {
@@ -550,11 +597,13 @@ model LoyaltyTransaction {
   source       LoyaltyTransactionSource
   description  String?
   order_id     String?
+  created_by   String?
   created_date DateTime                 @default(now())
   updated_date DateTime                 @updatedAt
 
   @@index([user_email])
   @@index([order_id])
+  @@index([created_by])
 }
 
 model Message {
@@ -566,6 +615,7 @@ model Message {
   content         String
   is_read         Boolean  @default(false)
   conversation_id String?
+  created_by      String?
   created_date    DateTime @default(now())
   updated_date    DateTime @updatedAt
 
@@ -573,6 +623,7 @@ model Message {
   @@index([recipient_email])
   @@index([is_read])
   @@index([conversation_id])
+  @@index([created_by])
 }
 
 model Notification {
@@ -585,11 +636,13 @@ model Notification {
   action_url   String?
   image_url    String?
   data         Json?
+  created_by   String?
   created_date DateTime         @default(now())
   updated_date DateTime         @updatedAt
 
   @@index([user_email])
   @@index([is_read])
+  @@index([created_by])
 }
 
 model Order {
@@ -622,12 +675,14 @@ model Order {
   co2_saved_kg      Float               @default(0)
   cancelled_at      DateTime?
   cancel_reason     String?
+  created_by        String?
   created_date      DateTime            @default(now())
   updated_date      DateTime            @updatedAt
 
   @@index([customer_email])
   @@index([status])
   @@index([store_id])
+  @@index([created_by])
 }
 
 model PartnerChallenge {
@@ -648,10 +703,12 @@ model PartnerChallenge {
   participants_count      Int                        @default(0)
   completions_count       Int                        @default(0)
   total_revenue_generated Float                      @default(0)
+  created_by              String?
   created_date            DateTime                   @default(now())
   updated_date            DateTime                   @updatedAt
 
   @@index([store_id])
+  @@index([created_by])
 }
 
 model PartnerStatusHistory {
@@ -664,10 +721,12 @@ model PartnerStatusHistory {
   changed_by_name String?
   notes           String?
   metadata        Json?
+  created_by      String?
   created_date    DateTime                           @default(now())
   updated_date    DateTime                           @updatedAt
 
   @@index([store_id])
+  @@index([created_by])
 }
 
 model PickupRequest {
@@ -688,6 +747,7 @@ model PickupRequest {
   ready_at             DateTime?
   picked_up_at         DateTime?
   qr_code_url          String?
+  created_by           String?
   created_date         DateTime            @default(now())
   updated_date         DateTime            @updatedAt
 
@@ -696,6 +756,7 @@ model PickupRequest {
   @@index([store_id])
   @@index([pickup_date])
   @@index([status])
+  @@index([created_by])
 }
 
 model PriceComparison {
@@ -707,10 +768,13 @@ model PriceComparison {
   best_deal     Json?
   category      String?
   last_updated  DateTime?
+  created_by    String?
   created_date  DateTime  @default(now())
   updated_date  DateTime  @updatedAt
 
+  @@index([brand])
   @@index([category])
+  @@index([created_by])
 }
 
 model Product {
@@ -720,6 +784,7 @@ model Product {
   original_price     Float
   discounted_price   Float
   ai_suggested_price Float?
+  discount_percent   Int                 @default(0)
   category           ProductCategory
   expiration_date    DateTime
   quantity_available Int                 @default(0)
@@ -747,13 +812,19 @@ model Product {
   is_bundle          Boolean             @default(false)
   bundle_products    String[]
   co2_saved          Float?
+  created_by         String?
   created_date       DateTime            @default(now())
   updated_date       DateTime            @updatedAt
 
+  @@index([discounted_price])
+  @@index([discount_percent])
   @@index([category])
   @@index([expiration_date])
   @@index([store_id])
   @@index([status])
+  @@index([brand])
+  @@index([avg_rating])
+  @@index([created_by])
 }
 
 model ProductBatch {
@@ -767,6 +838,7 @@ model ProductBatch {
   expiration_date DateTime
   purchase_price  Float?
   status          ProductBatchStatus @default(active)
+  created_by      String?
   created_date    DateTime           @default(now())
   updated_date    DateTime           @updatedAt
 
@@ -774,6 +846,7 @@ model ProductBatch {
   @@index([store_id])
   @@index([expiration_date])
   @@index([status])
+  @@index([created_by])
 }
 
 model ProductVariant {
@@ -788,10 +861,12 @@ model ProductVariant {
   quantity_available Int      @default(0)
   image_url          String?
   is_active          Boolean  @default(true)
+  created_by         String?
   created_date       DateTime @default(now())
   updated_date       DateTime @updatedAt
 
   @@index([product_id])
+  @@index([created_by])
 }
 
 model Promotion {
@@ -806,10 +881,12 @@ model Promotion {
   is_active           Boolean               @default(true)
   applicable_products String[]
   usage_count         Int                   @default(0)
+  created_by          String?
   created_date        DateTime              @default(now())
   updated_date        DateTime              @updatedAt
 
   @@index([store_id])
+  @@index([created_by])
 }
 
 model PromotionRule {
@@ -826,10 +903,12 @@ model PromotionRule {
   target_categories String[]
   execution_count   Int                      @default(0)
   last_executed     DateTime?
+  created_by        String?
   created_date      DateTime                 @default(now())
   updated_date      DateTime                 @updatedAt
 
   @@index([store_id])
+  @@index([created_by])
 }
 
 model Recipe {
@@ -853,12 +932,14 @@ model Recipe {
   status            RecipeStatus      @default(pending)
   author_email      String?
   author_name       String?
+  created_by        String?
   created_date      DateTime          @default(now())
   updated_date      DateTime          @updatedAt
 
   @@index([category])
   @@index([status])
   @@index([author_email])
+  @@index([created_by])
 }
 
 model RecipeRating {
@@ -870,11 +951,13 @@ model RecipeRating {
   comment       String?
   image_url     String?
   helpful_count Int      @default(0)
+  created_by    String?
   created_date  DateTime @default(now())
   updated_date  DateTime @updatedAt
 
   @@index([recipe_id])
   @@index([user_email])
+  @@index([created_by])
 }
 
 model Review {
@@ -887,11 +970,13 @@ model Review {
   image_url            String?
   is_verified_purchase Boolean  @default(false)
   helpful_count        Int      @default(0)
+  created_by           String?
   created_date         DateTime @default(now())
   updated_date         DateTime @updatedAt
 
   @@index([product_id])
   @@index([user_email])
+  @@index([created_by])
 }
 
 model SavedSearch {
@@ -903,10 +988,12 @@ model SavedSearch {
   entity_types String[]
   usage_count  Int       @default(0)
   last_used    DateTime?
+  created_by   String?
   created_date DateTime  @default(now())
   updated_date DateTime  @updatedAt
 
   @@index([user_email])
+  @@index([created_by])
 }
 
 model ScamReport {
@@ -918,12 +1005,14 @@ model ScamReport {
   description          String?
   status               ScamReportStatus             @default(pending)
   evidence_url         String?
+  created_by           String?
   created_date         DateTime                     @default(now())
   updated_date         DateTime                     @updatedAt
 
   @@index([reporter_email])
   @@index([reported_entity_id])
   @@index([status])
+  @@index([created_by])
 }
 
 model ShoppingList {
@@ -939,11 +1028,13 @@ model ShoppingList {
   status            ShoppingListStatus            @default(active)
   is_recurring      Boolean                       @default(false)
   recurrence_period ShoppingListRecurrencePeriod?
+  created_by        String?
   created_date      DateTime                      @default(now())
   updated_date      DateTime                      @updatedAt
 
   @@index([user_email])
   @@index([status])
+  @@index([created_by])
 }
 
 model SocialPost {
@@ -964,11 +1055,13 @@ model SocialPost {
   is_featured      Boolean            @default(false)
   related_products String[]
   store_id         String?
+  created_by       String?
   created_date     DateTime           @default(now())
   updated_date     DateTime           @updatedAt
 
   @@index([author_email])
   @@index([store_id])
+  @@index([created_by])
 }
 
 model SponsoredCampaign {
@@ -994,11 +1087,13 @@ model SponsoredCampaign {
   roi               Float                         @default(0)
   ctr               Float                         @default(0)
   conversion_rate   Float                         @default(0)
+  created_by        String?
   created_date      DateTime                      @default(now())
   updated_date      DateTime                      @updatedAt
 
   @@index([brand_id])
   @@index([status])
+  @@index([created_by])
 }
 
 model StockMovement {
@@ -1014,6 +1109,7 @@ model StockMovement {
   notes             String?
   previous_quantity Int?
   new_quantity      Int?
+  created_by        String?
   created_date      DateTime                  @default(now())
   updated_date      DateTime                  @updatedAt
 
@@ -1021,6 +1117,7 @@ model StockMovement {
   @@index([store_id])
   @@index([variant_id])
   @@index([user_email])
+  @@index([created_by])
 }
 
 model Store {
@@ -1047,11 +1144,13 @@ model Store {
   stock_alert_settings    Json?
   email_verified          Boolean     @default(false)
   verification_token      String?
+  created_by              String?
   created_date            DateTime    @default(now())
   updated_date            DateTime    @updatedAt
 
   @@index([status])
   @@index([owner_email])
+  @@index([created_by])
 }
 
 model User {
@@ -1095,10 +1194,12 @@ model User {
   allergens_to_avoid      String[]
   favorite_stores         String[]
   community_badges        String[]
+  created_by              String?
   created_date            DateTime               @default(now())
   updated_date            DateTime               @updatedAt
 
   @@index([store_id])
+  @@index([created_by])
 }
 
 model UserChallenge {
@@ -1108,11 +1209,13 @@ model UserChallenge {
   current_progress Float     @default(0)
   is_completed     Boolean   @default(false)
   completed_date   DateTime?
+  created_by       String?
   created_date     DateTime  @default(now())
   updated_date     DateTime  @updatedAt
 
   @@index([user_email])
   @@index([challenge_id])
+  @@index([created_by])
 }
 
 model UserInteraction {
@@ -1123,12 +1226,14 @@ model UserInteraction {
   interaction_type UserInteractionInteractionType
   category         String?
   metadata         Json?
+  created_by       String?
   created_date     DateTime                       @default(now())
   updated_date     DateTime                       @updatedAt
 
   @@index([user_email])
   @@index([item_id])
   @@index([category])
+  @@index([created_by])
 }
 
 model UserPreference {
@@ -1142,10 +1247,12 @@ model UserPreference {
   location                 Json?
   allergens_to_avoid       String[]
   dietary_preferences      String[]
+  created_by               String?
   created_date             DateTime @default(now())
   updated_date             DateTime @updatedAt
 
   @@index([user_email])
+  @@index([created_by])
 }
 
 model ZeroWasteTip {
@@ -1160,12 +1267,14 @@ model ZeroWasteTip {
   saves_count  Int                  @default(0)
   liked_by     String[]
   status       ZeroWasteTipStatus   @default(pending)
+  created_by   String?
   created_date DateTime             @default(now())
   updated_date DateTime             @updatedAt
 
   @@index([author_email])
   @@index([category])
   @@index([status])
+  @@index([created_by])
 }
 
 enum BrandPartnershipPartnershipStatus {
