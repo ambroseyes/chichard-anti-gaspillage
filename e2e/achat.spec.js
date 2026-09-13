@@ -109,6 +109,30 @@ test.describe('parcours d’achat', () => {
     // Le code de retrait n'est donné qu'une fois, à la création : s'il manque,
     // le client ne peut pas récupérer sa commande.
     await expect(page).toHaveURL(/code=/);
+
+    // Régression : il n'était affiché que pour les livraisons. Un retrait en
+    // boutique repartait donc sans le code qui sert justement à retirer.
+    await expect(page.getByRole('heading', { name: /code de retrait|code de remise/i })).toBeVisible();
+    const code = new URL(page.url()).searchParams.get('code');
+    await expect(page.getByText(code, { exact: false })).toBeVisible();
+  });
+
+  test('l’historique liste la commande qui vient d’être passée', async ({ page }) => {
+    await page.goto('/Catalog');
+    await page.locator('article').first().getByRole('button', { name: /^Ajouter / }).click();
+    await page.waitForTimeout(800);
+
+    await page.goto('/Checkout');
+    await expect(page.getByRole('heading', { name: 'Livraison et contact' })).toBeVisible();
+    await page.getByLabel('Numéro de téléphone').fill('699112233');
+    await page.getByRole('button', { name: 'Continuer' }).click();
+    await page.getByRole('button', { name: 'Continuer' }).click();
+    await page.getByRole('button', { name: /Confirmer —/ }).click();
+    await expect(page).toHaveURL(/OrderConfirmation/, { timeout: 20_000 });
+
+    await page.goto('/Orders');
+    await expect(page.getByRole('heading', { name: 'Mes commandes' })).toBeVisible();
+    await expect(page.locator('article').first()).toBeVisible();
   });
 
   test('un panier vide ne propose pas de commander', async ({ page }) => {
