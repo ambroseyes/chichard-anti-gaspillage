@@ -55,7 +55,7 @@ export default function ProductDetail() {
 
   const { data: similar } = useQuery({
     queryKey: ['product-similar', product?.category, product?.id],
-    queryFn: () => api.catalog.search({ category: [product.category], per_page: 8 }),
+    queryFn: () => api.catalog.search({ category: [product.category], per_page: 8, facets: 0 }),
     enabled: Boolean(product?.category),
     select: (page) => page.items.filter((item) => item.id !== product.id).slice(0, 4),
   });

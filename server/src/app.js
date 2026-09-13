@@ -9,7 +9,7 @@ import { resolve } from 'node:path';
 
 import { corsOrigins, env, isProduction } from './config/env.js';
 import { logger } from './lib/logger.js';
-import { HttpError, notFound } from './lib/errors.js';
+import { HttpError, notFound, tooManyRequests } from './lib/errors.js';
 import { attachUser } from './auth/middleware.js';
 
 import { authRouter } from './routes/auth.js';
@@ -66,16 +66,41 @@ export function createApp() {
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 
+  // Un dépassement est renvoyé dans le même format que les autres erreurs de
+  // l'API : sans ce relais, le client recevait la réponse par défaut de la
+  // bibliothèque, qu'aucun écran ne sait lire.
+  const tropDeRequêtes = (_req, _res, next) => next(tooManyRequests());
+
   app.use(
     rateLimit({
       windowMs: 60_000,
       limit: 300,
       standardHeaders: 'draft-7',
       legacyHeaders: false,
+      handler: tropDeRequêtes,
       skip: (req) =>
         env.NODE_ENV === 'test' ||
         req.path === '/health' ||
         req.path.startsWith('/api/realtime'),
+    }),
+  );
+
+  /*
+   * Le catalogue est public et coûteux : une recherche complète déclenche neuf
+   * requêtes en base, dix avec un mot-clé (mesuré). La limite globale de 300
+   * appels/minute autoriserait donc trois mille requêtes SQL par minute depuis
+   * une seule adresse. Ce plafond-ci est dimensionné sur un usage réel — on ne
+   * consulte pas quatre-vingt-dix pages de résultats par minute à la main.
+   */
+  app.use(
+    '/api/catalog',
+    rateLimit({
+      windowMs: 60_000,
+      limit: 90,
+      standardHeaders: 'draft-7',
+      legacyHeaders: false,
+      handler: tropDeRequêtes,
+      skip: () => env.NODE_ENV === 'test',
     }),
   );
 

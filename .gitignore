@@ -31,3 +31,8 @@ pnpm-debug.log*
 # Couverture et cache d'outils
 coverage
 .vitest
+
+# Rapports de tests de parcours
+/playwright-report/
+/test-results/
+/blob-report/

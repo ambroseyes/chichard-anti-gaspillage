@@ -1,4 +1,6 @@
 process.env.NODE_ENV = 'test';
+// Trace SQL active en test : un test compte les requêtes d'un point d'entrée.
+process.env.DEBUG_SQL ??= '1';
 process.env.DATABASE_URL ??= 'postgresql://chichard:chichard@127.0.0.1:5432/chichard_test';
 process.env.JWT_SECRET ??= 'test_only_jwt_secret_0123456789abcdefghijklmnop';
 process.env.PICKUP_TOKEN_SECRET ??= 'test_only_pickup_secret_0123456789abcdefghijkl';

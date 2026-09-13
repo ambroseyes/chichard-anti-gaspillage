@@ -148,6 +148,9 @@ export function parseCriteria(query = {}) {
     expires,
     min_rating: asNumber(query.min_rating),
     verified_only: query.verified === '1' || query.verified === 'true',
+    // Une rangée thématique n'affiche que des produits : lui faire compter
+    // toutes les facettes, c'est neuf requêtes en base pour rien.
+    facets: query.facets !== '0' && query.facets !== 'false',
     sort,
     page,
     per_page: perPage,
@@ -300,4 +303,28 @@ export function rankByRelevance(candidates, tokens) {
     const diff = scoreProduct(b, tokens) - scoreProduct(a, tokens);
     return diff !== 0 ? diff : String(a.id).localeCompare(String(b.id));
   });
+}
+
+/**
+ * Clé de cache des facettes.
+ *
+ * Elle ne retient que ce dont les décomptes dépendent : les filtres. Ni la
+ * page ni le tri n'en font partie — les facettes de la page 1 et de la page 5
+ * sont les mêmes, autant les calculer une fois. Le jour y figure parce que les
+ * fenêtres d'expiration se déplacent à minuit.
+ */
+export function facetCacheKey(criteria, now = new Date()) {
+  const trié = (liste) => [...liste].sort();
+  return JSON.stringify([
+    `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`,
+    criteria.tokens,
+    trié(criteria.categories),
+    trié(criteria.brands),
+    trié(criteria.stores),
+    criteria.price_min,
+    criteria.price_max,
+    criteria.expires,
+    criteria.min_rating,
+    criteria.verified_only,
+  ]);
 }

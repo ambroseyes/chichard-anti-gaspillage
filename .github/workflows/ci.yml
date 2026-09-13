@@ -75,3 +75,70 @@ jobs:
       - run: npx prisma migrate deploy
       - run: npm run lint
       - run: npm test
+
+  e2e:
+    name: Parcours
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: chichard
+          POSTGRES_PASSWORD: chichard
+          POSTGRES_DB: chichard_e2e
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U chichard"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://chichard:chichard@localhost:5432/chichard_e2e
+      JWT_SECRET: valeur_de_test_uniquement_0123456789abcdefghij
+      PICKUP_TOKEN_SECRET: valeur_de_test_uniquement_abcdefghij0123456789
+      CORS_ORIGINS: http://localhost:5173
+      ENABLE_SCHEDULER: 'false'
+      # Les limites de débit sont désactivées en `test` : le parcours en
+      # déclenche plus qu'un humain, et on veut mesurer l'application, pas
+      # le compteur de requêtes — celui-ci a ses propres tests côté serveur.
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Installer les dépendances
+        run: |
+          npm ci
+          npm ci --prefix server
+
+      - name: Préparer la base
+        working-directory: server
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+          npm run seed
+
+      - name: Construire l'interface
+        run: npm run build
+
+      - name: Installer le navigateur
+        run: npx playwright install --with-deps chromium
+
+      - name: Conduire les parcours
+        run: npm run test:e2e
+
+      - name: Conserver le rapport en cas d'échec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapport-parcours
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

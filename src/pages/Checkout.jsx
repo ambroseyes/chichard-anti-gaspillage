@@ -172,9 +172,7 @@ export default function Checkout() {
               summary={`${deliveryLabel} · ${phone}`}
               onEdit={() => setStep(1)}
             >
-              <fieldset className="space-y-3">
-                <legend className="sr-only">Mode de récupération</legend>
-
+              <fieldset className="space-y-3" aria-labelledby="titre-etape-1">
                 <ChoiceCard
                   name="recuperation"
                   checked={deliveryType === 'pickup'}
@@ -242,8 +240,7 @@ export default function Checkout() {
               summary={paymentLabel}
               onEdit={() => setStep(2)}
             >
-              <fieldset className="space-y-3">
-                <legend className="sr-only">Moyen de paiement</legend>
+              <fieldset className="space-y-3" aria-labelledby="titre-etape-2">
                 {PAYMENT_METHODS.filter(
                   (method) => method.id !== 'cash' || deliveryType === 'delivery',
                 ).map((method) => (
@@ -485,7 +482,10 @@ function StepCard({ number, title, active, done, summary, onEdit, children }) {
         >
           {done ? <Check className="w-4 h-4" /> : number}
         </span>
-        <h2 className={`font-semibold ${active || done ? 'text-gray-900' : 'text-gray-400'}`}>
+        <h2
+          id={`titre-etape-${number}`}
+          className={`font-semibold ${active || done ? 'text-gray-900' : 'text-gray-400'}`}
+        >
           {title}
         </h2>
         {done && (
