@@ -10,13 +10,25 @@ import {
   SORT_OPTIONS,
   buildWhere,
   expirationBoundary,
+  facetCacheKey,
   fold,
   orderByFor,
   parseCriteria,
   rankByRelevance,
 } from '../domain/catalog.js';
+import { createTtlCache } from '../lib/cache.js';
 
 export const catalogRouter = Router();
+
+/**
+ * Les décomptes de facettes coûtent sept requêtes d'agrégation sur les neuf
+ * d'une recherche complète. Ils portent sur le catalogue public, identique pour
+ * tout le monde, et quelques secondes de retard sur un compteur ne trompent
+ * personne. La liste des produits, elle, reste toujours relue : c'est ce que le
+ * visiteur regarde vraiment, et un article vendu entre-temps ne peut pas être
+ * survendu — la commande revalide le stock en base.
+ */
+const facetCache = createTtlCache({ ttlMs: 20_000, maxEntries: 300 });
 
 /** Champs suffisants pour classer un candidat sans rapatrier toute la ligne. */
 const RANKING_SELECT = {
@@ -45,43 +57,13 @@ catalogRouter.get(
     const where = buildWhere(criteria, { now });
     const skip = (criteria.page - 1) * criteria.per_page;
 
-    const [total, items, categories, brands, stores, priceRange, expirationCounts] =
-      await Promise.all([
-        prisma.product.count({ where }),
-        findPage(criteria, where, skip),
-        prisma.product.groupBy({
-          by: ['category'],
-          where: buildWhere(criteria, { now, skipFacet: 'categories' }),
-          _count: { _all: true },
-        }),
-        prisma.product.groupBy({
-          by: ['brand'],
-          where: buildWhere(criteria, { now, skipFacet: 'brands' }),
-          _count: { _all: true },
-        }),
-        prisma.product.groupBy({
-          by: ['store_name'],
-          where: buildWhere(criteria, { now, skipFacet: 'stores' }),
-          _count: { _all: true },
-        }),
-        prisma.product.aggregate({
-          where: buildWhere(criteria, { now, skipFacet: 'price' }),
-          _min: { discounted_price: true },
-          _max: { discounted_price: true },
-        }),
-        Promise.all(
-          EXPIRATION_BUCKETS.map((bucket) =>
-            prisma.product.count({
-              where: {
-                AND: [
-                  buildWhere(criteria, { now, skipFacet: 'expiration' }),
-                  { expiration_date: { lte: expirationBoundary(bucket, now) } },
-                ],
-              },
-            }),
-          ),
-        ),
-      ]);
+    const [total, items, facets] = await Promise.all([
+      prisma.product.count({ where }),
+      findPage(criteria, where, skip),
+      criteria.facets
+        ? facetCache.remember(facetCacheKey(criteria, now), () => computeFacets(criteria, now))
+        : null,
+    ]);
 
     res.json({
       data: {
@@ -92,36 +74,7 @@ catalogRouter.get(
           total,
           pages: Math.max(1, Math.ceil(total / criteria.per_page)),
         },
-        facets: {
-          categories: byCount(
-            categories.map((row) => ({
-              value: row.category,
-              label: CATEGORY_LABELS[row.category] ?? row.category,
-              count: row._count._all,
-            })),
-          ),
-          brands: byCount(
-            brands
-              .filter((row) => row.brand)
-              .map((row) => ({ value: row.brand, label: row.brand, count: row._count._all })),
-          ).slice(0, 20),
-          stores: byCount(
-            stores.map((row) => ({
-              value: row.store_name,
-              label: row.store_name,
-              count: row._count._all,
-            })),
-          ).slice(0, 20),
-          price: {
-            min: Math.floor(priceRange._min.discounted_price ?? 0),
-            max: Math.ceil(priceRange._max.discounted_price ?? 0),
-          },
-          expiration: EXPIRATION_BUCKETS.map((bucket, index) => ({
-            value: bucket.id,
-            label: bucket.label,
-            count: expirationCounts[index],
-          })),
-        },
+        facets,
         sorts: SORT_OPTIONS,
         applied: criteria,
       },
@@ -188,6 +141,81 @@ catalogRouter.get(
 );
 
 /**
+ * Décomptes de chaque facette.
+ *
+ * Chaque facette est comptée en écartant son propre filtre : cocher une marque
+ * ne doit pas mettre toutes les autres à zéro, sinon on ne peut jamais en
+ * cocher une seconde.
+ */
+async function computeFacets(criteria, now) {
+  const [categories, brands, stores, priceRange, expirationCounts] = await Promise.all([
+    prisma.product.groupBy({
+      by: ['category'],
+      where: buildWhere(criteria, { now, skipFacet: 'categories' }),
+      _count: { _all: true },
+    }),
+    prisma.product.groupBy({
+      by: ['brand'],
+      where: buildWhere(criteria, { now, skipFacet: 'brands' }),
+      _count: { _all: true },
+    }),
+    prisma.product.groupBy({
+      by: ['store_name'],
+      where: buildWhere(criteria, { now, skipFacet: 'stores' }),
+      _count: { _all: true },
+    }),
+    prisma.product.aggregate({
+      where: buildWhere(criteria, { now, skipFacet: 'price' }),
+      _min: { discounted_price: true },
+      _max: { discounted_price: true },
+    }),
+    Promise.all(
+      EXPIRATION_BUCKETS.map((bucket) =>
+        prisma.product.count({
+          where: {
+            AND: [
+              buildWhere(criteria, { now, skipFacet: 'expiration' }),
+              { expiration_date: { lte: expirationBoundary(bucket, now) } },
+            ],
+          },
+        }),
+      ),
+    ),
+  ]);
+
+  return {
+    categories: byCount(
+      categories.map((row) => ({
+        value: row.category,
+        label: CATEGORY_LABELS[row.category] ?? row.category,
+        count: row._count._all,
+      })),
+    ),
+    brands: byCount(
+      brands
+        .filter((row) => row.brand)
+        .map((row) => ({ value: row.brand, label: row.brand, count: row._count._all })),
+    ).slice(0, 20),
+    stores: byCount(
+      stores.map((row) => ({
+        value: row.store_name,
+        label: row.store_name,
+        count: row._count._all,
+      })),
+    ).slice(0, 20),
+    price: {
+      min: Math.floor(priceRange._min.discounted_price ?? 0),
+      max: Math.ceil(priceRange._max.discounted_price ?? 0),
+    },
+    expiration: EXPIRATION_BUCKETS.map((bucket, index) => ({
+      value: bucket.id,
+      label: bucket.label,
+      count: expirationCounts[index],
+    })),
+  };
+}
+
+/**
  * Récupère la page demandée.
  *
  * Le tri par pertinence ne s'exprime pas en SQL : il est calculé sur un
@@ -229,4 +257,4 @@ function byCount(entries) {
   return entries.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'fr'));
 }
 
-export { PER_PAGE_DEFAULT };
+export { PER_PAGE_DEFAULT, facetCache };

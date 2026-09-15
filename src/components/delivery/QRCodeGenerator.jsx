@@ -10,7 +10,12 @@ import { Button } from '@/components/ui/button';
  * Le jeton est signé (HMAC) côté serveur : il ne peut être ni fabriqué ni
  * modifié ici. Le code court sert de repli quand la caméra ne lit rien.
  */
-export default function QRCodeGenerator({ pickupToken, confirmationCode, orderNumber }) {
+/**
+ * `showCode` permet à l'appelant qui affiche déjà le code en évidence de ne pas
+ * le faire répéter ici — le voir deux fois dans le même encadré fait douter
+ * qu'il s'agisse du même.
+ */
+export default function QRCodeGenerator({ pickupToken, confirmationCode, orderNumber, showCode = true }) {
   const canvasRef = useRef(null);
   const [copied, setCopied] = useState(false);
 
@@ -55,7 +60,7 @@ export default function QRCodeGenerator({ pickupToken, confirmationCode, orderNu
     <div className="flex flex-col items-center gap-3 p-4 bg-white rounded-xl border">
       {pickupToken && <canvas ref={canvasRef} className="border rounded-lg" aria-label="QR code de retrait" />}
 
-      {confirmationCode && (
+      {confirmationCode && showCode && (
         <div className="text-center">
           <p className="text-xs text-gray-500">Code à présenter</p>
           <p className="text-2xl font-mono font-bold tracking-widest text-gray-900">{confirmationCode}</p>

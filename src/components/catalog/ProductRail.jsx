@@ -16,7 +16,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function ProductRail({ title, subtitle, criteria, seeAllTo, onAddToCart, limit = 6 }) {
   const { data, isLoading } = useQuery({
     queryKey: ['catalog-rail', criteria],
-    queryFn: () => api.catalog.search({ ...criteria, per_page: limit }),
+    // `facets: false` : cette rangée n'affiche que des produits. Réclamer les
+    // décomptes de facettes lui coûterait huit requêtes d'agrégation que rien
+    // n'affiche — et l'accueil en aligne trois.
+    queryFn: () => api.catalog.search({ ...criteria, per_page: limit, facets: 0 }),
     staleTime: 60_000,
   });
 

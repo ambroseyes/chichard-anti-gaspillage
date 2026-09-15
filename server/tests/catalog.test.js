@@ -1,8 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
-import { prisma } from '../src/lib/prisma.js';
+import { countQueries, prisma } from '../src/lib/prisma.js';
 import { app, auth, createProduct, createStore, createUser, login, resetDatabase } from './helpers.js';
 import { rankByRelevance, tokenize } from '../src/domain/catalog.js';
+import { facetCache } from '../src/routes/catalog.js';
 
 const jours = (n) => new Date(Date.now() + n * 86_400_000);
 
@@ -148,6 +149,42 @@ describe('recherche catalogue', () => {
       tokens,
     );
     expect(classés[0].id).toBe('a');
+  });
+
+  it("n'interroge la base qu'une poignée de fois quand les facettes ne servent pas", async () => {
+    facetCache.clear();
+
+    const avecFacettes = await countQueries(() => search({ per_page: 6 }));
+    facetCache.clear();
+    const sansFacettes = await countQueries(() => search({ per_page: 6, facets: '0' }));
+
+    // La trace SQL peut être éteinte : on ne teste que si elle a mesuré.
+    if (avecFacettes === null || sansFacettes === null) return;
+
+    expect(sansFacettes).toBeLessThan(avecFacettes);
+    // Une rangée de l'accueil n'affiche que des produits : il lui faut la page
+    // et son total, rien de plus. L'accueil en aligne trois.
+    expect(sansFacettes).toBeLessThanOrEqual(3);
+  });
+
+  it('sert les décomptes de facettes depuis le cache au second appel', async () => {
+    facetCache.clear();
+
+    const premier = await countQueries(() => search({ category: 'epicerie' }));
+    const second = await countQueries(() => search({ category: 'epicerie', page: 2 }));
+
+    if (premier === null || second === null) return;
+
+    // Les facettes ne dépendent pas de la page : la page 2 les retrouve en cache.
+    expect(second).toBeLessThan(premier);
+  });
+
+  it('renvoie des facettes nulles, et non vides, quand on n’en veut pas', async () => {
+    const res = await search({ facets: '0' });
+    expect(res.status).toBe(200);
+    expect(res.body.data.facets).toBeNull();
+    expect(res.body.data.items.length).toBeGreaterThan(0);
+    expect(res.body.data.page.total).toBeGreaterThan(0);
   });
 
   it('refuse une catégorie inconnue au lieu de renvoyer tout le catalogue', async () => {

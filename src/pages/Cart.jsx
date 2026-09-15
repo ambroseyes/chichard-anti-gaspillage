@@ -276,6 +276,15 @@ export default function Cart() {
                               variant="outline"
                               size="icon"
                               className="h-8 w-8"
+                              // Bouton sans texte : sans nom accessible, un lecteur
+                              // d'écran n'annonce rien et le contrôle est
+                              // introuvable au clavier. Le libellé suit l'action,
+                              // qui change selon la quantité restante.
+                              aria-label={
+                                item.quantity <= 1
+                                  ? `Supprimer ${item.product_name} du panier`
+                                  : `Retirer un ${item.product_name}`
+                              }
                               onClick={() => {
                                 if (item.quantity <= 1) {
                                   deleteItemMutation.mutate(item.id);
@@ -294,6 +303,7 @@ export default function Cart() {
                               variant="outline"
                               size="icon"
                               className="h-8 w-8"
+                              aria-label={`Ajouter un ${item.product_name}`}
                               onClick={() => updateQuantityMutation.mutate({ 
                                 id: item.id, 
                                 quantity: item.quantity + 1 

@@ -18,6 +18,8 @@ import { toast } from 'sonner';
 import SavingsDashboard from '@/components/account/SavingsDashboard';
 import { BarChart2 } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import { EMPTY_ARRAY } from '@/lib/stable';
+import Breadcrumbs from '@/components/layout/Breadcrumbs';
 
 export default function MyAccount() {
   const { user, updateProfile } = useAuth();
@@ -54,15 +56,19 @@ export default function MyAccount() {
     enabled: !!user
   });
 
-  const { data: products = [] } = useQuery({
-    queryKey: ['products-for-favorites'],
-    queryFn: () => api.entities.Product.list(),
-    enabled: favorites.length > 0
-  });
+  /*
+   * Les produits favoris sont demandés par leur identifiant. L'écran chargeait
+   * auparavant une page entière du catalogue pour n'en garder que les quelques
+   * lignes correspondantes — et un favori absent de cette page disparaissait
+   * purement et simplement de la liste.
+   */
+  const favoriteIds = favorites.map((f) => f.product_id).filter(Boolean);
 
-  const favoriteProducts = products.filter(p => 
-    favorites.some(f => f.product_id === p.id)
-  );
+  const { data: favoriteProducts = EMPTY_ARRAY } = useQuery({
+    queryKey: ['favorite-products', favoriteIds.join(',')],
+    queryFn: () => api.entities.Product.filter({ id: favoriteIds }, '-created_date', 100),
+    enabled: favoriteIds.length > 0,
+  });
 
   const createAddressMutation = useMutation({
     mutationFn: (data) => api.entities.DeliveryAddress.create({ ...data, user_email: user.email }),
@@ -168,7 +174,9 @@ export default function MyAccount() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-6xl mx-auto px-4 lg:px-6 py-6 space-y-6">
+        <Breadcrumbs trail={[{ label: 'Mon compte' }]} />
+
         {/* Header */}
         <div className="flex items-center gap-4">
           <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
