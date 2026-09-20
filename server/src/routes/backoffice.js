@@ -2,12 +2,15 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { handler } from '../lib/async-handler.js';
-import { badRequest, forbidden } from '../lib/errors.js';
+import { badRequest, forbidden, notFound } from '../lib/errors.js';
 import { requireBackoffice } from '../auth/middleware.js';
 import { stripHidden } from '../entities/schema.js';
 import { recordAudit } from '../lib/audit.js';
 
 export const backofficeRouter = Router();
+
+/** Étapes du cycle de vente, dans l'ordre. Miroir de l'énuméré de `Store`. */
+const ÉTAPES = ['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'won', 'lost'];
 
 // Tout le backoffice est derrière ce contrôle : il n'existe aucune route
 // d'administration atteignable avec un simple compte connecté.
@@ -159,7 +162,6 @@ backofficeRouter.patch(
   }),
 );
 
-/** Journal d'audit réel, alimenté par le serveur. */
 /**
  * Boutiques, paginées, avec le nombre de produits de chacune.
  *
@@ -176,17 +178,19 @@ backofficeRouter.get(
         q: z.string().trim().max(120).optional(),
         status: z.enum(['pending', 'verified', 'rejected', 'suspended']).optional(),
         is_partner: z.enum(['true', 'false']).optional(),
+        stage: z.enum(ÉTAPES).optional(),
         limit: z.coerce.number().int().min(1).max(100).default(20),
         offset: z.coerce.number().int().min(0).default(0),
       })
       .safeParse(req.query);
     if (!parsed.success) throw badRequest('Paramètres invalides', parsed.error.issues);
 
-    const { q, status, is_partner: partenaire, limit, offset } = parsed.data;
+    const { q, status, is_partner: partenaire, stage, limit, offset } = parsed.data;
 
     const where = {
       ...(status ? { status } : {}),
       ...(partenaire ? { is_partner: partenaire === 'true' } : {}),
+      ...(stage ? { pipeline_stage: stage } : {}),
       ...(q
         ? {
             OR: [
@@ -198,10 +202,24 @@ backofficeRouter.get(
         : {}),
     };
 
-    const [stores, total, parStatut] = await Promise.all([
+    /*
+     * Les décomptes d'étapes portent sur le même périmètre que la liste, mais
+     * sans le filtre d'étape lui-même : sélectionner « Proposition » ne doit
+     * pas ramener toutes les autres colonnes à zéro.
+     */
+    const périmètreÉtapes = { ...where };
+    delete périmètreÉtapes.pipeline_stage;
+
+    const [stores, total, parStatut, parÉtape] = await Promise.all([
       prisma.store.findMany({ where, orderBy: { created_date: 'desc' }, take: limit, skip: offset }),
       prisma.store.count({ where }),
       prisma.store.groupBy({ by: ['status'], _count: { _all: true } }),
+      prisma.store.groupBy({
+        by: ['pipeline_stage'],
+        where: périmètreÉtapes,
+        _count: { _all: true },
+        _sum: { pipeline_expected_value: true },
+      }),
     ]);
 
     // Un seul groupBy pour toute la page, plutôt qu'une requête par boutique.
@@ -230,11 +248,71 @@ backofficeRouter.get(
         limit,
         offset,
         by_status: parStatut.map((ligne) => ({ status: ligne.status, count: ligne._count._all })),
+        by_stage: ÉTAPES.map((étape) => {
+          const ligne = parÉtape.find((l) => l.pipeline_stage === étape);
+          return {
+            stage: étape,
+            count: ligne?._count._all ?? 0,
+            expected_value: ligne?._sum.pipeline_expected_value ?? 0,
+          };
+        }),
       },
     });
   }),
 );
 
+/**
+ * Suivi commercial d'une boutique.
+ *
+ * Réservé au backoffice : `Store.update` est ouvert au propriétaire de la
+ * boutique, qui n'a pas à décider de son propre avancement ni du montant
+ * qu'on attend de lui. Tout changement d'étape laisse une trace.
+ */
+backofficeRouter.patch(
+  '/stores/:id/pipeline',
+  handler(async (req, res) => {
+    const parsed = z
+      .object({
+        pipeline_stage: z.enum(ÉTAPES).optional(),
+        pipeline_expected_value: z.number().min(0).max(1_000_000_000).nullable().optional(),
+        pipeline_owner_email: z.string().email().nullable().optional(),
+        pipeline_next_action_at: z.coerce.date().nullable().optional(),
+        pipeline_notes: z.string().max(2000).nullable().optional(),
+      })
+      .refine((v) => Object.keys(v).length > 0, { message: 'Aucune modification demandée' })
+      .safeParse(req.body);
+    if (!parsed.success) throw badRequest('Suivi commercial invalide', parsed.error.issues);
+
+    const store = await prisma.store.findUnique({ where: { id: req.params.id } });
+    if (!store) throw notFound('Boutique introuvable');
+
+    const changementDÉtape =
+      parsed.data.pipeline_stage && parsed.data.pipeline_stage !== store.pipeline_stage;
+
+    const updated = await prisma.store.update({
+      where: { id: store.id },
+      data: {
+        ...parsed.data,
+        // La date d'entrée dans l'étape est posée par le serveur, pas fournie.
+        ...(changementDÉtape ? { pipeline_stage_changed_at: new Date() } : {}),
+      },
+    });
+
+    if (changementDÉtape) {
+      await recordAudit(req, {
+        action: 'pipeline_stage',
+        module: 'Store',
+        entity_id: store.id,
+        description: `${store.name} : ${store.pipeline_stage} → ${parsed.data.pipeline_stage}`,
+        metadata: { from: store.pipeline_stage, to: parsed.data.pipeline_stage },
+      });
+    }
+
+    res.json({ data: updated });
+  }),
+);
+
+/** Journal d'audit réel, alimenté par le serveur. */
 backofficeRouter.get(
   '/audit-logs',
   requireBackoffice('admin', 'super_admin'),

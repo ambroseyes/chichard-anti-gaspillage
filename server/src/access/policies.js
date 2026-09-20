@@ -78,8 +78,15 @@ export const policies = {
     create: NEVER,
     update: STORE,
     delete: ADMIN,
-    // Statut de partenariat et compteurs : décidés par le backoffice ou le serveur.
+    /*
+     * Statut de partenariat, compteurs et suivi commercial : décidés par le
+     * backoffice ou le serveur. `update` étant ouvert au propriétaire de la
+     * boutique, sans cette liste un commerçant pourrait se déclarer « gagné »
+     * et s'attribuer le montant attendu de son choix.
+     */
     protected: [
+      'pipeline_stage', 'pipeline_expected_value', 'pipeline_owner_email',
+      'pipeline_next_action_at', 'pipeline_notes', 'pipeline_stage_changed_at',
       'status', 'is_partner', 'rating', 'total_products_saved',
       'total_revenue_recovered', 'total_savings_generated',
       'email_verified', 'verification_token',
