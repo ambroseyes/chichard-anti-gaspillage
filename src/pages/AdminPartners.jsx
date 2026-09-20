@@ -22,6 +22,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { formatNumber } from '@/lib/format';
+import Paginator from '@/components/catalog/Paginator';
+
+const PAR_PAGE = 20;
 
 const emptyStore = {
   name: '',
@@ -46,17 +51,43 @@ export default function AdminPartners() {
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [historyStore, setHistoryStore] = useState(null);
   const [selectedStores, setSelectedStores] = useState([]);
+  const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
 
-  const { data: stores = [], isLoading } = useQuery({
-    queryKey: ['admin-stores'],
-    queryFn: () => api.entities.Store.list('-created_date'),
+  /*
+   * Boutiques paginées, avec le nombre de produits et les unités de chacune,
+   * comptés par la base. L'écran chargeait auparavant cinquante boutiques et
+   * cinquante produits tous magasins confondus, puis comptait dedans : le
+   * chiffre affiché en face de chaque partenaire n'avait aucun rapport avec
+   * son catalogue réel, et les boutiques au-delà de cinquante n'existaient
+   * tout simplement pas.
+   */
+  const terme = useDebouncedValue(searchQuery.trim(), 300);
+
+  const { data: résultat, isLoading } = useQuery({
+    queryKey: ['admin-stores', terme, statusFilter, page],
+    queryFn: () =>
+      api.backoffice.stores({
+        q: terme || undefined,
+        status: statusFilter === 'all' ? undefined : statusFilter,
+        limit: PAR_PAGE,
+        offset: (page - 1) * PAR_PAGE,
+      }),
+    placeholderData: (précédent) => précédent,
   });
 
-  const { data: products = [] } = useQuery({
-    queryKey: ['all-products'],
-    queryFn: () => api.entities.Product.list(),
+  /* Totaux de la plateforme : l'agrégat existant, pas une somme sur la page. */
+  const { data: vue } = useQuery({
+    queryKey: ['backoffice-overview', 30],
+    queryFn: () => api.backoffice.overview(30),
   });
+  const produitsPlateforme = (vue?.products_by_status ?? []).reduce((t, l) => t + l.count, 0);
+
+  const stores = résultat?.data ?? [];
+  const total = résultat?.meta?.total ?? 0;
+  const nombrePages = Math.max(1, Math.ceil(total / PAR_PAGE));
+  const parStatut = (statut) =>
+    résultat?.meta?.by_status?.find((ligne) => ligne.status === statut)?.count ?? 0;
 
   const createMutation = useMutation({
     mutationFn: (data) => api.entities.Store.create(data),
@@ -183,24 +214,15 @@ export default function AdminPartners() {
     );
   };
 
-  const getStoreStats = (storeId) => {
-    const storeProducts = products.filter(p => p.store_id === storeId);
-    return {
-      products: storeProducts.length,
-      sold: storeProducts.reduce((sum, p) => sum + (p.quantity_sold || 0), 0),
-      saved: storeProducts.reduce((sum, p) => sum + (p.quantity_available || 0), 0)
-    };
-  };
-
-  const filteredStores = stores.filter(store => {
-    const matchSearch = !searchQuery || 
-      store.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      store.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      store.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      store.address?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchStatus = statusFilter === 'all' || store.status === statusFilter;
-    return matchSearch && matchStatus;
+  /* Les chiffres accompagnent chaque boutique renvoyée par le serveur. */
+  const getStoreStats = (store) => ({
+    products: store.products_count ?? 0,
+    sold: store.units_sold ?? 0,
+    saved: store.units_in_stock ?? 0,
   });
+
+  // Recherche et filtre de statut appliqués par le serveur.
+  const filteredStores = stores;
 
   const statusConfig = {
     verified: { label: 'Vérifié', color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle },
@@ -240,7 +262,7 @@ export default function AdminPartners() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Gestion des Partenaires</h1>
-            <p className="text-gray-500">{stores.length} partenaires enregistrés</p>
+            <p className="text-gray-500">{formatNumber(total)} boutique{total > 1 ? 's' : ''} enregistrée{total > 1 ? 's' : ''}</p>
           </div>
           <div className="flex gap-2">
             <Link to={createPageUrl('PartnerAnalytics')}>
@@ -264,7 +286,7 @@ export default function AdminPartners() {
                 <CheckCircle className="w-5 h-5 text-emerald-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{stores.filter(s => s.status === 'verified').length}</p>
+                <p className="text-2xl font-bold">{formatNumber(parStatut('verified'))}</p>
                 <p className="text-xs text-gray-500">Vérifiés</p>
               </div>
             </div>
@@ -275,7 +297,7 @@ export default function AdminPartners() {
                 <Clock className="w-5 h-5 text-yellow-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{stores.filter(s => s.status === 'pending').length}</p>
+                <p className="text-2xl font-bold">{formatNumber(parStatut('pending'))}</p>
                 <p className="text-xs text-gray-500">En attente</p>
               </div>
             </div>
@@ -286,7 +308,7 @@ export default function AdminPartners() {
                 <Package className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{products.length}</p>
+                <p className="text-2xl font-bold">{formatNumber(produitsPlateforme)}</p>
                 <p className="text-xs text-gray-500">Produits total</p>
               </div>
             </div>
@@ -297,8 +319,8 @@ export default function AdminPartners() {
                 <TrendingUp className="w-5 h-5 text-purple-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{products.reduce((sum, p) => sum + (p.quantity_sold || 0), 0)}</p>
-                <p className="text-xs text-gray-500">Ventes totales</p>
+                <p className="text-2xl font-bold">{formatNumber(vue?.orders ?? 0)}</p>
+                <p className="text-xs text-gray-500">Commandes (30 j)</p>
               </div>
             </div>
           </Card>
@@ -312,12 +334,12 @@ export default function AdminPartners() {
               <Input
                 placeholder="Rechercher par nom, ville, email..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
                 className="pl-10"
               />
             </div>
             <div className="flex gap-2">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select value={statusFilter} onValueChange={(valeur) => { setStatusFilter(valeur); setPage(1); }}>
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Statut" />
                 </SelectTrigger>
@@ -345,7 +367,7 @@ export default function AdminPartners() {
             </div>
           </div>
           <div className="flex items-center gap-2 mt-3 text-sm text-gray-600">
-            <span>{filteredStores.length} résultat(s)</span>
+            <span>{formatNumber(total)} résultat{total > 1 ? 's' : ''}</span>
             {searchQuery && <span>• Recherche: "{searchQuery}"</span>}
             {statusFilter !== 'all' && <span>• Statut: {statusConfig[statusFilter]?.label}</span>}
           </div>
@@ -354,7 +376,7 @@ export default function AdminPartners() {
         {/* Partners List */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredStores.map((store) => {
-            const stats = getStoreStats(store.id);
+            const stats = getStoreStats(store);
             const status = statusConfig[store.status] || statusConfig.pending;
             const StatusIcon = status.icon;
 
@@ -465,6 +487,15 @@ export default function AdminPartners() {
             );
           })}
         </div>
+
+        <Paginator
+          page={page}
+          pages={nombrePages}
+          onChange={(suivante) => {
+            setPage(suivante);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
       </div>
 
       {/* Create/Edit Dialog */}

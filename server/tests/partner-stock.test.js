@@ -84,6 +84,52 @@ describe('stock du partenaire', () => {
     expect(enVente.body.meta.total).toBe(60);
   });
 
+  it('agrège tout le stock, pas un échantillon', async () => {
+    const res = await request(app).get('/api/partner/dashboard').set(auth(token));
+    expect(res.status).toBe(200);
+
+    const { active_products: actifs, sold_out_products: épuisés, units_in_stock: unités } =
+      res.body.data;
+
+    // Les compteurs venaient d'un findMany sans borne, puis d'un filtre en
+    // mémoire. Ils doivent coïncider avec ce que la base contient vraiment.
+    const actifsRéels = await prisma.product.count({
+      where: { store_id: store.id, status: 'active' },
+    });
+    const épuisésRéels = await prisma.product.count({
+      where: { store_id: store.id, status: 'sold_out' },
+    });
+    const stockRéel = await prisma.product.aggregate({
+      where: { store_id: store.id },
+      _sum: { quantity_available: true },
+    });
+
+    expect(actifs).toBe(actifsRéels);
+    expect(actifs).toBe(60);
+    expect(épuisés).toBe(épuisésRéels);
+    expect(unités).toBe(stockRéel._sum.quantity_available);
+  });
+
+  it('remonte les produits urgents sans rapatrier le stock entier', async () => {
+    // Un produit qui périme demain : il doit apparaître parmi les urgents.
+    await createProduct(store.id, {
+      name: 'Lot à écouler',
+      store_name: store.name,
+      expiration_date: new Date(Date.now() + 86_400_000),
+    });
+
+    const res = await request(app).get('/api/partner/dashboard').set(auth(token));
+    const urgents = res.body.data.urgent_products;
+
+    expect(urgents.map((p) => p.name)).toContain('Lot à écouler');
+    // La liste est bornée : elle alerte, elle n'inventorie pas.
+    expect(urgents.length).toBeLessThanOrEqual(20);
+    for (const produit of urgents) {
+      expect(['urgent', 'critical']).toContain(produit.urgency);
+      expect(produit.suggested_price).toBeLessThan(produit.current_price + 1);
+    }
+  });
+
   it('ne laisse pas un partenaire lister le stock d’un autre magasin', async () => {
     const autre = await createUser('rival@test.cm', { is_partner: true });
     const autreMagasin = await createStore(autre.email, { name: 'Chez le rival' });

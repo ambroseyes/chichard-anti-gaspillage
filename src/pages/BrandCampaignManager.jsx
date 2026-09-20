@@ -38,19 +38,14 @@ export default function BrandCampaignManager() {
 
   const { data: campaigns = [] } = useQuery({
     queryKey: ['brand-campaigns', brand?.id],
-    queryFn: () => api.entities.SponsoredCampaign.filter({ brand_id: brand.id }, '-created_date'),
+    queryFn: () => api.entities.SponsoredCampaign.all({ brand_id: brand.id }, '-created_date'),
     enabled: !!brand
   });
 
   const { data: commissions = [] } = useQuery({
     queryKey: ['brand-commissions', brand?.id],
-    queryFn: () => api.entities.CommissionTransaction.filter({ brand_id: brand.id }, '-created_date'),
+    queryFn: () => api.entities.CommissionTransaction.all({ brand_id: brand.id }, '-created_date'),
     enabled: !!brand
-  });
-
-  const { data: products = [] } = useQuery({
-    queryKey: ['products-for-sponsorship'],
-    queryFn: () => api.entities.Product.filter({ status: 'active' })
   });
 
   const createCampaignMutation = useMutation({

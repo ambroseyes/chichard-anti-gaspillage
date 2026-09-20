@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { api } from '@/api';
-import { formatShortDate } from '@/lib/format';
+import { formatShortDate, formatXAF } from '@/lib/format';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
@@ -41,19 +41,16 @@ export default function PartnerDashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  /*
+   * Les widgets d'analyse ont besoin du stock, pas d'un échantillon : ils
+   * recevaient la première page et présentaient leurs conclusions comme
+   * portant sur l'ensemble. `all()` parcourt les pages et prévient si le
+   * plafond est atteint.
+   */
   const { data: products = EMPTY_ARRAY, isLoading: loadingProducts } = useQuery({
-    queryKey: ['partner-products', storeId],
-    queryFn: () => api.entities.Product.filter({ store_id: storeId }),
+    queryKey: ['partner-stock', storeId],
+    queryFn: () => api.entities.Product.all({ store_id: storeId }),
     enabled: Boolean(storeId),
-  });
-
-  const { data: orders = EMPTY_ARRAY, isLoading: loadingOrders } = useQuery({
-    queryKey: ['partner-orders', user?.store_id],
-    queryFn: async () => {
-      const allOrders = await api.entities.Order.list('-created_date', 100);
-      return allOrders;
-    },
-    enabled: !!user,
   });
 
   const { data: preferences } = useQuery({
@@ -68,6 +65,43 @@ export default function PartnerDashboard() {
       return prefs[0] ?? null;
     },
     enabled: !!user
+  });
+
+  /*
+   * Les compteurs d'alerte, eux, sont demandés à la base : ils doivent rester
+   * exacts même au-delà de ce que l'écran rapatrie.
+   */
+  const seuilStock = preferences?.alerts_config?.low_stock_threshold ?? 5;
+  const joursAlerte = preferences?.alerts_config?.expiration_warning_days ?? 5;
+
+  const { data: compteurs } = useQuery({
+    queryKey: ['partner-alert-counts', storeId, seuilStock, joursAlerte],
+    queryFn: async () => {
+      const finFenêtre = new Date();
+      finFenêtre.setDate(finFenêtre.getDate() + joursAlerte);
+      finFenêtre.setHours(23, 59, 59, 999);
+
+      const [stockFaible, bientôtPérimés] = await Promise.all([
+        api.entities.Product.page({
+          filter: { store_id: storeId, status: 'active', quantity_available: { lte: seuilStock } },
+          limit: 1,
+        }),
+        api.entities.Product.page({
+          filter: {
+            store_id: storeId,
+            status: 'active',
+            expiration_date: { gte: new Date().toISOString(), lte: finFenêtre.toISOString() },
+          },
+          limit: 1,
+        }),
+      ]);
+
+      return {
+        stockFaible: stockFaible.meta.total,
+        bientôtPérimés: bientôtPérimés.meta.total,
+      };
+    },
+    enabled: Boolean(storeId),
   });
 
   const savePrefsMutation = useMutation({
@@ -109,22 +143,20 @@ export default function PartnerDashboard() {
 
   // Generate smart alerts
   useEffect(() => {
-    if (!products.length || !preferences) return;
+    if (!preferences || !compteurs) return;
 
     const newAlerts = [];
-    const config = preferences.alerts_config || {};
 
-    // Low stock alert
-    const lowStock = products.filter(p => 
-      p.quantity_available <= (config.low_stock_threshold || 5) && p.status === 'active'
-    );
+    /* Les décomptes viennent de la base : comptés sur la page reçue, ils
+       annonçaient « 3 produits en stock faible » quand il y en avait vingt. */
+    const lowStock = { length: compteurs?.stockFaible ?? 0 };
     if (lowStock.length > 0) {
       newAlerts.push({
         id: 'low_stock',
         type: 'low_stock',
         priority: 'high',
         title: 'Stock faible',
-        message: `${lowStock.length} produit(s) ont un stock inférieur au seuil (${config.low_stock_threshold || 5} unités)`,
+        message: `${lowStock.length} produit(s) ont un stock inférieur au seuil (${seuilStock} unités)`,
         action: {
           label: 'Voir les produits',
           onClick: () => navigate(createPageUrl('PartnerProducts'))
@@ -132,13 +164,8 @@ export default function PartnerDashboard() {
       });
     }
 
-    // Expiration warning
-    const expiringDays = config.expiration_warning_days || 5;
-    const expiringSoon = products.filter(p => {
-      if (!p.expiration_date || p.status !== 'active') return false;
-      const daysLeft = Math.ceil((new Date(p.expiration_date) - new Date()) / (1000 * 60 * 60 * 24));
-      return daysLeft > 0 && daysLeft <= expiringDays;
-    });
+    const expiringDays = joursAlerte;
+    const expiringSoon = { length: compteurs?.bientôtPérimés ?? 0 };
     if (expiringSoon.length > 0) {
       newAlerts.push({
         id: 'expiring_soon',
@@ -153,14 +180,15 @@ export default function PartnerDashboard() {
       });
     }
 
-    // Sales target
-    if (config.daily_sales_target && totalRevenue >= config.daily_sales_target) {
+    // Objectif de vente
+    const objectif = preferences.alerts_config?.daily_sales_target;
+    if (objectif && totalRevenue >= objectif) {
       newAlerts.push({
         id: 'target_reached',
         type: 'target_reached',
         priority: 'low',
         title: '🎉 Objectif atteint!',
-        message: `Vous avez dépassé votre objectif de ${config.daily_sales_target.toLocaleString()} FCFA`
+        message: `Vous avez dépassé votre objectif de ${formatXAF(objectif)}`
       });
     }
 
@@ -176,7 +204,7 @@ export default function PartnerDashboard() {
     }
 
     setAlerts(newAlerts);
-  }, [products, preferences, totalRevenue, urgentProducts.length]);
+  }, [compteurs, preferences, seuilStock, joursAlerte, totalRevenue, urgentProducts.length, navigate]);
 
   const visibleWidgets = preferences?.visible_widgets || ['stats', 'revenue', 'products', 'alerts'];
 

@@ -30,13 +30,13 @@ export default function PartnerAnalytics() {
 
   const { data: campaigns = [] } = useQuery({
     queryKey: ['campaign-metrics', store?.id],
-    queryFn: () => api.entities.CampaignMetrics.filter({ store_id: store.id }, '-created_date'),
+    queryFn: () => api.entities.CampaignMetrics.all({ store_id: store.id }, '-created_date'),
     enabled: !!store
   });
 
   const { data: products = [] } = useQuery({
     queryKey: ['store-products-analytics', store?.id],
-    queryFn: () => api.entities.Product.filter({ store_id: store.id }),
+    queryFn: () => api.entities.Product.all({ store_id: store.id }),
     enabled: !!store
   });
 
@@ -48,7 +48,7 @@ export default function PartnerAnalytics() {
 
   const { data: segments = [] } = useQuery({
     queryKey: ['customer-segments'],
-    queryFn: () => api.entities.CustomerSegment.list(),
+    queryFn: () => api.entities.CustomerSegment.all(),
     enabled: !!store
   });
 
