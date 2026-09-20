@@ -51,7 +51,13 @@ const urgencyConfig = {
 };
 
 export default function RestockAdvisor({ products, onRestock }) {
-  const [collapsed, setCollapsed] = useState(false);
+  /*
+   * Replié par défaut. Déplié, ce panneau occupait tout le premier écran d'une
+   * page intitulée « Mes produits » : le partenaire n'y voyait aucun produit
+   * sans faire défiler. Le nombre de suggestions reste visible dans l'en-tête,
+   * ce qui suffit à décider de l'ouvrir.
+   */
+  const [collapsed, setCollapsed] = useState(true);
   const [restocking, setRestocking] = useState({});
 
   const advisories = useMemo(() => {

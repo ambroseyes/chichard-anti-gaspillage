@@ -22,17 +22,31 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/AuthContext';
 import { useMyStore } from '@/hooks/useMyStore';
+import { PRODUCT_CATEGORIES } from '@/lib/constants';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { EMPTY_ARRAY } from '@/lib/stable';
+import { formatXAF } from '@/lib/format';
+import Paginator from '@/components/catalog/Paginator';
 
-const categories = [
-  { id: 'fruits_legumes', label: 'Fruits & Légumes', emoji: '🥬' },
-  { id: 'produits_laitiers', label: 'Produits laitiers', emoji: '🥛' },
-  { id: 'viandes_poissons', label: 'Viandes & Poissons', emoji: '🥩' },
-  { id: 'boulangerie', label: 'Boulangerie', emoji: '🥖' },
-  { id: 'epicerie', label: 'Épicerie', emoji: '🛒' },
-  { id: 'boissons', label: 'Boissons', emoji: '🥤' },
-  { id: 'surgeles', label: 'Surgelés', emoji: '❄️' },
-  { id: 'hygiene', label: 'Hygiène', emoji: '🧴' },
+/*
+ * Les rayons viennent de la source unique. La liste redéclarée ici n'en
+ * comptait que huit sur les dix acceptées par le serveur : « conserves » et
+ * « condiments » étaient absents du menu, donc impossibles à publier.
+ */
+const categories = PRODUCT_CATEGORIES;
+
+const PAR_PAGE = 24;
+
+/** En dessous de ce stock, un article mérite qu'on signale sa tension. */
+const SEUIL_TENSION = 5;
+
+const STATUTS = [
+  { id: 'all', label: 'Tous' },
+  { id: 'active', label: 'En vente' },
+  { id: 'sold_out', label: 'Épuisés' },
+  { id: 'expired', label: 'Périmés' },
 ];
+
 
 const emptyProduct = {
   name: '',
@@ -49,6 +63,8 @@ export default function PartnerProducts() {
   const { storeId } = useMyStore();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
+  const [statutFiltre, setStatutFiltre] = useState('all');
+  const [numeroPage, setNumeroPage] = useState(1);
   const [showDialog, setShowDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState(emptyProduct);
@@ -58,9 +74,49 @@ export default function PartnerProducts() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const queryClient = useQueryClient();
 
-  const { data: products = [], isLoading } = useQuery({
-    queryKey: ['partner-products', storeId],
-    queryFn: () => api.entities.Product.filter({ store_id: storeId }, '-created_date'),
+  /*
+   * La recherche, le filtre de statut et la pagination sont appliqués par le
+   * serveur. L'écran chargeait auparavant les cinquante produits les plus
+   * récents et cherchait dedans : au-delà de cinquante références, le reste du
+   * stock du partenaire devenait introuvable, sans aucun signal.
+   */
+  const recherche = useDebouncedValue(searchQuery.trim(), 300);
+
+  const { data: page, isLoading } = useQuery({
+    queryKey: ['partner-products', storeId, recherche, statutFiltre, numeroPage],
+    queryFn: () =>
+      api.entities.Product.page({
+        filter: {
+          store_id: storeId,
+          ...(recherche ? { name: { contains: recherche, mode: 'insensitive' } } : {}),
+          ...(statutFiltre === 'all' ? {} : { status: statutFiltre }),
+        },
+        sort: '-created_date',
+        limit: PAR_PAGE,
+        offset: (numeroPage - 1) * PAR_PAGE,
+      }),
+    enabled: Boolean(storeId),
+    placeholderData: (précédent) => précédent,
+  });
+
+  const products = page?.data ?? [];
+  const total = page?.meta?.total ?? 0;
+  const nombrePages = Math.max(1, Math.ceil(total / PAR_PAGE));
+
+  /*
+   * Le conseil de réapprovisionnement portait sur la page affichée : il
+   * suggérait de recommander ce qui se trouvait sous les yeux du partenaire et
+   * ignorait le reste du stock. Il interroge maintenant les articles
+   * réellement en tension, quelle que soit la page.
+   */
+  const { data: produitsEnTension = EMPTY_ARRAY } = useQuery({
+    queryKey: ['partner-low-stock', storeId],
+    queryFn: () =>
+      api.entities.Product.filter(
+        { store_id: storeId, status: 'active', quantity_available: { lte: SEUIL_TENSION } },
+        'quantity_available',
+        20,
+      ),
     enabled: Boolean(storeId),
   });
 
@@ -151,10 +207,6 @@ export default function PartnerProducts() {
     }
   };
 
-  const filteredProducts = products.filter(p =>
-    p.name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   const getDaysLeft = (date) => {
     return Math.ceil((new Date(date) - new Date()) / (1000 * 60 * 60 * 24));
   };
@@ -192,7 +244,11 @@ export default function PartnerProducts() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Mes produits</h1>
-            <p className="text-gray-500">{products.length} produit{products.length > 1 ? 's' : ''}</p>
+            {/* Le stock entier, pas la page affichée : l'en-tête annonçait 24
+                pendant que le compteur de résultats en annonçait 70. */}
+            <p className="text-gray-500">
+              {total} produit{total > 1 ? 's' : ''} en stock
+            </p>
           </div>
           <Button onClick={openCreateDialog} className="bg-emerald-500 hover:bg-emerald-600">
             <Plus className="w-4 h-4 mr-2" />
@@ -201,24 +257,61 @@ export default function PartnerProducts() {
         </div>
 
         {/* Restock Advisor */}
-        {products.length > 0 && (
+        {produitsEnTension.length > 0 && (
           <RestockAdvisor
-            products={products}
+            products={produitsEnTension}
             onRestock={(product, qty) => {
               // Optionally open edit dialog pre-filled for manual update
             }}
           />
         )}
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <Input
-            placeholder="Rechercher un produit..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 h-11"
-          />
+        {/* Recherche et filtres */}
+        <div className="space-y-3">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Input
+                placeholder="Rechercher dans tout votre stock…"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setNumeroPage(1);
+                }}
+                className="pl-10 h-11"
+                aria-label="Rechercher un produit dans votre stock"
+              />
+            </div>
+
+            <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1">
+              {STATUTS.map((statut) => (
+                <button
+                  key={statut.id}
+                  type="button"
+                  onClick={() => {
+                    setStatutFiltre(statut.id);
+                    setNumeroPage(1);
+                  }}
+                  aria-pressed={statutFiltre === statut.id}
+                  className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap transition-colors ${
+                    statutFiltre === statut.id
+                      ? 'bg-emerald-600 text-white font-medium'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {statut.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <p className="text-sm text-gray-500" aria-live="polite">
+            {isLoading
+              ? 'Chargement…'
+              : recherche
+                ? `${total} résultat${total > 1 ? 's' : ''} pour « ${recherche} »`
+                : `${total} produit${total > 1 ? 's' : ''} dans votre stock`}
+          </p>
         </div>
 
         {/* Products Grid */}
@@ -232,20 +325,41 @@ export default function PartnerProducts() {
               </Card>
             ))}
           </div>
-        ) : filteredProducts.length === 0 ? (
+        ) : products.length === 0 ? (
           <div className="text-center py-16">
             <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="font-semibold text-gray-900 mb-2">Aucun produit</h3>
-            <p className="text-gray-500 mb-4">Commencez par ajouter vos premiers produits</p>
-            <Button onClick={openCreateDialog}>
-              <Plus className="w-4 h-4 mr-2" />
-              Ajouter un produit
-            </Button>
+            {recherche || statutFiltre !== 'all' ? (
+              <>
+                <h3 className="font-semibold text-gray-900 mb-2">Aucun produit ne correspond</h3>
+                <p className="text-gray-500 mb-4">
+                  Essayez un autre terme, ou revenez à l'ensemble de votre stock.
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setStatutFiltre('all');
+                    setNumeroPage(1);
+                  }}
+                >
+                  Voir tout mon stock
+                </Button>
+              </>
+            ) : (
+              <>
+                <h3 className="font-semibold text-gray-900 mb-2">Aucun produit</h3>
+                <p className="text-gray-500 mb-4">Commencez par ajouter vos premiers produits</p>
+                <Button onClick={openCreateDialog}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Ajouter un produit
+                </Button>
+              </>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <AnimatePresence>
-              {filteredProducts.map((product) => {
+              {products.map((product) => {
                 const daysLeft = getDaysLeft(product.expiration_date);
                 const discount = Math.round(
                   (1 - product.discounted_price / product.original_price) * 100
@@ -321,10 +435,10 @@ export default function PartnerProducts() {
                         <div className="flex items-center justify-between">
                           <div>
                             <span className="font-bold text-emerald-600">
-                              {product.discounted_price?.toLocaleString()} F
+                              {formatXAF(product.discounted_price)}
                             </span>
                             <span className="text-sm text-gray-400 line-through ml-2">
-                              {product.original_price?.toLocaleString()} F
+                              {formatXAF(product.original_price)}
                             </span>
                           </div>
                           <div className="flex gap-2">
@@ -353,6 +467,15 @@ export default function PartnerProducts() {
             </AnimatePresence>
           </div>
         )}
+
+        <Paginator
+          page={numeroPage}
+          pages={nombrePages}
+          onChange={(page) => {
+            setNumeroPage(page);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
       </div>
 
       {/* Create/Edit Dialog */}
