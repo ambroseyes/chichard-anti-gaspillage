@@ -74,6 +74,15 @@ export const partner = {
 
 export const backoffice = {
   overview: (days = 30) => request(`/api/backoffice/overview?days=${days}`).then((r) => r.data),
+  /** Boutiques paginées, avec le nombre de produits de chacune. */
+  stores: (params = {}) => {
+    const query = new URLSearchParams();
+    for (const [clé, valeur] of Object.entries(params)) {
+      if (valeur === undefined || valeur === null || valeur === '') continue;
+      query.set(clé, String(valeur));
+    }
+    return request(`/api/backoffice/stores?${query.toString()}`);
+  },
   users: (params = {}) => {
     const query = new URLSearchParams(
       Object.entries(params).filter(([, v]) => v !== undefined && v !== ''),

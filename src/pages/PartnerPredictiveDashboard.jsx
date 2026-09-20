@@ -65,7 +65,9 @@ export default function PartnerPredictiveDashboard() {
 
   const { data: products = EMPTY_ARRAY, isLoading } = useQuery({
     queryKey: ['partner-products-predictive', store?.id],
-    queryFn: () => api.entities.Product.filter({ store_id: store.id }, 'expiration_date', 200),
+    /* La prévision porte sur tout le stock, pas sur ses deux cents
+         premières lignes. */
+    queryFn: () => api.entities.Product.all({ store_id: store.id }, 'expiration_date'),
     enabled: !!store?.id,
     refetchInterval: 60000,
   });

@@ -160,6 +160,81 @@ backofficeRouter.patch(
 );
 
 /** Journal d'audit réel, alimenté par le serveur. */
+/**
+ * Boutiques, paginées, avec le nombre de produits de chacune.
+ *
+ * Le décompte est fait par la base en une passe. L'écran d'administration
+ * chargeait auparavant cinquante produits tous magasins confondus et comptait
+ * dedans : le chiffre affiché en face de chaque boutique n'avait aucun
+ * rapport avec son catalogue réel.
+ */
+backofficeRouter.get(
+  '/stores',
+  handler(async (req, res) => {
+    const parsed = z
+      .object({
+        q: z.string().trim().max(120).optional(),
+        status: z.enum(['pending', 'verified', 'rejected', 'suspended']).optional(),
+        is_partner: z.enum(['true', 'false']).optional(),
+        limit: z.coerce.number().int().min(1).max(100).default(20),
+        offset: z.coerce.number().int().min(0).default(0),
+      })
+      .safeParse(req.query);
+    if (!parsed.success) throw badRequest('Paramètres invalides', parsed.error.issues);
+
+    const { q, status, is_partner: partenaire, limit, offset } = parsed.data;
+
+    const where = {
+      ...(status ? { status } : {}),
+      ...(partenaire ? { is_partner: partenaire === 'true' } : {}),
+      ...(q
+        ? {
+            OR: [
+              { name: { contains: q, mode: 'insensitive' } },
+              { city: { contains: q, mode: 'insensitive' } },
+              { email: { contains: q, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
+
+    const [stores, total, parStatut] = await Promise.all([
+      prisma.store.findMany({ where, orderBy: { created_date: 'desc' }, take: limit, skip: offset }),
+      prisma.store.count({ where }),
+      prisma.store.groupBy({ by: ['status'], _count: { _all: true } }),
+    ]);
+
+    // Un seul groupBy pour toute la page, plutôt qu'une requête par boutique.
+    const décomptes = stores.length
+      ? await prisma.product.groupBy({
+          by: ['store_id'],
+          where: { store_id: { in: stores.map((s) => s.id) } },
+          _count: { _all: true },
+          _sum: { quantity_sold: true, quantity_available: true },
+        })
+      : [];
+    const produitsPar = new Map(décomptes.map((d) => [d.store_id, d]));
+
+    res.json({
+      data: stores.map((store) => {
+        const ligne = produitsPar.get(store.id);
+        return {
+          ...store,
+          products_count: ligne?._count._all ?? 0,
+          units_sold: ligne?._sum.quantity_sold ?? 0,
+          units_in_stock: ligne?._sum.quantity_available ?? 0,
+        };
+      }),
+      meta: {
+        total,
+        limit,
+        offset,
+        by_status: parStatut.map((ligne) => ({ status: ligne.status, count: ligne._count._all })),
+      },
+    });
+  }),
+);
+
 backofficeRouter.get(
   '/audit-logs',
   requireBackoffice('admin', 'super_admin'),

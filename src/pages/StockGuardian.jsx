@@ -27,7 +27,9 @@ export default function StockGuardian() {
 
   const { data: products = [] } = useQuery({
     queryKey: ['partner-products', storeId],
-    queryFn: () => api.entities.Product.filter({ store_id: storeId }),
+    /* Cet écran analyse le stock entier : une page n'en était qu'un
+         échantillon, présenté comme l'ensemble. */
+    queryFn: () => api.entities.Product.all({ store_id: storeId }),
     enabled: Boolean(storeId),
   });
 

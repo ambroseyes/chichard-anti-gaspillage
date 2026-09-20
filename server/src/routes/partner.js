@@ -11,7 +11,8 @@ import { env } from '../config/env.js';
 import { logger } from '../lib/logger.js';
 import { badRequest, notFound } from '../lib/errors.js';
 import { withStoreContext } from '../access/context.js';
-import { urgencyFor, suggestedPrice } from '../domain/pricing.js';
+import { DISCOUNT_LADDER, urgencyFor, suggestedPrice } from '../domain/pricing.js';
+import { CATEGORY_LABELS } from '../domain/catalog.js';
 import { derivedFields } from '../entities/derived.js';
 
 export const partnerRouter = Router();
@@ -161,6 +162,32 @@ partnerRouter.patch(
  * Tableau de bord partenaire — chiffres réels, agrégés en base sur la période
  * demandée. Aucun jeu de données de démonstration.
  */
+/**
+ * Nombre de produits urgents remontés au tableau de bord. La liste complète
+ * vit sur l'écran des produits ; ici, elle sert à alerter, pas à inventorier.
+ */
+const URGENTS_AFFICHÉS = 20;
+
+/**
+ * Jusqu'à combien de jours restants un produit est-il « urgent » ou
+ * « critique » ? Dérivé du barème plutôt que recopié : si les paliers
+ * changent, la requête suit.
+ */
+const JOURS_URGENCE = Math.max(
+  ...DISCOUNT_LADDER.filter((palier) => palier.urgency === 'urgent' || palier.urgency === 'critical')
+    .map((palier) => palier.maxDaysLeft),
+);
+
+/*
+ * On compare des dates de calendrier, pas des instants : un produit qui périme
+ * ce soir est à J-0. Les bornes encadrent donc des journées entières.
+ */
+const débutDeJournée = (now = new Date()) =>
+  new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+const finDeLUrgence = (now = new Date()) =>
+  new Date(now.getFullYear(), now.getMonth(), now.getDate() + JOURS_URGENCE, 23, 59, 59, 999);
+
 partnerRouter.get(
   '/dashboard',
   handler(async (req, res) => {
@@ -169,13 +196,24 @@ partnerRouter.get(
     const storeIds = await withStoreContext(req);
     if (!storeIds.length) throw forbidden("Aucun magasin n'est rattaché à votre compte");
 
-    const [orders, products, daily, topProducts] = await Promise.all([
+    const [orders, products, parRayon, daily, topProducts, urgent] = await Promise.all([
       prisma.order.aggregate({
         where: { store_id: { in: storeIds }, created_date: { gte: since }, status: { not: 'cancelled' } },
         _sum: { total_amount: true, total_savings: true, co2_saved_kg: true },
         _count: true,
       }),
-      prisma.product.findMany({ where: { store_id: { in: storeIds } } }),
+      prisma.product.groupBy({
+        by: ['status'],
+        where: { store_id: { in: storeIds } },
+        _count: { _all: true },
+        _sum: { quantity_available: true, quantity_sold: true },
+      }),
+      prisma.product.groupBy({
+        by: ['category'],
+        where: { store_id: { in: storeIds } },
+        _count: { _all: true },
+        _sum: { quantity_sold: true },
+      }),
       prisma.$queryRaw`
         SELECT date_trunc('day', "created_date") AS day,
                COUNT(*)::int                     AS commandes,
@@ -193,13 +231,29 @@ partnerRouter.get(
         take: 5,
         select: { id: true, name: true, quantity_sold: true, discounted_price: true },
       }),
+      prisma.product.findMany({
+        where: {
+          store_id: { in: storeIds },
+          status: 'active',
+          expiration_date: { gte: débutDeJournée(), lte: finDeLUrgence() },
+        },
+        orderBy: { expiration_date: 'asc' },
+        take: URGENTS_AFFICHÉS,
+        select: {
+          id: true,
+          name: true,
+          expiration_date: true,
+          discounted_price: true,
+          original_price: true,
+        },
+      }),
     ]);
 
     const now = new Date();
-    const urgent = products
-      .filter((p) => p.status === 'active')
-      .map((p) => ({ product: p, ...urgencyFor(p.expiration_date, now) }))
-      .filter((p) => p.urgency === 'urgent' || p.urgency === 'critical');
+
+    const parStatut = (statut) => products.find((ligne) => ligne.status === statut);
+    const somme = (champ) =>
+      products.reduce((total, ligne) => total + (ligne._sum[champ] ?? 0), 0);
 
     res.json({
       data: {
@@ -208,24 +262,38 @@ partnerRouter.get(
         orders: orders._count,
         savings_generated: orders._sum.total_savings ?? 0,
         co2_saved_kg: orders._sum.co2_saved_kg ?? 0,
-        active_products: products.filter((p) => p.status === 'active').length,
-        sold_out_products: products.filter((p) => p.status === 'sold_out').length,
-        units_in_stock: products.reduce((s, p) => s + (p.quantity_available ?? 0), 0),
-        units_sold: products.reduce((s, p) => s + (p.quantity_sold ?? 0), 0),
-        urgent_products: urgent.map((u) => ({
-          id: u.product.id,
-          name: u.product.name,
-          days_left: u.daysLeft,
-          urgency: u.urgency,
-          current_price: u.product.discounted_price,
-          suggested_price: suggestedPrice(u.product.original_price, u.product.expiration_date, now),
-        })),
+        active_products: parStatut('active')?._count._all ?? 0,
+        sold_out_products: parStatut('sold_out')?._count._all ?? 0,
+        units_in_stock: somme('quantity_available'),
+        units_sold: somme('quantity_sold'),
+        urgent_products: urgent.map((produit) => {
+          const { urgency, daysLeft } = urgencyFor(produit.expiration_date, now);
+          return {
+            id: produit.id,
+            name: produit.name,
+            days_left: daysLeft,
+            urgency,
+            current_price: produit.discounted_price,
+            suggested_price: suggestedPrice(produit.original_price, produit.expiration_date, now),
+          };
+        }),
         daily: daily.map((d) => ({
           date: d.day,
           commandes: Number(d.commandes),
           ventes: Number(d.ventes),
         })),
         top_products: topProducts,
+        // Répartition par rayon : elle était reconstruite dans le navigateur à
+        // partir d'une page de produits, donc fausse dès que le stock
+        // dépassait cette page.
+        products_by_category: parRayon
+          .map((ligne) => ({
+            category: ligne.category,
+            label: CATEGORY_LABELS[ligne.category] ?? ligne.category,
+            products: ligne._count._all,
+            units_sold: ligne._sum.quantity_sold ?? 0,
+          }))
+          .sort((a, b) => b.units_sold - a.units_sold || a.label.localeCompare(b.label, 'fr')),
       },
     });
   }),

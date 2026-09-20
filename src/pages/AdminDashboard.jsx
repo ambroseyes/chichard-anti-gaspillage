@@ -1,260 +1,327 @@
-import React from 'react';
-import { api } from '@/api';
-import { useNavigate, Link } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
-  LayoutDashboard, Store, Package, Users, Clock,
-  CheckCircle, AlertTriangle, DollarSign, ShoppingBag, Truck, BarChart3
+  AlertTriangle,
+  BarChart3,
+  CheckCircle,
+  Clock,
+  LayoutDashboard,
+  Leaf,
+  Package,
+  ShoppingBag,
+  Store,
+  Truck,
+  Users,
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { api } from '@/api';
+import { createPageUrl } from '@/utils';
 import { useAuth } from '@/lib/AuthContext';
+import { formatXAF, formatNumber, formatShortDate } from '@/lib/format';
+import { ORDER_STATUS } from '@/lib/constants';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 
+const PÉRIODES = [
+  { jours: 7, label: '7 jours' },
+  { jours: 30, label: '30 jours' },
+  { jours: 90, label: '90 jours' },
+];
+
+/**
+ * Tableau de bord administrateur.
+ *
+ * Tous les chiffres viennent des agrégats calculés en base. L'écran les
+ * recomposait auparavant en JavaScript à partir de listes plafonnées : il
+ * annonçait « revenus totaux » sur la somme des cent dernières commandes, et
+ * comptait les magasins, produits et utilisateurs sur les cinquante premiers.
+ * Aucun de ces chiffres n'était juste, et rien ne le signalait.
+ */
 export default function AdminDashboard() {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const [jours, setJours] = useState(30);
 
-  const { data: stores = [] } = useQuery({
-    queryKey: ['all-stores'],
-    queryFn: () => api.entities.Store.list(),
-    enabled: !!user
+  const { data: vue, isLoading } = useQuery({
+    queryKey: ['backoffice-overview', jours],
+    queryFn: () => api.backoffice.overview(jours),
+    enabled: Boolean(user),
+    placeholderData: (précédent) => précédent,
   });
 
-  const { data: products = [] } = useQuery({
-    queryKey: ['all-products'],
-    queryFn: () => api.entities.Product.list(),
-    enabled: !!user
+  /* Produits à écouler sous trois jours : le moteur du catalogue sait déjà les
+     compter, avec le même périmètre que ce que voient les clients. */
+  const { data: urgents } = useQuery({
+    queryKey: ['admin-urgents'],
+    queryFn: () => api.catalog.search({ expires: '3days', per_page: 1, facets: 0 }),
+    enabled: Boolean(user),
+    select: (page) => page.page.total,
   });
 
-  const { data: orders = [] } = useQuery({
-    queryKey: ['all-orders'],
-    queryFn: () => api.entities.Order.list('-created_date', 100),
-    enabled: !!user
+  const { data: dernièresCommandes = [] } = useQuery({
+    queryKey: ['admin-recent-orders'],
+    // Cinq lignes, demandées explicitement : c'est une liste d'activité
+    // récente, pas un inventaire.
+    queryFn: () => api.entities.Order.list('-created_date', 5),
+    enabled: Boolean(user),
   });
 
-  const { data: users = [] } = useQuery({
-    queryKey: ['all-users'],
-    queryFn: () => api.entities.User.list(),
-    enabled: !!user
-  });
+  const parStatut = (liste, statut) => liste?.find((l) => l.status === statut)?.count ?? 0;
+  const somme = (liste) => (liste ?? []).reduce((total, l) => total + l.count, 0);
 
-  // Calculate stats
-  const pendingStores = stores.filter(s => s.status === 'pending').length;
-  const verifiedStores = stores.filter(s => s.status === 'verified').length;
-  const activeProducts = products.filter(p => p.status === 'active').length;
-  const expiringSoon = products.filter(p => {
-    const daysLeft = Math.ceil((new Date(p.expiration_date) - new Date()) / (1000 * 60 * 60 * 24));
-    return daysLeft <= 3 && p.status === 'active';
-  }).length;
+  const magasinsVérifiés = parStatut(vue?.stores_by_status, 'verified');
+  const magasinsEnAttente = parStatut(vue?.stores_by_status, 'pending');
+  const commandesLivrées = parStatut(vue?.orders_by_status, 'delivered');
+  const commandesEnAttente = parStatut(vue?.orders_by_status, 'pending');
 
-  const totalRevenue = orders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
-  const pendingOrders = orders.filter(o => o.status === 'pending').length;
-  const deliveredOrders = orders.filter(o => o.status === 'delivered').length;
+  const graphique = (vue?.daily ?? []).map((jour) => ({
+    date: formatShortDate(jour.date),
+    commandes: jour.orders,
+    revenus: Math.round(jour.revenue / 1000),
+  }));
 
-  // Chart data - Orders per day (last 7 days)
-  const last7Days = [...Array(7)].map((_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - (6 - i));
-    return date.toISOString().split('T')[0];
-  });
-
-  const ordersChartData = last7Days.map(date => {
-    const dayOrders = orders.filter(o => o.created_date?.startsWith(date));
-    return {
-      date: new Date(date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
-      orders: dayOrders.length,
-      revenue: dayOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0) / 1000
-    };
-  });
-
-  const quickActions = [
+  const raccourcis = [
     { label: 'Gérer les partenaires', icon: Store, href: 'AdminPartners', color: 'bg-blue-500' },
-    { label: 'Valider les magasins', icon: CheckCircle, href: 'AdminPartners', badge: pendingStores, color: 'bg-orange-500' },
-    { label: 'Produits urgents', icon: AlertTriangle, href: 'StockGuardian', badge: expiringSoon, color: 'bg-red-500' },
-    { label: 'Gestion livraisons', icon: Truck, href: 'DeliveryOptimization', color: 'bg-purple-500' }
+    {
+      label: 'Valider les magasins',
+      icon: CheckCircle,
+      href: 'AdminPartners',
+      badge: magasinsEnAttente,
+      color: 'bg-orange-500',
+    },
+    {
+      label: 'Produits urgents',
+      icon: AlertTriangle,
+      href: 'StockGuardian',
+      badge: urgents,
+      color: 'bg-red-500',
+    },
+    { label: 'Gestion livraisons', icon: Truck, href: 'DeliveryOptimization', color: 'bg-purple-500' },
   ];
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-white/20 rounded-xl">
+      <header className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
+        <div className="max-w-7xl mx-auto px-4 lg:px-6 py-6">
+          <div className="flex flex-wrap items-center gap-3 mb-6">
+            <span className="p-3 bg-white/20 rounded-xl">
               <LayoutDashboard className="w-6 h-6" />
-            </div>
-            <div>
+            </span>
+            <div className="min-w-0">
               <h1 className="text-2xl font-bold">Tableau de bord administrateur</h1>
-              <p className="text-indigo-100">Vue d'ensemble de la plateforme CHICHARD</p>
+              <p className="text-indigo-100">Vue d'ensemble de la plateforme Chichard</p>
+            </div>
+
+            <div className="ml-auto flex gap-1 bg-white/10 rounded-lg p-1">
+              {PÉRIODES.map((période) => (
+                <button
+                  key={période.jours}
+                  type="button"
+                  onClick={() => setJours(période.jours)}
+                  aria-pressed={jours === période.jours}
+                  className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+                    jours === période.jours ? 'bg-white text-indigo-700 font-medium' : 'text-white/80'
+                  }`}
+                >
+                  {période.label}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Quick Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20 p-4">
-              <div className="flex items-center gap-3">
-                <Store className="w-8 h-8" />
-                <div>
-                  <p className="text-2xl font-bold">{stores.length}</p>
-                  <p className="text-sm text-indigo-100">Magasins</p>
-                </div>
-              </div>
-            </Card>
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20 p-4">
-              <div className="flex items-center gap-3">
-                <Package className="w-8 h-8" />
-                <div>
-                  <p className="text-2xl font-bold">{products.length}</p>
-                  <p className="text-sm text-indigo-100">Produits</p>
-                </div>
-              </div>
-            </Card>
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20 p-4">
-              <div className="flex items-center gap-3">
-                <ShoppingBag className="w-8 h-8" />
-                <div>
-                  <p className="text-2xl font-bold">{orders.length}</p>
-                  <p className="text-sm text-indigo-100">Commandes</p>
-                </div>
-              </div>
-            </Card>
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20 p-4">
-              <div className="flex items-center gap-3">
-                <Users className="w-8 h-8" />
-                <div>
-                  <p className="text-2xl font-bold">{users.length}</p>
-                  <p className="text-sm text-indigo-100">Utilisateurs</p>
-                </div>
-              </div>
-            </Card>
+            <Chiffre
+              icon={ShoppingBag}
+              valeur={isLoading ? null : formatNumber(vue?.orders ?? 0)}
+              label={`Commandes sur ${jours} jours`}
+              évolution={vue?.orders_change_pct}
+            />
+            <Chiffre
+              icon={BarChart3}
+              valeur={isLoading ? null : formatXAF(vue?.revenue ?? 0)}
+              label="Chiffre d'affaires"
+              évolution={vue?.revenue_change_pct}
+            />
+            <Chiffre
+              icon={Users}
+              valeur={isLoading ? null : formatNumber(vue?.users_total ?? 0)}
+              label="Comptes inscrits"
+            />
+            <Chiffre
+              icon={Package}
+              valeur={isLoading ? null : formatNumber(somme(vue?.products_by_status))}
+              label="Produits au catalogue"
+            />
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        {/* Quick Actions */}
+      <div className="max-w-7xl mx-auto px-4 lg:px-6 py-6 space-y-6">
         <div className="grid md:grid-cols-4 gap-4">
-          {quickActions.map((action, idx) => (
-            <Link key={idx} to={createPageUrl(action.href)}>
-              <Card className={`p-4 hover:shadow-lg transition-all cursor-pointer ${action.color} text-white`}>
+          {raccourcis.map((raccourci) => (
+            <Link key={raccourci.label} to={createPageUrl(raccourci.href)}>
+              <Card className={`p-4 hover:shadow-lg transition-all ${raccourci.color} text-white h-full`}>
                 <div className="flex items-center justify-between mb-2">
-                  <action.icon className="w-6 h-6" />
-                  {action.badge > 0 && (
-                    <Badge className="bg-white text-gray-900">{action.badge}</Badge>
+                  <raccourci.icon className="w-6 h-6" />
+                  {raccourci.badge > 0 && (
+                    <Badge className="bg-white text-gray-900">{raccourci.badge}</Badge>
                   )}
                 </div>
-                <p className="font-semibold">{action.label}</p>
+                <p className="font-semibold">{raccourci.label}</p>
               </Card>
             </Link>
           ))}
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Revenue & Orders Chart */}
+        <div className="grid lg:grid-cols-2 gap-6">
           <Card className="p-6">
-            <h3 className="font-bold mb-4 flex items-center gap-2">
+            <h2 className="font-bold mb-4 flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-indigo-500" />
-              Commandes & Revenus (7 derniers jours)
-            </h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={ordersChartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="orders" fill="#6366f1" name="Commandes" />
-                <Bar dataKey="revenue" fill="#10b981" name="Revenus (k FCFA)" />
-              </BarChart>
-            </ResponsiveContainer>
+              Commandes et revenus sur {jours} jours
+            </h2>
+            {isLoading ? (
+              <Skeleton className="h-[250px] w-full" />
+            ) : graphique.length === 0 ? (
+              <p className="text-sm text-gray-500 py-16 text-center">
+                Aucune commande sur la période.
+              </p>
+            ) : (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={graphique}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="commandes" fill="#6366f1" name="Commandes" />
+                  <Bar dataKey="revenus" fill="#10b981" name="Revenus (milliers FCFA)" />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </Card>
 
-          {/* Key Metrics */}
           <Card className="p-6">
-            <h3 className="font-bold mb-4">Métriques clés</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <DollarSign className="w-8 h-8 text-emerald-600" />
-                  <div>
-                    <p className="text-sm text-gray-600">Revenus totaux</p>
-                    <p className="text-xl font-bold text-emerald-600">{totalRevenue.toLocaleString()} F</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="w-8 h-8 text-blue-600" />
-                  <div>
-                    <p className="text-sm text-gray-600">Commandes livrées</p>
-                    <p className="text-xl font-bold text-blue-600">{deliveredOrders}</p>
-                  </div>
-                </div>
-                <Badge variant="outline">{Math.round((deliveredOrders / orders.length) * 100)}%</Badge>
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Clock className="w-8 h-8 text-orange-600" />
-                  <div>
-                    <p className="text-sm text-gray-600">En attente</p>
-                    <p className="text-xl font-bold text-orange-600">{pendingOrders}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Store className="w-8 h-8 text-purple-600" />
-                  <div>
-                    <p className="text-sm text-gray-600">Magasins actifs</p>
-                    <p className="text-xl font-bold text-purple-600">{verifiedStores}</p>
-                  </div>
-                </div>
-                <Badge variant="outline">{pendingStores} en attente</Badge>
-              </div>
+            <h2 className="font-bold mb-4">Métriques clés</h2>
+            <div className="space-y-3">
+              <Métrique
+                icon={CheckCircle}
+                ton="blue"
+                label="Commandes remises"
+                valeur={formatNumber(commandesLivrées)}
+                appoint={
+                  vue?.orders ? `${Math.round((commandesLivrées / vue.orders) * 100)} %` : null
+                }
+              />
+              <Métrique
+                icon={Clock}
+                ton="orange"
+                label="Commandes en attente"
+                valeur={formatNumber(commandesEnAttente)}
+              />
+              <Métrique
+                icon={Store}
+                ton="purple"
+                label="Magasins vérifiés"
+                valeur={formatNumber(magasinsVérifiés)}
+                appoint={magasinsEnAttente ? `${magasinsEnAttente} en attente` : null}
+              />
+              <Métrique
+                icon={Leaf}
+                ton="emerald"
+                label="Économies générées pour les clients"
+                valeur={formatXAF(vue?.savings_generated ?? 0)}
+                appoint={vue?.co2_saved_kg ? `${Math.round(vue.co2_saved_kg)} kg de CO₂` : null}
+              />
             </div>
           </Card>
         </div>
 
-        {/* Recent Activity */}
         <Card className="p-6">
-          <h3 className="font-bold mb-4">Activité récente</h3>
-          <div className="space-y-3">
-            {orders.slice(0, 5).map((order) => (
-              <div key={order.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <ShoppingBag className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="font-medium">{order.customer_name}</p>
-                    <p className="text-sm text-gray-500">{order.items?.length} article(s)</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-emerald-600">{order.total_amount?.toLocaleString()} F</p>
-                  <Badge className={
-                    order.status === 'delivered' ? 'bg-green-100 text-green-700' :
-                    order.status === 'pending' ? 'bg-orange-100 text-orange-700' :
-                    'bg-blue-100 text-blue-700'
-                  }>
-                    {order.status}
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
+          <h2 className="font-bold mb-4">Dernières commandes</h2>
+          {dernièresCommandes.length === 0 ? (
+            <p className="text-sm text-gray-500">Aucune commande pour le moment.</p>
+          ) : (
+            <ul className="space-y-2">
+              {dernièresCommandes.map((commande) => {
+                const statut = ORDER_STATUS[commande.status] ?? {
+                  label: commande.status,
+                  color: 'bg-gray-100 text-gray-700',
+                };
+                return (
+                  <li
+                    key={commande.id}
+                    className="flex items-center justify-between gap-3 p-3 border border-gray-200 rounded-lg"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <ShoppingBag className="w-5 h-5 text-gray-400 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{commande.customer_name}</p>
+                        <p className="text-sm text-gray-500">
+                          {commande.items?.length ?? 0} article
+                          {(commande.items?.length ?? 0) > 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="font-bold text-gray-900">{formatXAF(commande.total_amount)}</p>
+                      <span className={`inline-block px-2 py-0.5 rounded text-xs ${statut.color}`}>
+                        {statut.label}
+                      </span>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </Card>
       </div>
+    </div>
+  );
+}
+
+function Chiffre({ icon: Icon, valeur, label, évolution }) {
+  return (
+    <Card className="bg-white/10 backdrop-blur-sm border-white/20 p-4">
+      <div className="flex items-center gap-3">
+        <Icon className="w-8 h-8 shrink-0" />
+        <div className="min-w-0">
+          {valeur === null ? (
+            <Skeleton className="h-7 w-20 bg-white/30" />
+          ) : (
+            <p className="text-xl font-bold truncate">{valeur}</p>
+          )}
+          <p className="text-sm text-indigo-100">{label}</p>
+          {typeof évolution === 'number' && (
+            <p className={`text-xs ${évolution >= 0 ? 'text-emerald-200' : 'text-red-200'}`}>
+              {évolution >= 0 ? '+' : ''}
+              {Math.round(évolution)} % vs période précédente
+            </p>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function Métrique({ icon: Icon, ton, label, valeur, appoint }) {
+  const tons = {
+    blue: 'bg-blue-50 text-blue-600',
+    orange: 'bg-orange-50 text-orange-600',
+    purple: 'bg-purple-50 text-purple-600',
+    emerald: 'bg-emerald-50 text-emerald-600',
+  };
+  const [fond, texte] = tons[ton].split(' ');
+
+  return (
+    <div className={`flex items-center justify-between gap-3 p-3 rounded-lg ${fond}`}>
+      <div className="flex items-center gap-3 min-w-0">
+        <Icon className={`w-7 h-7 shrink-0 ${texte}`} />
+        <div className="min-w-0">
+          <p className="text-sm text-gray-600">{label}</p>
+          <p className={`text-lg font-bold ${texte}`}>{valeur}</p>
+        </div>
+      </div>
+      {appoint && <Badge variant="outline" className="shrink-0">{appoint}</Badge>}
     </div>
   );
 }
