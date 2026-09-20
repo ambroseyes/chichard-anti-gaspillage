@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 import { api } from '@/api';
 import { createPageUrl } from '@/utils';
 import { useAuth } from '@/lib/AuthContext';
-import { formatXAF } from '@/lib/format';
+import { formatXAF, isMobileMoneyNumber } from '@/lib/format';
 import { useAppConfig } from '@/hooks/useAppConfig';
 import { useCart } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
@@ -126,10 +126,18 @@ export default function Checkout() {
   const paymentLabel = PAYMENT_METHODS.find((m) => m.id === paymentMethod)?.label ?? paymentMethod;
 
   /** Chaque étape vérifie ce qu'elle a collecté avant de laisser passer. */
+  const paiementMobile = paymentMethod === 'orange_money' || paymentMethod === 'mtn_money';
+
   const validateStep = () => {
     if (step === 1) {
       if (!phone.trim()) {
         toast.error('Renseignez votre numéro de téléphone');
+        return false;
+      }
+      /* Un paiement mobile exige un numéro que l'opérateur sait joindre.
+         Le signaler ici évite d'aller jusqu'au paiement pour l'apprendre. */
+      if (paiementMobile && !isMobileMoneyNumber(phone)) {
+        toast.error('Numéro de mobile invalide — exemple : 6 99 11 22 33');
         return false;
       }
       if (deliveryType === 'delivery' && !address.trim()) {
@@ -228,6 +236,12 @@ export default function Checkout() {
                 <p className="text-xs text-gray-500 mt-1.5">
                   Sert à confirmer le paiement mobile et à vous prévenir quand la commande est prête.
                 </p>
+                {phone.trim() && !isMobileMoneyNumber(phone) && (
+                  <p className="text-xs text-amber-700 mt-1">
+                    Ce numéro ne pourra pas recevoir de demande de paiement mobile. Un mobile
+                    camerounais commence par 6 et compte neuf chiffres.
+                  </p>
+                )}
               </div>
             </StepCard>
 

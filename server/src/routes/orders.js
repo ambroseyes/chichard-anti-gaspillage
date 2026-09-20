@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import { isMobileMoneyNumber } from '../payments/msisdn.js';
 import { prisma } from '../lib/prisma.js';
 import { handler } from '../lib/async-handler.js';
 import { badRequest, forbidden, notFound } from '../lib/errors.js';
@@ -20,7 +21,20 @@ const checkoutSchema = z.object({
 }).refine(
   (v) => v.delivery_type !== 'delivery' || Boolean(v.delivery_address),
   { message: 'Adresse de livraison requise', path: ['delivery_address'] },
+).refine(
+  /*
+   * Un paiement mobile exige un numéro que l'opérateur sait joindre. Refuser
+   * ici évite de créer une commande que le paiement rejettera une seconde
+   * plus tard, en laissant le client devant une commande impayée.
+   */
+  (v) => !MOBILE_MONEY.has(v.payment_method) || isMobileMoneyNumber(v.customer_phone),
+  {
+    message: 'Numéro de mobile invalide pour un paiement mobile (exemple : 6 99 11 22 33)',
+    path: ['customer_phone'],
+  },
 );
+
+const MOBILE_MONEY = new Set(['orange_money', 'mtn_money']);
 
 ordersRouter.post(
   '/quote',

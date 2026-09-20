@@ -92,3 +92,18 @@ export function unitPrice(product) {
 
   return { amount, unit: reference.unit, label: `${formatXAF(amount)} / ${reference.unit}` };
 }
+
+/**
+ * Un numéro joignable par un opérateur de paiement mobile camerounais ?
+ *
+ * Règle identique à celle du serveur (`server/src/payments/msisdn.js`) : les
+ * opérateurs attendent 237 suivi de neuf chiffres commençant par 6. La
+ * vérifier ici évite de laisser le client aller jusqu'au paiement pour
+ * apprendre que son numéro ne convient pas.
+ */
+export function isMobileMoneyNumber(saisie) {
+  const brut = String(saisie ?? '').replace(/\D/g, '');
+  const sansSortie = brut.startsWith('00') ? brut.slice(2) : brut;
+  const national = sansSortie.startsWith('237') ? sansSortie.slice(3) : sansSortie;
+  return national.length === 9 && national.startsWith('6');
+}
