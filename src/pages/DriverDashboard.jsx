@@ -374,7 +374,7 @@ export default function DriverDashboard() {
       <DeliveryNotifications userEmail={user?.email} onNewOrder={handleNewOrder} />
       
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -383,7 +383,7 @@ export default function DriverDashboard() {
               </div>
               <div>
                 <h1 className="text-xl font-bold">Espace Livreur</h1>
-                <p className="text-blue-100 text-sm">Bonjour, {user.full_name}</p>
+                <p className="text-emerald-100 text-sm">Bonjour, {user.full_name}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -415,15 +415,15 @@ export default function DriverDashboard() {
           <div className="grid grid-cols-3 gap-3 mt-6">
             <Card className="bg-white/10 backdrop-blur-sm border-white/20 p-3 text-center">
               <p className="text-2xl font-bold">{pendingPickup.length}</p>
-              <p className="text-xs text-blue-100">À récupérer</p>
+              <p className="text-xs text-emerald-100">À récupérer</p>
             </Card>
             <Card className="bg-white/10 backdrop-blur-sm border-white/20 p-3 text-center">
               <p className="text-2xl font-bold">{inDelivery.length}</p>
-              <p className="text-xs text-blue-100">En route</p>
+              <p className="text-xs text-emerald-100">En route</p>
             </Card>
             <Card className="bg-white/10 backdrop-blur-sm border-white/20 p-3 text-center">
               <p className="text-2xl font-bold">{deliveredToday.length}</p>
-              <p className="text-xs text-blue-100">Livrées auj.</p>
+              <p className="text-xs text-emerald-100">Livrées auj.</p>
             </Card>
           </div>
         </div>
