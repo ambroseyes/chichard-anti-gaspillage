@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Clock, MapPin, ShieldCheck, ShoppingCart, Star } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { formatXAF, daysUntil, expiryLabel, unitPrice } from '@/lib/format';
-import { CATEGORY_EMOJI } from '@/lib/constants';
+import ProductThumbnail from '@/components/ui/ProductThumbnail';
 
 /**
  * Carte produit.
@@ -31,18 +31,12 @@ export default function ProductCard({ product, onAddToCart, variant = 'grid' }) 
         to={href}
         className={`relative bg-gray-50 shrink-0 ${horizontal ? 'w-40 sm:w-48' : 'aspect-square'}`}
       >
-        {product.image_url ? (
-          <img
-            src={product.image_url}
-            alt={product.name}
-            loading="lazy"
-            className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
-          />
-        ) : (
-          <span className="w-full h-full grid place-items-center text-5xl bg-gradient-to-br from-gray-50 to-gray-100" aria-hidden="true">
-            {CATEGORY_EMOJI[product.category] ?? '🛒'}
-          </span>
-        )}
+        <ProductThumbnail
+          product={product}
+          emojiClassName="text-5xl"
+          className="group-hover:scale-[1.03] transition-transform duration-300"
+          sizes={horizontal ? '12rem' : '(max-width: 640px) 50vw, 20rem'}
+        />
 
         {discount > 0 && (
           <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-orange-500 text-white text-xs font-bold shadow-sm">

@@ -5,7 +5,7 @@ import { Loader2, Search, Store, Tag, X } from 'lucide-react';
 import { api } from '@/api';
 import { createPageUrl } from '@/utils';
 import { formatXAF } from '@/lib/format';
-import { CATEGORY_EMOJI } from '@/lib/constants';
+import ProductThumbnail from '@/components/ui/ProductThumbnail';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 const MIN_LENGTH = 2;
@@ -224,15 +224,9 @@ export default function SearchBar({ initialTerm = '', autoFocus = false, onNavig
 
 function SuggestionIcon({ option }) {
   if (option.kind === 'product') {
-    return option.product.image_url ? (
-      <img
-        src={option.product.image_url}
-        alt=""
-        className="w-9 h-9 rounded object-cover bg-gray-100 shrink-0"
-      />
-    ) : (
-      <span className="w-9 h-9 rounded bg-gray-100 grid place-items-center text-base shrink-0">
-        {CATEGORY_EMOJI[option.product.category] ?? '🛒'}
+    return (
+      <span className="w-9 h-9 rounded overflow-hidden bg-gray-100 shrink-0">
+        <ProductThumbnail product={option.product} emojiClassName="text-base" />
       </span>
     );
   }

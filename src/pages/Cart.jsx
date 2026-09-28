@@ -5,6 +5,7 @@ import { api } from '@/api';
 import { useAuth } from '@/lib/AuthContext';
 import { useCart } from '@/hooks/useCart';
 import { formatXAF } from '@/lib/format';
+import ProductThumbnail from '@/components/ui/ProductThumbnail';
 import { EMPTY_ARRAY } from '@/lib/stable';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -224,17 +225,10 @@ export default function Cart() {
                     <div className="flex gap-4">
                       {/* Image */}
                       <div className="w-24 h-24 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
-                        {item.product_image ? (
-                          <img 
-                            src={item.product_image} 
-                            alt={item.product_name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-3xl">
-                            🛒
-                          </div>
-                        )}
+                        <ProductThumbnail
+                          product={{ image_url: item.product_image, name: item.product_name }}
+                          emojiClassName="text-3xl"
+                        />
                       </div>
 
                       {/* Details */}

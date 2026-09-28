@@ -22,7 +22,8 @@ import { toast } from 'sonner';
 import { api } from '@/api';
 import { createPageUrl } from '@/utils';
 import { formatXAF, expiryLabel, daysUntil, unitPrice, formatDate } from '@/lib/format';
-import { CATEGORY_EMOJI, CATEGORY_LABEL } from '@/lib/constants';
+import { CATEGORY_LABEL } from '@/lib/constants';
+import ProductThumbnail from '@/components/ui/ProductThumbnail';
 import { useCart } from '@/hooks/useCart';
 import { useAppConfig } from '@/hooks/useAppConfig';
 import { Button } from '@/components/ui/button';
@@ -111,18 +112,13 @@ export default function ProductDetail() {
             <div className="bg-white rounded-xl border border-gray-200 p-4 lg:p-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <div className="relative aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
-                    {images[activeImage] ? (
-                      <img
-                        src={images[activeImage]}
-                        alt={product.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="w-full h-full grid place-items-center text-7xl" aria-hidden="true">
-                        {CATEGORY_EMOJI[product.category] ?? '🛒'}
-                      </span>
-                    )}
+                  <div className="relative aspect-square rounded-lg overflow-hidden">
+                    <ProductThumbnail
+                      product={{ ...product, image_url: images[activeImage] }}
+                      emojiClassName="text-7xl"
+                      showLabel
+                      loading="eager"
+                    />
 
                     {discount > 0 && (
                       <span className="absolute top-3 left-3 px-2.5 py-1 rounded bg-orange-500 text-white text-sm font-bold">

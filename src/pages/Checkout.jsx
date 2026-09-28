@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { api } from '@/api';
 import { createPageUrl } from '@/utils';
 import { useAuth } from '@/lib/AuthContext';
+import ProductThumbnail from '@/components/ui/ProductThumbnail';
 import { formatXAF, isMobileMoneyNumber } from '@/lib/format';
 import { useAppConfig } from '@/hooks/useAppConfig';
 import { useCart } from '@/hooks/useCart';
@@ -284,15 +285,12 @@ export default function Checkout() {
               <ul className="divide-y divide-gray-100">
                 {cartItems.map((item) => (
                   <li key={item.id} className="flex items-center gap-3 py-3">
-                    {item.product_image ? (
-                      <img
-                        src={item.product_image}
-                        alt=""
-                        className="w-12 h-12 rounded-lg object-cover bg-gray-100"
+                    <span className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                      <ProductThumbnail
+                        product={{ image_url: item.product_image, name: item.product_name }}
+                        emojiClassName="text-xl"
                       />
-                    ) : (
-                      <span className="w-12 h-12 rounded-lg bg-gray-100 grid place-items-center">🛒</span>
-                    )}
+                    </span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{item.product_name}</p>
                       <p className="text-xs text-gray-500">

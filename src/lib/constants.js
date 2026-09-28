@@ -7,16 +7,19 @@
  */
 
 export const PRODUCT_CATEGORIES = [
-  { id: 'fruits_legumes', label: 'Fruits & légumes', emoji: '🥬' },
-  { id: 'produits_laitiers', label: 'Produits laitiers', emoji: '🥛' },
-  { id: 'viandes_poissons', label: 'Viandes & poissons', emoji: '🍖' },
-  { id: 'boulangerie', label: 'Boulangerie', emoji: '🥖' },
-  { id: 'epicerie', label: 'Épicerie', emoji: '🛒' },
-  { id: 'boissons', label: 'Boissons', emoji: '🥤' },
-  { id: 'surgeles', label: 'Surgelés', emoji: '🧊' },
-  { id: 'hygiene', label: 'Hygiène', emoji: '🧼' },
-  { id: 'conserves', label: 'Conserves', emoji: '🥫' },
-  { id: 'condiments', label: 'Condiments', emoji: '🧂' },
+  // `tint` : fond de la vignette quand le produit n'a pas de photo. Teintes
+  // douces, assez proches pour former une famille, assez distinctes pour que
+  // l'œil sépare les rayons d'un coup d'œil sur une grille.
+  { id: 'fruits_legumes', label: 'Fruits & légumes', emoji: '🥬', tint: 'from-lime-50 to-emerald-100 text-emerald-700' },
+  { id: 'produits_laitiers', label: 'Produits laitiers', emoji: '🥛', tint: 'from-sky-50 to-blue-100 text-sky-700' },
+  { id: 'viandes_poissons', label: 'Viandes & poissons', emoji: '🍖', tint: 'from-rose-50 to-red-100 text-rose-700' },
+  { id: 'boulangerie', label: 'Boulangerie', emoji: '🥖', tint: 'from-amber-50 to-orange-100 text-amber-700' },
+  { id: 'epicerie', label: 'Épicerie', emoji: '🛒', tint: 'from-stone-50 to-stone-100 text-stone-600' },
+  { id: 'boissons', label: 'Boissons', emoji: '🥤', tint: 'from-cyan-50 to-teal-100 text-teal-700' },
+  { id: 'surgeles', label: 'Surgelés', emoji: '🧊', tint: 'from-sky-50 to-indigo-100 text-indigo-700' },
+  { id: 'hygiene', label: 'Hygiène', emoji: '🧼', tint: 'from-violet-50 to-purple-100 text-violet-700' },
+  { id: 'conserves', label: 'Conserves', emoji: '🥫', tint: 'from-orange-50 to-amber-100 text-orange-700' },
+  { id: 'condiments', label: 'Condiments', emoji: '🧂', tint: 'from-yellow-50 to-amber-100 text-yellow-700' },
 ];
 
 export const CATEGORY_LABEL = Object.fromEntries(
@@ -25,6 +28,10 @@ export const CATEGORY_LABEL = Object.fromEntries(
 
 export const CATEGORY_EMOJI = Object.fromEntries(
   PRODUCT_CATEGORIES.map((c) => [c.id, c.emoji]),
+);
+
+export const CATEGORY_TINT = Object.fromEntries(
+  PRODUCT_CATEGORIES.map((c) => [c.id, c.tint]),
 );
 
 /** Paliers d'urgence, alignés sur ceux appliqués par le serveur. */

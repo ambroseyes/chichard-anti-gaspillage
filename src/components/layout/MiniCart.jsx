@@ -1,3 +1,4 @@
+import ProductThumbnail from '@/components/ui/ProductThumbnail';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react';
@@ -49,17 +50,12 @@ export default function MiniCart({ open, onOpenChange }) {
             <ul className="flex-1 overflow-y-auto divide-y">
               {items.map((item) => (
                 <li key={item.id} className="flex gap-3 p-4">
-                  {item.product_image ? (
-                    <img
-                      src={item.product_image}
-                      alt=""
-                      className="w-16 h-16 rounded-lg object-cover bg-gray-100 shrink-0"
+                  <span className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                    <ProductThumbnail
+                      product={{ image_url: item.product_image, name: item.product_name }}
+                      emojiClassName="text-2xl"
                     />
-                  ) : (
-                    <span className="w-16 h-16 rounded-lg bg-gray-100 grid place-items-center text-2xl shrink-0">
-                      🛒
-                    </span>
-                  )}
+                  </span>
 
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 line-clamp-2">{item.product_name}</p>
