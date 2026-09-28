@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Facebook, Instagram, Leaf, Mail, MapPin, Phone } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { PRODUCT_CATEGORIES } from '@/lib/constants';
+import { useT } from '@/i18n/LanguageContext';
 
 const catalogLink = (params) => createPageUrl(`Catalog?${new URLSearchParams(params).toString()}`);
 
@@ -55,6 +56,7 @@ const PAYMENTS = ['Orange Money', 'MTN MoMo', 'Carte bancaire', 'À la livraison
  * visiteurs vont chercher ce que la navigation principale ne montre pas.
  */
 export default function SiteFooter() {
+  const t = useT();
   return (
     <footer className="bg-gray-900 text-gray-300 mt-12">
       <div className="max-w-7xl mx-auto px-4 lg:px-6 py-12">
@@ -67,13 +69,12 @@ export default function SiteFooter() {
               <span className="text-lg font-bold text-white">CHICHARD</span>
             </div>
             <p className="text-sm text-gray-400 mb-4 max-w-xs">
-              La plateforme camerounaise qui vend à prix réduit les produits
-              proches de leur date limite, au lieu de les jeter.
+              {t('La plateforme camerounaise qui vend à prix réduit les produits proches de leur date limite, au lieu de les jeter.')}
             </p>
             <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-emerald-500 shrink-0" />
-                Yaoundé &amp; Douala, Cameroun
+                {t('Yaoundé & Douala, Cameroun')}
               </li>
               <li className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -91,7 +92,7 @@ export default function SiteFooter() {
             <div className="flex gap-3 mt-5">
               <a
                 href="https://www.facebook.com"
-                aria-label="Chichard sur Facebook"
+                aria-label={t('Chichard sur Facebook')}
                 className="w-9 h-9 rounded-full bg-gray-800 grid place-items-center hover:bg-emerald-600 transition-colors"
                 rel="noreferrer noopener"
                 target="_blank"
@@ -100,7 +101,7 @@ export default function SiteFooter() {
               </a>
               <a
                 href="https://www.instagram.com"
-                aria-label="Chichard sur Instagram"
+                aria-label={t('Chichard sur Instagram')}
                 className="w-9 h-9 rounded-full bg-gray-800 grid place-items-center hover:bg-emerald-600 transition-colors"
                 rel="noreferrer noopener"
                 target="_blank"
@@ -111,13 +112,13 @@ export default function SiteFooter() {
           </div>
 
           {COLUMNS.map((column) => (
-            <nav key={column.title} aria-label={column.title}>
-              <h2 className="text-sm font-semibold text-white mb-3">{column.title}</h2>
+            <nav key={column.title} aria-label={t(column.title)}>
+              <h2 className="text-sm font-semibold text-white mb-3">{t(column.title)}</h2>
               <ul className="space-y-2">
                 {column.links.map((link) => (
                   <li key={link.label}>
                     <Link to={link.to} className="text-sm text-gray-400 hover:text-white transition-colors">
-                      {link.label}
+                      {t(link.label)}
                     </Link>
                   </li>
                 ))}
@@ -127,7 +128,7 @@ export default function SiteFooter() {
         </div>
 
         <div className="mt-10 pt-6 border-t border-gray-800">
-          <h2 className="text-sm font-semibold text-white mb-3">Nos rayons</h2>
+          <h2 className="text-sm font-semibold text-white mb-3">{t('Nos rayons')}</h2>
           <ul className="flex flex-wrap gap-x-4 gap-y-2">
             {PRODUCT_CATEGORIES.map((category) => (
               <li key={category.id}>
@@ -135,7 +136,7 @@ export default function SiteFooter() {
                   to={catalogLink({ category: category.id })}
                   className="text-sm text-gray-400 hover:text-white transition-colors"
                 >
-                  {category.label}
+                  {t(category.label)}
                 </Link>
               </li>
             ))}
@@ -146,7 +147,7 @@ export default function SiteFooter() {
       <div className="border-t border-gray-800">
         <div className="max-w-7xl mx-auto px-4 lg:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-gray-500 text-center sm:text-left">
-            © {new Date().getFullYear()} Chichard — Tous droits réservés.
+            © {new Date().getFullYear()} Chichard — {t('Tous droits réservés')}.
           </p>
           <ul className="flex flex-wrap justify-center gap-2">
             {PAYMENTS.map((payment) => (
@@ -154,7 +155,7 @@ export default function SiteFooter() {
                 key={payment}
                 className="px-2.5 py-1 rounded border border-gray-700 text-[11px] text-gray-400"
               >
-                {payment}
+                {t(payment)}
               </li>
             ))}
           </ul>

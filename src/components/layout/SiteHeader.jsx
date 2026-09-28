@@ -5,10 +5,12 @@ import { createPageUrl } from '@/utils';
 import { formatXAF } from '@/lib/format';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/lib/AuthContext';
+import { useT } from '@/i18n/LanguageContext';
 import SearchBar from './SearchBar';
 import CategoryBar from './CategoryBar';
 import AccountMenu from './AccountMenu';
 import MiniCart from './MiniCart';
+import LanguageSwitcher from './LanguageSwitcher';
 
 /**
  * En-tête du site marchand.
@@ -23,6 +25,7 @@ export default function SiteHeader() {
   const { user } = useAuth();
   const { count, subtotal } = useCart();
   const [cartOpen, setCartOpen] = useState(false);
+  const t = useT();
 
   // Sur la page de résultats, la barre rappelle le mot cherché.
   const term = new URLSearchParams(location.search).get('q') ?? '';
@@ -34,19 +37,22 @@ export default function SiteHeader() {
         <div className="max-w-7xl mx-auto px-4 lg:px-6 h-9 flex items-center justify-between text-xs">
           <p className="flex items-center gap-1.5">
             <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
-            Livraison à Yaoundé et Douala — retrait gratuit en boutique
+            {t('Livraison à Yaoundé et Douala — retrait gratuit en boutique')}
           </p>
-          <nav aria-label="Liens de service" className="hidden md:flex items-center gap-4">
-            <Link to={createPageUrl('BecomePartner')} className="hover:text-white">
-              Vendre sur Chichard
-            </Link>
-            <Link to={createPageUrl('Orders')} className="hover:text-white">
-              Suivre ma commande
-            </Link>
-            <Link to={createPageUrl('Contact')} className="hover:text-white">
-              Aide
-            </Link>
-          </nav>
+          <div className="flex items-center gap-4">
+            <nav aria-label={t('Liens de service')} className="hidden md:flex items-center gap-4">
+              <Link to={createPageUrl('BecomePartner')} className="hover:text-white">
+                {t('Vendre sur Chichard')}
+              </Link>
+              <Link to={createPageUrl('Orders')} className="hover:text-white">
+                {t('Suivre ma commande')}
+              </Link>
+              <Link to={createPageUrl('Contact')} className="hover:text-white">
+                {t('Aide')}
+              </Link>
+            </nav>
+            <LanguageSwitcher tone="dark" />
+          </div>
         </div>
       </div>
 
@@ -73,7 +79,7 @@ export default function SiteHeader() {
                 className="hidden lg:flex flex-col items-center px-3 py-1.5 rounded-md hover:bg-gray-50 text-gray-700"
               >
                 <Heart className="w-5 h-5" />
-                <span className="text-[11px]">Favoris</span>
+                <span className="text-[11px]">{t('Favoris')}</span>
               </Link>
             )}
             {user && (
@@ -82,7 +88,7 @@ export default function SiteHeader() {
                 className="hidden lg:flex flex-col items-center px-3 py-1.5 rounded-md hover:bg-gray-50 text-gray-700"
               >
                 <Package className="w-5 h-5" />
-                <span className="text-[11px]">Commandes</span>
+                <span className="text-[11px]">{t('Commandes')}</span>
               </Link>
             )}
 
@@ -102,11 +108,13 @@ export default function SiteHeader() {
                 )}
               </span>
               <span className="hidden lg:block text-left leading-tight">
-                <span className="block text-[11px] text-gray-500">Panier</span>
+                <span className="block text-[11px] text-gray-500">{t('Panier')}</span>
                 <span className="block text-sm font-semibold">{formatXAF(subtotal)}</span>
               </span>
               <span className="sr-only">
-                Ouvrir le panier, {count} article{count > 1 ? 's' : ''}
+                {t(count > 1 ? 'Ouvrir le panier, {n} articles' : 'Ouvrir le panier, {n} article', {
+                  n: count,
+                })}
               </span>
             </button>
           </div>
@@ -127,6 +135,7 @@ export default function SiteHeader() {
 
 /** En-tête allégé des espaces professionnels : pas de panier, pas de rayons. */
 export function WorkspaceHeader({ title, navItems = [], currentPageName }) {
+  const t = useT();
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 lg:px-6 h-16 flex items-center gap-6">
@@ -165,9 +174,10 @@ export function WorkspaceHeader({ title, navItems = [], currentPageName }) {
           className="hidden sm:flex items-center gap-2 text-sm text-gray-600 hover:text-emerald-700 shrink-0"
         >
           <Store className="w-4 h-4" />
-          Voir la boutique
+          {t('Voir la boutique')}
         </Link>
 
+        <LanguageSwitcher />
         <AccountMenu />
       </div>
     </header>

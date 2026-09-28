@@ -6,6 +6,7 @@ import { Toaster } from 'sonner';
 import './App.css';
 import { queryClientInstance } from '@/lib/query-client';
 import { AuthProvider } from '@/lib/AuthContext';
+import { LanguageProvider } from '@/i18n/LanguageContext';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import RequireRole from '@/components/auth/RequireRole';
 import PageSpinner from '@/components/ui/PageSpinner';
@@ -60,13 +61,15 @@ export default function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClientInstance}>
-        <BrowserRouter>
-          <AuthProvider>
-            <Suspense fallback={<PageSpinner />}>
-              <AppRoutes />
-            </Suspense>
-          </AuthProvider>
-        </BrowserRouter>
+        <LanguageProvider>
+          <BrowserRouter>
+            <AuthProvider>
+              <Suspense fallback={<PageSpinner />}>
+                <AppRoutes />
+              </Suspense>
+            </AuthProvider>
+          </BrowserRouter>
+        </LanguageProvider>
         {/* Un seul système de messages, monté une fois pour toute l'application. */}
         <Toaster position="top-center" richColors closeButton expand={false} duration={4000} />
       </QueryClientProvider>

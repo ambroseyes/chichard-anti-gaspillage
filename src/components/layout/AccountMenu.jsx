@@ -22,6 +22,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { createPageUrl } from '@/utils';
 import { useAuth } from '@/lib/AuthContext';
+import { useT } from '@/i18n/LanguageContext';
 
 const CLIENT_LINKS = [
   { name: 'MyAccount', label: 'Mon compte', icon: User },
@@ -39,15 +40,16 @@ const CLIENT_LINKS = [
  */
 export default function AccountMenu() {
   const { user, logout } = useAuth();
+  const t = useT();
 
   if (!user) {
     return (
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" asChild className="text-gray-700">
-          <Link to="/connexion">Connexion</Link>
+          <Link to="/connexion">{t('Connexion')}</Link>
         </Button>
         <Button size="sm" asChild className="bg-emerald-600 hover:bg-emerald-700">
-          <Link to="/inscription">Créer un compte</Link>
+          <Link to="/inscription">{t('Créer un compte')}</Link>
         </Button>
       </div>
     );
@@ -70,7 +72,7 @@ export default function AccountMenu() {
             {(user.full_name || user.email).charAt(0).toUpperCase()}
           </span>
           <span className="hidden lg:block leading-tight">
-            <span className="block text-[11px] text-gray-500">Bonjour</span>
+            <span className="block text-[11px] text-gray-500">{t('Bonjour')}</span>
             <span className="block text-sm font-medium text-gray-900 max-w-[10rem] truncate">
               {user.full_name || user.email}
             </span>
@@ -80,7 +82,7 @@ export default function AccountMenu() {
 
       <DropdownMenuContent align="end" className="w-60">
         <DropdownMenuLabel className="font-normal">
-          <span className="block text-sm font-medium">{user.full_name || 'Mon compte'}</span>
+          <span className="block text-sm font-medium">{user.full_name || t('Mon compte')}</span>
           <span className="block text-xs text-gray-500 truncate">{user.email}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -89,7 +91,7 @@ export default function AccountMenu() {
           <DropdownMenuItem key={link.name} asChild>
             <Link to={createPageUrl(link.name)} className="cursor-pointer">
               <link.icon className="w-4 h-4 mr-2 text-gray-400" />
-              {link.label}
+              {t(link.label)}
             </Link>
           </DropdownMenuItem>
         ))}
@@ -98,13 +100,13 @@ export default function AccountMenu() {
           <>
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-xs text-gray-400 font-normal">
-              Espaces professionnels
+              {t('Espaces professionnels')}
             </DropdownMenuLabel>
             {professional.map((link) => (
               <DropdownMenuItem key={link.name} asChild>
                 <Link to={createPageUrl(link.name)} className="cursor-pointer">
                   <link.icon className="w-4 h-4 mr-2 text-gray-400" />
-                  {link.label}
+                  {t(link.label)}
                 </Link>
               </DropdownMenuItem>
             ))}
@@ -114,7 +116,7 @@ export default function AccountMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={logout} className="cursor-pointer text-red-600 focus:text-red-600">
           <LogOut className="w-4 h-4 mr-2" />
-          Se déconnecter
+          {t('Se déconnecter')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

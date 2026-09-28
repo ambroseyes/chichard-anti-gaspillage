@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { createPageUrl } from '@/utils';
 import { formatXAF, expiryLabel } from '@/lib/format';
 import { useCart } from '@/hooks/useCart';
+import { useT } from '@/i18n/LanguageContext';
 
 /**
  * Panier en tiroir.
@@ -16,6 +17,7 @@ import { useCart } from '@/hooks/useCart';
  */
 export default function MiniCart({ open, onOpenChange }) {
   const { items, count, subtotal, savings, setQuantity, remove } = useCart();
+  const t = useT();
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -23,9 +25,9 @@ export default function MiniCart({ open, onOpenChange }) {
         <SheetHeader className="px-5 py-4 border-b">
           <SheetTitle className="flex items-center gap-2 text-left">
             <ShoppingCart className="w-5 h-5 text-emerald-600" />
-            Mon panier
+            {t('Mon panier')}
             <span className="text-sm font-normal text-gray-500">
-              ({count} article{count > 1 ? 's' : ''})
+              ({t(count > 1 ? '{n} articles' : '{n} article', { n: count })})
             </span>
           </SheetTitle>
         </SheetHeader>
@@ -36,12 +38,12 @@ export default function MiniCart({ open, onOpenChange }) {
               <div className="w-16 h-16 rounded-full bg-gray-100 grid place-items-center mx-auto mb-4">
                 <ShoppingCart className="w-8 h-8 text-gray-400" />
               </div>
-              <p className="font-medium text-gray-900 mb-1">Votre panier est vide</p>
+              <p className="font-medium text-gray-900 mb-1">{t('Votre panier est vide')}</p>
               <p className="text-sm text-gray-500 mb-4">
-                Chaque article sauvé, c'est un repas qui ne part pas à la poubelle.
+                {t('Chaque article sauvé, c\'est un repas qui ne part pas à la poubelle.')}
               </p>
               <Button asChild onClick={() => onOpenChange(false)}>
-                <Link to={createPageUrl('Catalog')}>Parcourir le catalogue</Link>
+                <Link to={createPageUrl('Catalog')}>{t('Parcourir le catalogue')}</Link>
               </Button>
             </div>
           </div>
@@ -68,7 +70,7 @@ export default function MiniCart({ open, onOpenChange }) {
                       <div className="flex items-center border rounded-md">
                         <button
                           type="button"
-                          aria-label={`Retirer un ${item.product_name}`}
+                          aria-label={t('Retirer un {nom}', { nom: item.product_name })}
                           onClick={() => setQuantity(item.id, (item.quantity || 1) - 1)}
                           className="px-2 py-1 text-gray-500 hover:text-gray-900"
                         >
@@ -77,7 +79,7 @@ export default function MiniCart({ open, onOpenChange }) {
                         <span className="px-2 text-sm tabular-nums">{item.quantity || 1}</span>
                         <button
                           type="button"
-                          aria-label={`Ajouter un ${item.product_name}`}
+                          aria-label={t('Ajouter un {nom}', { nom: item.product_name })}
                           onClick={() => setQuantity(item.id, (item.quantity || 1) + 1)}
                           className="px-2 py-1 text-gray-500 hover:text-gray-900"
                         >
@@ -92,7 +94,7 @@ export default function MiniCart({ open, onOpenChange }) {
 
                   <button
                     type="button"
-                    aria-label={`Supprimer ${item.product_name} du panier`}
+                    aria-label={t('Supprimer {nom} du panier', { nom: item.product_name })}
                     onClick={() => remove(item.id)}
                     className="self-start p-1 text-gray-300 hover:text-red-500"
                   >
@@ -104,7 +106,7 @@ export default function MiniCart({ open, onOpenChange }) {
 
             <div className="border-t p-5 space-y-3 bg-gray-50">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Sous-total</span>
+                <span className="text-gray-600">{t('Sous-total')}</span>
                 <span className="font-semibold">{formatXAF(subtotal)}</span>
               </div>
               {/* Les économies comparent au prix d'origine : ce n'est pas une
@@ -113,18 +115,18 @@ export default function MiniCart({ open, onOpenChange }) {
                   retranchait 900 FCFA d'un sous-total de 850. */}
               {savings > 0 && (
                 <p className="text-sm text-emerald-700 bg-emerald-50 rounded-md px-2.5 py-1.5">
-                  Vous économisez <strong>{formatXAF(savings)}</strong> par rapport au prix d'origine.
+                  {t('Vous économisez {montant} par rapport au prix d\'origine.', { montant: formatXAF(savings) })}
                 </p>
               )}
               <p className="text-xs text-gray-500">
-                Livraison et remises calculées à l'étape suivante.
+                {t('Livraison et remises calculées à l\'étape suivante.')}
               </p>
               <div className="grid grid-cols-2 gap-2">
                 <Button variant="outline" asChild onClick={() => onOpenChange(false)}>
-                  <Link to={createPageUrl('Cart')}>Voir le panier</Link>
+                  <Link to={createPageUrl('Cart')}>{t('Voir le panier')}</Link>
                 </Button>
                 <Button className="bg-emerald-600 hover:bg-emerald-700" asChild onClick={() => onOpenChange(false)}>
-                  <Link to={createPageUrl('Checkout')}>Commander</Link>
+                  <Link to={createPageUrl('Checkout')}>{t('Commander')}</Link>
                 </Button>
               </div>
             </div>
