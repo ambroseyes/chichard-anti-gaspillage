@@ -4,6 +4,7 @@ import { createPageUrl } from '@/utils';
 import { api } from '@/api';
 import { useAuth } from '@/lib/AuthContext';
 import { useCart } from '@/hooks/useCart';
+import { useT } from '@/i18n/LanguageContext';
 import { formatXAF } from '@/lib/format';
 import ProductThumbnail from '@/components/ui/ProductThumbnail';
 import { EMPTY_ARRAY } from '@/lib/stable';
@@ -20,7 +21,7 @@ import { toast } from 'sonner';
 import SmartCartSuggestions from '@/components/cart/SmartCartSuggestions';
 
 export default function Cart() {
-
+  const t = useT();
   const [couponInput, setCouponInput] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState('');
   const [couponError, setCouponError] = useState('');
@@ -38,7 +39,7 @@ export default function Cart() {
   const deleteItemMutation = {
     mutate: (id) => {
       remove(id);
-      toast.success('Article supprimé');
+      toast.success(t('Article supprimé'));
     },
   };
 
@@ -79,7 +80,7 @@ export default function Cart() {
     if (!appliedCoupon || !quote) return;
     setCouponError(quote.couponError ?? '');
     if (!quote.couponError && quote.coupon_applied) {
-      toast.success(`Code ${quote.coupon_applied} appliqué`);
+      toast.success(t('Code {code} appliqué', { code: quote.coupon_applied }));
     }
   }, [quote, appliedCoupon]);
 
@@ -112,12 +113,12 @@ export default function Cart() {
           <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <ShoppingCart className="w-12 h-12 text-emerald-500" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Votre panier est vide</h2>
-          <p className="text-gray-500 mb-6">Découvrez nos offres anti-gaspillage</p>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">{t('Votre panier est vide')}</h2>
+          <p className="text-gray-500 mb-6">{t('Découvrez nos offres anti-gaspillage')}</p>
           <Link to={createPageUrl('Catalog')}>
             <Button className="bg-emerald-500 hover:bg-emerald-600">
               <ShoppingBag className="w-4 h-4 mr-2" />
-              Explorer le catalogue
+              {t('Explorer le catalogue')}
             </Button>
           </Link>
         </motion.div>
@@ -128,7 +129,7 @@ export default function Cart() {
   return (
     <div className="min-h-screen bg-gray-50 pb-48">
       <div className="max-w-2xl mx-auto px-4 py-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Mon panier</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('Mon panier')}</h1>
 
         {/* Savings banner */}
         <motion.div
@@ -141,8 +142,8 @@ export default function Cart() {
               <Leaf className="w-5 h-5" />
             </div>
             <div>
-              <p className="font-semibold">Vous économisez {formatXAF(totalSavings)}</p>
-              <p className="text-sm text-emerald-100">sur cette commande</p>
+              <p className="font-semibold">{t('Vous économisez {montant}', { montant: formatXAF(totalSavings) })}</p>
+              <p className="text-sm text-emerald-100">{t('sur cette commande')}</p>
             </div>
           </div>
         </motion.div>
@@ -156,12 +157,12 @@ export default function Cart() {
                 <input
                   value={couponInput}
                   onChange={e => { setCouponInput(e.target.value); setCouponError(''); }}
-                  placeholder="Code coupon"
+                  placeholder={t('Code coupon')}
                   className="w-full h-10 pl-9 pr-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
                 />
               </div>
               <Button onClick={applyCoupon} variant="outline" className="border-emerald-300 text-emerald-700 hover:bg-emerald-50">
-                Appliquer
+                {t('Appliquer')}
               </Button>
             </div>
           ) : (
@@ -174,7 +175,7 @@ export default function Cart() {
                 {quote?.coupon_applied ?? appliedCoupon}
                 {couponDiscount > 0 && ` — −${formatXAF(couponDiscount)}`}
               </span>
-              <button onClick={() => { setAppliedCoupon(''); setCouponInput(''); }} className="text-gray-400 hover:text-red-500" aria-label="Retirer le code promo">
+              <button onClick={() => { setAppliedCoupon(''); setCouponInput(''); }} className="text-gray-400 hover:text-red-500" aria-label={t('Retirer le code promo')}>
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -183,7 +184,7 @@ export default function Cart() {
 
           {!appliedCoupon && userCoupons.length > 0 && (
             <div className="mt-2">
-              <p className="text-xs text-gray-500 mb-1.5">Vos codes disponibles</p>
+              <p className="text-xs text-gray-500 mb-1.5">{t('Vos codes disponibles')}</p>
               <ul className="flex flex-wrap gap-1.5">
                 {userCoupons.slice(0, 4).map((coupon) => (
                   <li key={coupon.id}>
@@ -248,7 +249,7 @@ export default function Cart() {
                             'bg-emerald-100 text-emerald-600'
                           }`}>
                             <Clock className="w-3 h-3 inline mr-1" />
-                            {daysLeft <= 1 ? "Expire aujourd'hui" : `${daysLeft}j`}
+                            {daysLeft <= 1 ? t("Expire aujourd'hui") : t('{n}j', { n: daysLeft })}
                           </span>
                         </div>
 
@@ -276,8 +277,8 @@ export default function Cart() {
                               // qui change selon la quantité restante.
                               aria-label={
                                 item.quantity <= 1
-                                  ? `Supprimer ${item.product_name} du panier`
-                                  : `Retirer un ${item.product_name}`
+                                  ? t('Supprimer {nom} du panier', { nom: item.product_name })
+                                  : t('Retirer un {nom}', { nom: item.product_name })
                               }
                               onClick={() => {
                                 if (item.quantity <= 1) {
@@ -297,7 +298,7 @@ export default function Cart() {
                               variant="outline"
                               size="icon"
                               className="h-8 w-8"
-                              aria-label={`Ajouter un ${item.product_name}`}
+                              aria-label={t('Ajouter un {nom}', { nom: item.product_name })}
                               onClick={() => updateQuantityMutation.mutate({ 
                                 id: item.id, 
                                 quantity: item.quantity + 1 
@@ -321,7 +322,7 @@ export default function Cart() {
       <div className="fixed bottom-16 md:bottom-0 left-0 right-0 bg-white border-t z-40">
         <div className="max-w-2xl mx-auto p-4 space-y-3">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500">Sous-total</span>
+            <span className="text-gray-500">{t('Sous-total')}</span>
             <span className="font-medium">{formatXAF(totalAmount)}</span>
           </div>
           {appliedCoupon && (
@@ -331,19 +332,19 @@ export default function Cart() {
             </div>
           )}
           <div className="flex items-center justify-between text-lg font-bold">
-            <span>Total</span>
+            <span>{t('Total')}</span>
             <span>{formatXAF(finalTotal)}</span>
           </div>
           {/* Comparaison au prix d'origine, pas une déduction : alignée avec
               les autres lignes, elle laissait croire à un total plus bas. */}
           {totalSavings > 0 && (
             <p className="text-sm text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2">
-              Vous économisez <strong>{formatXAF(totalSavings)}</strong> par rapport au prix d'origine.
+              {t('Vous économisez {montant} par rapport au prix d\'origine.', { montant: formatXAF(totalSavings) })}
             </p>
           )}
           <Link to={createPageUrl('Checkout')}>
             <Button className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-base">
-              Passer commande
+              {t('Passer commande')}
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </Link>

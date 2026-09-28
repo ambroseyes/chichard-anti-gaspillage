@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import { useT } from '@/i18n/LanguageContext';
 import ProductCard from '@/components/ui/ProductCard';
 import ReportModal from '@/components/safety/ReportModal';
 
@@ -41,6 +42,7 @@ import ReportModal from '@/components/safety/ReportModal';
  * passe sous des onglets pour ne pas repousser le bouton d'achat hors écran.
  */
 export default function ProductDetail() {
+  const t = useT();
   const [params] = useSearchParams();
   const productId = params.get('id');
   const { addToCart, isAdding } = useCart();
@@ -74,7 +76,7 @@ export default function ProductDetail() {
 
   const add = () => {
     if (addToCart(product, quantity)) {
-      toast.success(`${quantity} × ${product.name} ajouté au panier`);
+      toast.success(t('{n} × {nom} ajouté au panier', { n: quantity, nom: product.name }));
     }
   };
 
@@ -84,7 +86,7 @@ export default function ProductDetail() {
       if (navigator.share) await navigator.share({ title: product.name, url });
       else {
         await navigator.clipboard.writeText(url);
-        toast.success('Lien copié');
+        toast.success(t('Lien copié'));
       }
     } catch {
       // L'utilisateur a annulé le partage : rien à signaler.
@@ -158,23 +160,23 @@ export default function ProductDetail() {
                     <Rating value={product.avg_rating} />
                     <span className="text-sm text-gray-500">
                       {product.reviews_count > 0
-                        ? `${product.avg_rating?.toFixed(1)} · ${product.reviews_count} avis`
-                        : 'Pas encore d’avis'}
+                        ? t('{note} · {n} avis', { note: product.avg_rating?.toFixed(1), n: product.reviews_count })
+                        : t('Pas encore d’avis')}
                     </span>
                   </div>
 
                   <div className="flex flex-wrap gap-2 mt-4">
                     <Tag icon={Clock} tone={days <= 1 ? 'danger' : days <= 3 ? 'warning' : 'neutral'}>
-                      {expiryLabel(product.expiration_date)} — {formatDate(product.expiration_date)}
+                      {expiryLabel(product.expiration_date, undefined, t)} — {formatDate(product.expiration_date)}
                     </Tag>
                     {product.is_verified && (
                       <Tag icon={ShieldCheck} tone="success">
-                        Date vérifiée par la boutique
+                        {t('Date vérifiée par la boutique')}
                       </Tag>
                     )}
                     {product.co2_saved > 0 && (
                       <Tag icon={Leaf} tone="success">
-                        {product.co2_saved} kg de CO₂ évités
+                        {t('{n} kg de CO₂ évités', { n: product.co2_saved })}
                       </Tag>
                     )}
                   </div>
@@ -189,13 +191,13 @@ export default function ProductDetail() {
                       onClick={share}
                       className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900"
                     >
-                      <Share2 className="w-4 h-4" /> Partager
+                      <Share2 className="w-4 h-4" /> {t('Partager')}
                     </button>
                     <button
                       type="button"
                       className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900"
                     >
-                      <Heart className="w-4 h-4" /> Ajouter aux favoris
+                      <Heart className="w-4 h-4" /> {t('Ajouter aux favoris')}
                     </button>
                     <ReportModal entityType="product" entityId={product.id} entityName={product.name} />
                   </div>
@@ -208,33 +210,33 @@ export default function ProductDetail() {
               <Tabs defaultValue="caracteristiques">
                 <TabsList className="w-full justify-start rounded-none border-b bg-transparent px-4 h-auto py-0">
                   <TabsTrigger value="caracteristiques" className="rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 py-3">
-                    Caractéristiques
+                    {t('Caractéristiques')}
                   </TabsTrigger>
                   <TabsTrigger value="boutique" className="rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 py-3">
-                    La boutique
+                    {t('La boutique')}
                   </TabsTrigger>
                   <TabsTrigger value="avis" className="rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 py-3">
-                    Avis ({product.reviews_count ?? 0})
+                    {t('Avis ({n})', { n: product.reviews_count ?? 0 })}
                   </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="caracteristiques" className="p-4 lg:p-6 mt-0">
                   <dl className="divide-y divide-gray-100">
-                    <Row label="Rayon">{CATEGORY_LABEL[product.category] ?? product.category}</Row>
-                    {product.brand && <Row label="Marque">{product.brand}</Row>}
+                    <Row label={t('Rayon')}>{t(CATEGORY_LABEL[product.category] ?? product.category)}</Row>
+                    {product.brand && <Row label={t('Marque')}>{product.brand}</Row>}
                     {product.weight && (
-                      <Row label="Conditionnement">
+                      <Row label={t('Conditionnement')}>
                         {product.weight} {product.weight_unit}
-                        {perUnit && <span className="text-gray-500"> — soit {perUnit.label}</span>}
+                        {perUnit && <span className="text-gray-500"> — {t('soit {prix}', { prix: perUnit.label })}</span>}
                       </Row>
                     )}
-                    <Row label="Date limite">{formatDate(product.expiration_date)}</Row>
-                    <Row label="Disponibilité">
-                      {stock > 0 ? `${stock} en stock` : 'Épuisé'}
+                    <Row label={t('Date limite')}>{formatDate(product.expiration_date)}</Row>
+                    <Row label={t('Disponibilité')}>
+                      {stock > 0 ? t('{n} en stock', { n: stock }) : t('Épuisé')}
                     </Row>
-                    {product.barcode && <Row label="Code-barres">{product.barcode}</Row>}
+                    {product.barcode && <Row label={t('Code-barres')}>{product.barcode}</Row>}
                     {product.allergens?.length > 0 && (
-                      <Row label="Allergènes">
+                      <Row label={t('Allergènes')}>
                         <span className="flex items-center gap-1.5 text-amber-700">
                           <AlertTriangle className="w-4 h-4" />
                           {product.allergens.join(', ')}
@@ -246,7 +248,7 @@ export default function ProductDetail() {
                   {product.nutritional_info && Object.keys(product.nutritional_info).length > 0 && (
                     <>
                       <h3 className="text-sm font-semibold text-gray-900 mt-6 mb-2">
-                        Valeurs nutritionnelles
+                        {t('Valeurs nutritionnelles')}
                       </h3>
                       <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {Object.entries(product.nutritional_info).map(([key, value]) => (
@@ -276,7 +278,7 @@ export default function ProductDetail() {
                         to={createPageUrl(`Catalog?store=${encodeURIComponent(product.store_name)}`)}
                         className="inline-block mt-3 text-sm font-medium text-emerald-700 hover:underline"
                       >
-                        Voir tous les articles de cette boutique
+                        {t('Voir tous les articles de cette boutique')}
                       </Link>
                     </div>
                   </div>
@@ -291,13 +293,13 @@ export default function ProductDetail() {
                       <div>
                         <Rating value={product.avg_rating} />
                         <p className="text-sm text-gray-500 mt-1">
-                          Moyenne sur {product.reviews_count} avis clients
+                          {t('Moyenne sur {n} avis clients', { n: product.reviews_count })}
                         </p>
                       </div>
                     </div>
                   ) : (
                     <p className="text-sm text-gray-500">
-                      Ce produit n'a pas encore d'avis. Le vôtre sera le premier.
+                      {t("Ce produit n'a pas encore d'avis. Le vôtre sera le premier.")}
                     </p>
                   )}
                 </TabsContent>
@@ -323,7 +325,7 @@ export default function ProductDetail() {
                 {savings > 0 && (
                   <p className="inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 text-sm font-medium">
                     <Award className="w-3.5 h-3.5" />
-                    Vous économisez {formatXAF(savings)}
+                    {t('Vous économisez {montant}', { montant: formatXAF(savings) })}
                   </p>
                 )}
               </div>
@@ -331,13 +333,13 @@ export default function ProductDetail() {
               <StockLine stock={stock} />
 
               <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-600">Quantité</span>
+                <span className="text-sm text-gray-600">{t('Quantité')}</span>
                 <div className="flex items-center border border-gray-200 rounded-md">
                   <button
                     type="button"
                     onClick={() => setQuantity((value) => Math.max(1, value - 1))}
                     disabled={quantity <= 1}
-                    aria-label="Diminuer la quantité"
+                    aria-label={t('Diminuer la quantité')}
                     className="px-3 py-2 text-gray-500 disabled:opacity-30"
                   >
                     <Minus className="w-4 h-4" />
@@ -347,7 +349,7 @@ export default function ProductDetail() {
                     type="button"
                     onClick={() => setQuantity((value) => Math.min(maxQuantity, value + 1))}
                     disabled={quantity >= maxQuantity}
-                    aria-label="Augmenter la quantité"
+                    aria-label={t('Augmenter la quantité')}
                     className="px-3 py-2 text-gray-500 disabled:opacity-30"
                   >
                     <Plus className="w-4 h-4" />
@@ -361,28 +363,28 @@ export default function ProductDetail() {
                 className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-base"
               >
                 <ShoppingCart className="w-5 h-5 mr-2" />
-                {stock === 0 ? 'Produit épuisé' : `Ajouter — ${formatXAF(product.discounted_price * quantity)}`}
+                {stock === 0 ? t('Produit épuisé') : t('Ajouter — {montant}', { montant: formatXAF(product.discounted_price * quantity) })}
               </Button>
 
               <ul className="space-y-2 pt-2 border-t border-gray-100 text-sm text-gray-600">
                 <li className="flex items-start gap-2">
                   <Store className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
                   <span>
-                    Retrait gratuit chez <strong className="font-medium">{product.store_name}</strong>
+                    {t('Retrait gratuit chez {boutique}', { boutique: product.store_name })}
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Truck className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
                   <span>
-                    Livraison {formatXAF(config?.delivery_fee ?? 0)}
+                    {t('Livraison {frais}', { frais: formatXAF(config?.delivery_fee ?? 0) })}
                     {config?.free_delivery_threshold
-                      ? `, offerte dès ${formatXAF(config.free_delivery_threshold)} d'achat`
+                      ? t(', offerte dès {seuil} d’achat', { seuil: formatXAF(config.free_delivery_threshold) })
                       : ''}
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <ShieldCheck className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
-                  <span>Paiement Orange Money, MTN MoMo ou à la livraison</span>
+                  <span>{t('Paiement Orange Money, MTN MoMo ou à la livraison')}</span>
                 </li>
               </ul>
             </div>
@@ -391,7 +393,7 @@ export default function ProductDetail() {
 
         {similar?.length > 0 && (
           <section className="mt-10">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Dans le même rayon</h2>
+            <h2 className="text-lg font-bold text-gray-900 mb-4">{t('Dans le même rayon')}</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 lg:gap-4">
               {similar.map((item) => (
                 <ProductCard key={item.id} product={item} onAddToCart={addToCart} />
@@ -405,19 +407,20 @@ export default function ProductDetail() {
 }
 
 function StockLine({ stock }) {
+  const t = useT();
   if (stock === 0) {
-    return <p className="text-sm font-medium text-red-600">Épuisé pour le moment</p>;
+    return <p className="text-sm font-medium text-red-600">{t('Épuisé pour le moment')}</p>;
   }
   if (stock <= 5) {
     return (
       <p className="text-sm font-medium text-orange-600">
-        Plus que {stock} en stock — commandez vite
+        {t('Plus que {n} en stock — commandez vite', { n: stock })}
       </p>
     );
   }
   return (
     <p className="flex items-center gap-1.5 text-sm font-medium text-emerald-700">
-      <Check className="w-4 h-4" /> En stock ({stock} disponibles)
+      <Check className="w-4 h-4" /> {t('En stock ({n} disponibles)', { n: stock })}
     </p>
   );
 }
@@ -447,9 +450,10 @@ function Tag({ icon: Icon, tone = 'neutral', children }) {
 }
 
 function Rating({ value = 0 }) {
+  const t = useT();
   const rounded = Math.round(Number(value) || 0);
   return (
-    <span className="flex items-center" aria-label={`Noté ${rounded} sur 5`}>
+    <span className="flex items-center" aria-label={t('Noté {n} sur 5', { n: rounded })}>
       {[1, 2, 3, 4, 5].map((index) => (
         <Star
           key={index}
@@ -479,14 +483,15 @@ function DetailSkeleton() {
 }
 
 function NotFound() {
+  const t = useT();
   return (
     <div className="max-w-3xl mx-auto px-4 py-20 text-center">
-      <h1 className="text-xl font-semibold text-gray-900 mb-2">Ce produit n'est plus disponible</h1>
+      <h1 className="text-xl font-semibold text-gray-900 mb-2">{t("Ce produit n'est plus disponible")}</h1>
       <p className="text-sm text-gray-500 mb-6">
-        Il a peut-être été vendu — le catalogue anti-gaspillage tourne vite.
+        {t('Il a peut-être été vendu — le catalogue anti-gaspillage tourne vite.')}
       </p>
       <Button asChild className="bg-emerald-600 hover:bg-emerald-700">
-        <Link to={createPageUrl('Catalog')}>Retour au catalogue</Link>
+        <Link to={createPageUrl('Catalog')}>{t('Retour au catalogue')}</Link>
       </Button>
     </div>
   );

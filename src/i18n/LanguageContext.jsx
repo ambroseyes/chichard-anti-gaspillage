@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { setDateLocale } from '@/lib/format';
 import { DEFAULT_LANG, LANGS, translate } from './translate';
 
 const STORAGE_KEY = 'chichard.lang';
@@ -25,6 +26,11 @@ function langInitiale() {
 
 export function LanguageProvider({ children }) {
   const [lang, setLangState] = useState(langInitiale);
+
+  // Le format des dates suit la langue, posé pendant le rendu pour que les
+  // composants du même passage l'utilisent déjà (un effet arriverait un rendu
+  // trop tard, laissant une date française sur un écran anglais).
+  setDateLocale(lang);
 
   // L'attribut `lang` du document : c'est lui que lisent les lecteurs d'écran
   // et les correcteurs. Sans lui, une page anglaise resterait annoncée en
