@@ -2,7 +2,13 @@
  * Formatage. Une locale explicite partout : sans elle, la mise en forme des
  * montants variait d'un navigateur à l'autre.
  */
+import { DEFAULT_LANG, translate } from '@/i18n/translate';
+
 const LOCALE = 'fr-CM';
+
+/* Traducteur par défaut hors composant : rend le français, interpolation
+   comprise. Un composant passe son propre `t` pour l'anglais. */
+const fraduire = (texte, params) => translate(DEFAULT_LANG, texte, params);
 
 const currencyFormatter = new Intl.NumberFormat(LOCALE, {
   style: 'currency',
@@ -53,14 +59,20 @@ export function daysUntil(value, now = new Date()) {
   return Math.round((midnight(target) - midnight(now)) / 86_400_000);
 }
 
-/** « il reste 2 jours », « dernier jour », « périmé ». */
-export function expiryLabel(value, now = new Date()) {
+/**
+ * « il reste 2 jours », « dernier jour », « périmé ».
+ *
+ * `t` est le traducteur (voir `useT`) ; sans lui, la fonction reste utilisable
+ * hors composant et renvoie le français. Le nombre de jours est interpolé
+ * après traduction pour que l'anglais dise « In 2 days » et non « Dans 2 days ».
+ */
+export function expiryLabel(value, now = new Date(), t = fraduire) {
   const days = daysUntil(value, now);
-  if (days === null) return 'Date inconnue';
-  if (days < 0) return 'Périmé';
-  if (days === 0) return 'Dernier jour';
-  if (days === 1) return 'Demain';
-  return `Dans ${days} jours`;
+  if (days === null) return t('Date inconnue');
+  if (days < 0) return t('Périmé');
+  if (days === 0) return t('Dernier jour');
+  if (days === 1) return t('Demain');
+  return t('Dans {n} jours', { n: days });
 }
 
 /**

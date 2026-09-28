@@ -4,6 +4,7 @@ import { ChefHat, Flame, Percent, Sparkles, Store, Trophy, Users } from 'lucide-
 import { createPageUrl } from '@/utils';
 import { useAuth } from '@/lib/AuthContext';
 import { useCart } from '@/hooks/useCart';
+import { useT } from '@/i18n/LanguageContext';
 import { PRODUCT_CATEGORIES } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -28,6 +29,7 @@ const catalogLink = (params) => createPageUrl(`Catalog?${new URLSearchParams(par
 export default function Home() {
   const { user } = useAuth();
   const { addToCart } = useCart();
+  const t = useT();
 
   return (
     <div className="bg-gray-50">
@@ -39,20 +41,17 @@ export default function Home() {
           <div>
             <p className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-xs font-medium mb-4">
               <Flame className="w-3.5 h-3.5" />
-              Jusqu'à −70 % sur les produits proches de leur date limite
+              {t("Jusqu'à −70 % sur les produits proches de leur date limite")}
             </p>
             <h1 className="text-3xl lg:text-4xl font-bold leading-tight mb-3">
-              Sauvez des produits,
-              <br />
-              économisez vraiment.
+              {t('Sauvez des produits, économisez vraiment.')}
             </h1>
             <p className="text-emerald-50 text-base mb-6 max-w-md">
-              Les invendus des boutiques de Yaoundé et Douala, à petit prix et
-              vérifiés — plutôt qu'à la poubelle.
+              {t('Les invendus des boutiques de Yaoundé et Douala, à petit prix et vérifiés — plutôt qu\'à la poubelle.')}
             </p>
             <div className="flex flex-wrap gap-3">
               <Button asChild size="lg" className="bg-white text-emerald-700 hover:bg-emerald-50">
-                <Link to={createPageUrl('Catalog')}>Voir le catalogue</Link>
+                <Link to={createPageUrl('Catalog')}>{t('Voir le catalogue')}</Link>
               </Button>
               <Button
                 asChild
@@ -60,16 +59,16 @@ export default function Home() {
                 variant="outline"
                 className="border-white/40 bg-white/10 text-white hover:bg-white/20"
               >
-                <Link to={catalogLink({ expires: 'today' })}>Ce qui expire aujourd'hui</Link>
+                <Link to={catalogLink({ expires: 'today' })}>{t("Ce qui expire aujourd'hui")}</Link>
               </Button>
             </div>
           </div>
 
           <ul className="grid grid-cols-3 gap-3">
             {[
-              { value: '−70 %', label: 'de remise maximale' },
-              { value: '3', label: 'boutiques partenaires' },
-              { value: '24 h', label: 'de délai de livraison' },
+              { value: '−70 %', label: t('de remise maximale') },
+              { value: '3', label: t('boutiques partenaires') },
+              { value: '24 h', label: t('de délai de livraison') },
             ].map((stat) => (
               <li key={stat.label} className="bg-white/10 rounded-xl p-4 text-center">
                 <span className="block text-2xl font-bold">{stat.value}</span>
@@ -85,7 +84,7 @@ export default function Home() {
       <div className="max-w-7xl mx-auto px-4 lg:px-6 py-8 space-y-10">
         {/* Rayons */}
         <section>
-          <h2 className="text-lg font-bold text-gray-900 mb-3">Faire ses courses par rayon</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-3">{t('Faire ses courses par rayon')}</h2>
           <ul className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 gap-2">
             {PRODUCT_CATEGORIES.map((category) => (
               <li key={category.id}>
@@ -97,7 +96,7 @@ export default function Home() {
                     {category.emoji}
                   </span>
                   <span className="text-[11px] font-medium text-gray-700 leading-tight">
-                    {category.label}
+                    {t(category.label)}
                   </span>
                 </Link>
               </li>
@@ -114,16 +113,16 @@ export default function Home() {
         )}
 
         <ProductRail
-          title="Dernier jour"
-          subtitle="À sauver aujourd'hui — après, c'est perdu"
+          title={t('Dernier jour')}
+          subtitle={t("À sauver aujourd'hui — après, c'est perdu")}
           criteria={{ expires: 'today', sort: 'expiration' }}
           seeAllTo={catalogLink({ expires: 'today' })}
           onAddToCart={addToCart}
         />
 
         <ProductRail
-          title="Les plus fortes remises"
-          subtitle="Le meilleur rapport qualité-prix du moment"
+          title={t('Les plus fortes remises')}
+          subtitle={t('Le meilleur rapport qualité-prix du moment')}
           criteria={{ sort: 'discount' }}
           seeAllTo={catalogLink({ sort: 'discount' })}
           onAddToCart={addToCart}
@@ -133,8 +132,8 @@ export default function Home() {
         {user && <EnhancedPersonalizedFeed user={user} onAddToCart={addToCart} />}
 
         <ProductRail
-          title="Nouveautés du jour"
-          subtitle="Les articles mis en ligne le plus récemment"
+          title={t('Nouveautés du jour')}
+          subtitle={t('Les articles mis en ligne le plus récemment')}
           criteria={{ sort: 'newest' }}
           seeAllTo={catalogLink({ sort: 'newest' })}
           onAddToCart={addToCart}
@@ -148,29 +147,29 @@ export default function Home() {
           <QuickLink
             to={createPageUrl('ClickCollect')}
             icon={Store}
-            title="Paniers du soir"
-            detail="À retirer en boutique"
+            title={t('Paniers du soir')}
+            detail={t('À retirer en boutique')}
             className="from-emerald-50 to-teal-50 border-emerald-100 text-emerald-600"
           />
           <QuickLink
             to={createPageUrl('FoodCoach')}
             icon={ChefHat}
             title="FoodCoach"
-            detail="Recettes anti-gaspi"
+            detail={t('Recettes anti-gaspi')}
             className="from-orange-50 to-red-50 border-orange-100 text-orange-500"
           />
           <QuickLink
             to={createPageUrl('Community')}
             icon={Users}
-            title="Communauté"
-            detail="Partagez vos trouvailles"
+            title={t('Communauté')}
+            detail={t('Partagez vos trouvailles')}
             className="from-purple-50 to-indigo-50 border-purple-100 text-purple-500"
           />
           <QuickLink
             to={createPageUrl('LoyaltyProgram')}
             icon={Trophy}
-            title="Fidélité"
-            detail="Cumulez des points"
+            title={t('Fidélité')}
+            detail={t('Cumulez des points')}
             className="from-amber-50 to-yellow-50 border-amber-100 text-amber-500"
           />
         </section>
@@ -178,10 +177,9 @@ export default function Home() {
         {/* Appel aux commerçants */}
         <section className="bg-gray-900 rounded-2xl p-6 lg:p-8 text-white flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div>
-            <h2 className="text-xl font-bold mb-2">Vous êtes commerçant ?</h2>
+            <h2 className="text-xl font-bold mb-2">{t('Vous êtes commerçant ?')}</h2>
             <p className="text-gray-300 text-sm max-w-lg">
-              Mettez vos invendus en vente en quelques minutes, fixez vos remises
-              et suivez ce que vous récupérez au lieu de le jeter.
+              {t('Mettez vos invendus en vente en quelques minutes, fixez vos remises et suivez ce que vous récupérez au lieu de le jeter.')}
             </p>
           </div>
           <Button asChild size="lg" className="bg-emerald-500 hover:bg-emerald-600 shrink-0">
@@ -189,12 +187,12 @@ export default function Home() {
               {user?.is_partner ? (
                 <>
                   <Sparkles className="w-4 h-4 mr-2" />
-                  Mon espace partenaire
+                  {t('Mon espace partenaire')}
                 </>
               ) : (
                 <>
                   <Percent className="w-4 h-4 mr-2" />
-                  Devenir partenaire
+                  {t('Devenir partenaire')}
                 </>
               )}
             </Link>

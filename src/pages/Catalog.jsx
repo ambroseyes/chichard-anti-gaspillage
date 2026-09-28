@@ -15,6 +15,7 @@ import { useCart } from '@/hooks/useCart';
 import { createPageUrl } from '@/utils';
 import { formatNumber } from '@/lib/format';
 import { CATEGORY_LABEL } from '@/lib/constants';
+import { useT } from '@/i18n/LanguageContext';
 
 /**
  * Page de résultats.
@@ -27,6 +28,7 @@ export default function Catalog() {
   const { criteria, update, toggle, reset, activeFilterCount, data, isLoading, isFetching, isError } =
     useCatalogSearch();
   const { addToCart } = useCart();
+  const t = useT();
   const [layout, setLayout] = useState('grid');
   const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -54,11 +56,13 @@ export default function Catalog() {
 
         <div className="flex items-start justify-between gap-4 mb-4">
           <div className="min-w-0">
-            <h1 className="text-xl lg:text-2xl font-bold text-gray-900">{headline(criteria)}</h1>
+            <h1 className="text-xl lg:text-2xl font-bold text-gray-900">{headline(criteria, t)}</h1>
             <p className="text-sm text-gray-500 mt-0.5" aria-live="polite">
               {isLoading
-                ? 'Recherche en cours…'
-                : `${formatNumber(pagination?.total ?? 0)} produit${(pagination?.total ?? 0) > 1 ? 's' : ''} disponible${(pagination?.total ?? 0) > 1 ? 's' : ''}`}
+                ? t('Recherche en cours…')
+                : t((pagination?.total ?? 0) > 1 ? '{n} produits disponibles' : '{n} produit disponible', {
+                    n: formatNumber(pagination?.total ?? 0),
+                  })}
             </p>
           </div>
 
@@ -68,7 +72,7 @@ export default function Catalog() {
                 type="button"
                 onClick={() => setLayout('grid')}
                 aria-pressed={layout === 'grid'}
-                aria-label="Affichage en grille"
+                aria-label={t('Affichage en grille')}
                 className={`p-2 ${layout === 'grid' ? 'bg-emerald-50 text-emerald-700' : 'text-gray-400'}`}
               >
                 <LayoutGrid className="w-4 h-4" />
@@ -77,7 +81,7 @@ export default function Catalog() {
                 type="button"
                 onClick={() => setLayout('list')}
                 aria-pressed={layout === 'list'}
-                aria-label="Affichage en liste"
+                aria-label={t('Affichage en liste')}
                 className={`p-2 ${layout === 'list' ? 'bg-emerald-50 text-emerald-700' : 'text-gray-400'}`}
               >
                 <List className="w-4 h-4" />
@@ -85,16 +89,16 @@ export default function Catalog() {
             </div>
 
             <label className="flex items-center gap-2 text-sm">
-              <span className="hidden sm:inline text-gray-500">Trier par</span>
+              <span className="hidden sm:inline text-gray-500">{t('Trier par')}</span>
               <select
                 value={criteria.sort}
                 onChange={(event) => update({ sort: event.target.value })}
                 className="h-9 rounded-md border border-gray-200 bg-white px-2 text-sm text-gray-800"
-                aria-label="Trier les résultats"
+                aria-label={t('Trier les résultats')}
               >
                 {(data?.sorts ?? [{ id: 'relevance', label: 'Pertinence' }]).map((option) => (
                   <option key={option.id} value={option.id}>
-                    {option.label}
+                    {t(option.label)}
                   </option>
                 ))}
               </select>
@@ -104,7 +108,7 @@ export default function Catalog() {
               <SheetTrigger asChild>
                 <Button variant="outline" className="lg:hidden h-9 relative">
                   <SlidersHorizontal className="w-4 h-4 mr-1.5" />
-                  Filtrer
+                  {t('Filtrer')}
                   {activeFilterCount > 0 && (
                     <span className="ml-1.5 px-1.5 rounded-full bg-emerald-600 text-white text-[11px]">
                       {activeFilterCount}
@@ -114,11 +118,11 @@ export default function Catalog() {
               </SheetTrigger>
               <SheetContent side="left" className="w-full sm:max-w-sm overflow-y-auto">
                 <SheetHeader className="mb-4">
-                  <SheetTitle>Filtrer les résultats</SheetTitle>
+                  <SheetTitle>{t('Filtrer les résultats')}</SheetTitle>
                 </SheetHeader>
                 {rail}
                 <Button className="w-full mt-6 bg-emerald-600" onClick={() => setFiltersOpen(false)}>
-                  Voir {formatNumber(pagination?.total ?? 0)} résultats
+                  {t('Voir {n} résultats', { n: formatNumber(pagination?.total ?? 0) })}
                 </Button>
               </SheetContent>
             </Sheet>
@@ -187,10 +191,10 @@ export default function Catalog() {
   );
 }
 
-function headline({ q, category }) {
-  if (q) return `Résultats pour « ${q} »`;
-  if (category.length === 1) return CATEGORY_LABEL[category[0]] ?? 'Catalogue';
-  return 'Tout le catalogue';
+function headline({ q, category }, t) {
+  if (q) return t('Résultats pour « {terme} »', { terme: q });
+  if (category.length === 1) return t(CATEGORY_LABEL[category[0]] ?? 'Catalogue');
+  return t('Tout le catalogue');
 }
 
 function breadcrumbTrail({ q, category }) {
@@ -218,27 +222,28 @@ function ResultSkeleton() {
 }
 
 function EmptyState({ criteria, reset, hasFilters }) {
+  const t = useT();
   return (
     <div className="bg-white border border-gray-200 rounded-xl py-16 px-6 text-center">
       <div className="w-14 h-14 rounded-full bg-gray-100 grid place-items-center mx-auto mb-4 text-2xl">
         🔍
       </div>
       <h2 className="font-semibold text-gray-900 mb-1">
-        {criteria.q ? `Aucun résultat pour « ${criteria.q} »` : 'Aucun produit ne correspond'}
+        {criteria.q ? t('Aucun résultat pour « {terme} »', { terme: criteria.q }) : t('Aucun produit ne correspond')}
       </h2>
       <p className="text-sm text-gray-500 mb-5 max-w-md mx-auto">
         {hasFilters
-          ? 'Essayez d’élargir vos filtres : la date limite et le prix sont les plus restrictifs.'
-          : 'Le catalogue se renouvelle chaque jour, revenez dans quelques heures.'}
+          ? t('Essayez d’élargir vos filtres : la date limite et le prix sont les plus restrictifs.')
+          : t('Le catalogue se renouvelle chaque jour, revenez dans quelques heures.')}
       </p>
       <div className="flex items-center justify-center gap-2">
         {hasFilters && (
           <Button variant="outline" onClick={reset}>
-            Effacer les filtres
+            {t('Effacer les filtres')}
           </Button>
         )}
         <Button asChild className="bg-emerald-600 hover:bg-emerald-700">
-          <Link to={createPageUrl('Catalog')}>Voir tout le catalogue</Link>
+          <Link to={createPageUrl('Catalog')}>{t('Voir tout le catalogue')}</Link>
         </Button>
       </div>
     </div>
@@ -246,15 +251,16 @@ function EmptyState({ criteria, reset, hasFilters }) {
 }
 
 function ErrorState() {
+  const t = useT();
   return (
     <div className="bg-white border border-red-200 rounded-xl py-12 px-6 text-center">
       <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-3" />
-      <h2 className="font-semibold text-gray-900 mb-1">La recherche n'a pas abouti</h2>
+      <h2 className="font-semibold text-gray-900 mb-1">{t("La recherche n'a pas abouti")}</h2>
       <p className="text-sm text-gray-500 mb-4">
-        Le catalogue est momentanément injoignable. Réessayez dans un instant.
+        {t('Le catalogue est momentanément injoignable. Réessayez dans un instant.')}
       </p>
       <Button onClick={() => window.location.reload()} variant="outline">
-        Réessayer
+        {t('Réessayer')}
       </Button>
     </div>
   );

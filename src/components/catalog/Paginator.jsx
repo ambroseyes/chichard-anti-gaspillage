@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useT } from '@/i18n/LanguageContext';
 
 /**
  * Pagination.
@@ -8,12 +9,13 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
  * d'une dizaine de pages, la liste complète devient illisible sur mobile.
  */
 export default function Paginator({ page, pages, onChange }) {
+  const t = useT();
   if (pages <= 1) return null;
 
   const numbers = pageNumbers(page, pages);
 
   return (
-    <nav aria-label="Pagination des résultats" className="flex items-center justify-center gap-1 mt-8">
+    <nav aria-label={t('Pagination des résultats')} className="flex items-center justify-center gap-1 mt-8">
       <button
         type="button"
         onClick={() => onChange(page - 1)}
@@ -21,7 +23,7 @@ export default function Paginator({ page, pages, onChange }) {
         className="h-9 px-3 rounded-md border border-gray-200 text-sm text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 flex items-center gap-1"
       >
         <ChevronLeft className="w-4 h-4" />
-        <span className="hidden sm:inline">Précédent</span>
+        <span className="hidden sm:inline">{t('Précédent')}</span>
       </button>
 
       {numbers.map((number, index) =>
@@ -35,7 +37,7 @@ export default function Paginator({ page, pages, onChange }) {
             type="button"
             onClick={() => onChange(number)}
             aria-current={number === page ? 'page' : undefined}
-            aria-label={`Page ${number}`}
+            aria-label={t('Page {n}', { n: number })}
             className={`h-9 min-w-9 px-2 rounded-md text-sm ${
               number === page
                 ? 'bg-emerald-600 text-white font-semibold'
@@ -53,7 +55,7 @@ export default function Paginator({ page, pages, onChange }) {
         disabled={page >= pages}
         className="h-9 px-3 rounded-md border border-gray-200 text-sm text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 flex items-center gap-1"
       >
-        <span className="hidden sm:inline">Suivant</span>
+        <span className="hidden sm:inline">{t('Suivant')}</span>
         <ChevronRight className="w-4 h-4" />
       </button>
     </nav>

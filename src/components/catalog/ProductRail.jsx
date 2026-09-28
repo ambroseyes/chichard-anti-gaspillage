@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/api';
 import ProductCard from '@/components/ui/ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useT } from '@/i18n/LanguageContext';
 
 /**
  * Rangée thématique de produits.
@@ -14,6 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
  * catégories dans le navigateur : il demande exactement ce qu'il affiche.
  */
 export default function ProductRail({ title, subtitle, criteria, seeAllTo, onAddToCart, limit = 6 }) {
+  const t = useT();
   const { data, isLoading } = useQuery({
     queryKey: ['catalog-rail', criteria],
     // `facets: false` : cette rangée n'affiche que des produits. Réclamer les
@@ -38,7 +40,7 @@ export default function ProductRail({ title, subtitle, criteria, seeAllTo, onAdd
             to={seeAllTo}
             className="flex items-center gap-1 text-sm font-medium text-emerald-700 hover:underline shrink-0"
           >
-            Voir tout
+            {t('Voir tout')}
             <ChevronRight className="w-4 h-4" />
           </Link>
         )}
