@@ -211,7 +211,20 @@ backofficeRouter.get(
     delete périmètreÉtapes.pipeline_stage;
 
     const [stores, total, parStatut, parÉtape] = await Promise.all([
-      prisma.store.findMany({ where, orderBy: { created_date: 'desc' }, take: limit, skip: offset }),
+      /*
+       * L'écran sert à savoir qui relancer : les dossiers dont l'échéance est
+       * passée remontent en tête, ceux sans échéance ferment la marche. Trié
+       * par date d'inscription, les relances en retard se perdaient au milieu.
+       */
+      prisma.store.findMany({
+        where,
+        orderBy: [
+          { pipeline_next_action_at: { sort: 'asc', nulls: 'last' } },
+          { created_date: 'desc' },
+        ],
+        take: limit,
+        skip: offset,
+      }),
       prisma.store.count({ where }),
       prisma.store.groupBy({ by: ['status'], _count: { _all: true } }),
       prisma.store.groupBy({
@@ -237,7 +250,9 @@ backofficeRouter.get(
       data: stores.map((store) => {
         const ligne = produitsPar.get(store.id);
         return {
-          ...store,
+          // `verification_token` est masqué par le schéma : la ligne brute
+          // l'aurait livré à tout opérateur du backoffice.
+          ...stripHidden('Store', store),
           products_count: ligne?._count._all ?? 0,
           units_sold: ligne?._sum.quantity_sold ?? 0,
           units_in_stock: ligne?._sum.quantity_available ?? 0,
@@ -308,7 +323,7 @@ backofficeRouter.patch(
       });
     }
 
-    res.json({ data: updated });
+    res.json({ data: stripHidden('Store', updated) });
   }),
 );
 
@@ -386,7 +401,7 @@ backofficeRouter.patch(
     if (!parsed.success) throw badRequest('Statut invalide', parsed.error.issues);
 
     const store = await prisma.store.findUnique({ where: { id: req.params.id } });
-    if (!store) throw badRequest('Magasin introuvable');
+    if (!store) throw notFound('Magasin introuvable');
 
     const [updated] = await prisma.$transaction([
       prisma.store.update({
@@ -429,6 +444,6 @@ backofficeRouter.patch(
       description: `${store.status} → ${parsed.data.status}`,
     });
 
-    res.json({ data: updated });
+    res.json({ data: stripHidden('Store', updated) });
   }),
 );

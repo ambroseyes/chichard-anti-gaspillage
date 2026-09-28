@@ -113,6 +113,11 @@ export const backoffice = {
     request(`/api/backoffice/stores/${id}/status`, { method: 'PATCH', body: { status, notes } }).then(
       (r) => r.data,
     ),
+  /** Suivi commercial d'une boutique : étape, montant attendu, prochaine action. */
+  setStorePipeline: (id, champs) =>
+    request(`/api/backoffice/stores/${id}/pipeline`, { method: 'PATCH', body: champs }).then(
+      (r) => r.data,
+    ),
 };
 
 export const payments = {

@@ -26,7 +26,7 @@ const NAV_ITEMS = [
     items: [
       { path: '/BackofficeUsers', icon: Users, label: 'Utilisateurs', roles: ['super_admin', 'admin'] },
       { path: '/BackofficeTransactions', icon: Package, label: 'Transactions', roles: ['super_admin', 'admin', 'operator'] },
-      { path: '/BackofficeSales', icon: TrendingUp, label: 'Prospects partenaires', roles: ['super_admin', 'admin', 'operator'] },
+      { path: '/BackofficeSales', icon: TrendingUp, label: 'Suivi commercial', roles: ['super_admin', 'admin', 'operator'] },
       { path: '/AdminPartners', icon: ShieldCheck, label: 'Validation partenaires', roles: ['super_admin', 'admin'] },
     ],
   },

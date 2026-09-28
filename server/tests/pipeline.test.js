@@ -220,6 +220,58 @@ describe('pipeline commercial', () => {
     expect(étape(res.body.meta.by_stage, 'won').count).toBe(1);
   });
 
+  it('remonte les relances en retard en tête de liste', async () => {
+    // L'écran sert à savoir qui rappeler. Trié par date d'inscription, un
+    // dossier échu depuis trois semaines se retrouvait au milieu de la page.
+    const [échu, proche, sansÉchéance] = await Promise.all([
+      prisma.store.findFirst({ where: { name: 'Primeur Bonapriso' } }),
+      prisma.store.findFirst({ where: { name: 'Supérette Bastos' } }),
+      prisma.store.findFirst({ where: { name: 'Marché Mokolo' } }),
+    ]);
+    await prisma.store.update({
+      where: { id: échu.id },
+      data: { pipeline_next_action_at: new Date(Date.now() - 20 * 86_400_000) },
+    });
+    await prisma.store.update({
+      where: { id: proche.id },
+      data: { pipeline_next_action_at: new Date(Date.now() + 2 * 86_400_000) },
+    });
+    await prisma.store.update({
+      where: { id: sansÉchéance.id },
+      data: { pipeline_next_action_at: null },
+    });
+
+    const res = await request(app).get('/api/backoffice/stores').set(auth(adminToken));
+    const noms = res.body.data.map((s) => s.name);
+
+    expect(noms.indexOf('Primeur Bonapriso')).toBeLessThan(noms.indexOf('Supérette Bastos'));
+    // Les dossiers sans prochaine action ne s'intercalent pas devant ceux
+    // qui en ont une : ils ferment la marche.
+    expect(noms.indexOf('Supérette Bastos')).toBeLessThan(noms.indexOf('Marché Mokolo'));
+  });
+
+  it("ne livre pas le jeton de vérification d'adresse aux opérateurs", async () => {
+    // Le schéma déclare ce champ masqué. La liste renvoyait la ligne brute :
+    // un opérateur pouvait lire le jeton qui valide l'adresse d'un commerçant.
+    await prisma.store.update({
+      where: { id: maBoutique.id },
+      data: { verification_token: 'jeton-secret-de-test' },
+    });
+
+    const liste = await request(app).get('/api/backoffice/stores').set(auth(adminToken));
+    expect(liste.status).toBe(200);
+    for (const boutique of liste.body.data) {
+      expect(boutique).not.toHaveProperty('verification_token');
+    }
+
+    const patch = await request(app)
+      .patch(`/api/backoffice/stores/${maBoutique.id}/pipeline`)
+      .set(auth(adminToken))
+      .send({ pipeline_notes: 'Vérification du masquage.' });
+    expect(patch.status).toBe(200);
+    expect(patch.body.data).not.toHaveProperty('verification_token');
+  });
+
   it('refuse la liste des boutiques à un commerçant', async () => {
     const res = await request(app).get('/api/backoffice/stores').set(auth(commerçantToken));
     expect(res.status).toBe(403);
