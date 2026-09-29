@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { BarChart3, PlayCircle, ShoppingBag, Truck, User } from 'lucide-react';
+import { api } from '@/api';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { PAGE_TOURS, WELCOME, roleOf } from '@/components/tour/tourSteps';
-import { createPageUrl } from '@/utils';
+import { demanderGuide } from '@/components/tour/tourBus';
 
 /**
  * Guide d'utilisation illustré.
@@ -57,9 +57,8 @@ const SECTIONS = {
 };
 
 export default function Guide() {
-  const { user } = useAuth();
+  const { user, applyUser } = useAuth();
   const { lang } = useLanguage();
-  const navigate = useNavigate();
   const tr = (p) => p?.[lang] ?? p?.fr ?? '';
 
   const [role, setRole] = useState(roleOf(user));
@@ -67,16 +66,21 @@ export default function Guide() {
   const intro = WELCOME[role];
 
   const relancer = () => {
-    // On efface les repères « déjà vu » pour ce rôle, puis on file sur son
-    // espace : la bienvenue et le guide interactif se reproposent.
-    try {
-      const email = user?.email || 'invite';
-      localStorage.removeItem(`chichard.tour.welcome.${email}`);
-      for (const s of sections) localStorage.removeItem(`chichard.tour.page.${s.page}.${email}`);
-    } catch {
-      /* stockage indisponible : sans effet */
+    // On oublie les guides de pages de ce rôle (on garde la bienvenue vue, pour
+    // ne pas rejouer la modale), puis on relance la visite sur l'espace du rôle.
+    const clésPages = sections.map((s) => `page.${s.page}`);
+    if (user) {
+      api.auth.resetTour(clésPages).then(applyUser).catch(() => {});
+    } else {
+      try {
+        const vues = new Set(JSON.parse(localStorage.getItem('chichard.tour.invite') || '[]'));
+        for (const c of clésPages) vues.delete(c);
+        localStorage.setItem('chichard.tour.invite', JSON.stringify([...vues]));
+      } catch {
+        /* stockage indisponible : sans effet */
+      }
     }
-    navigate(createPageUrl(intro?.landing ?? 'Home'));
+    demanderGuide(intro?.landing ?? 'Home');
   };
 
   return (

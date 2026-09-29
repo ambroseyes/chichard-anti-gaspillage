@@ -68,6 +68,11 @@ export function AuthProvider({ children }) {
     return me;
   }, []);
 
+  /** Remplace l'utilisateur courant (après une écriture qui le renvoie à jour). */
+  const applyUser = useCallback((me) => {
+    if (me) setUser(me);
+  }, []);
+
   const value = useMemo(
     () => ({
       user,
@@ -78,9 +83,10 @@ export function AuthProvider({ children }) {
       register,
       logout,
       updateProfile,
+      applyUser,
       reload: load,
     }),
-    [user, status, login, register, logout, updateProfile, load],
+    [user, status, login, register, logout, updateProfile, applyUser, load],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

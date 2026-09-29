@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { HelpCircle, X } from 'lucide-react';
 import { routes, backofficeRoutes } from '@/routes';
 import { createPageUrl } from '@/utils';
+import { api } from '@/api';
 import { useAuth } from '@/lib/AuthContext';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -16,22 +17,29 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { PAGE_TOURS, WELCOME, roleOf } from './tourSteps';
+import { surDemandeGuide } from './tourBus';
 
 /* Chemin → nom de page, lu dans la table des routes (source unique). */
 const NAME_BY_PATH = new Map([...routes, ...backofficeRoutes].map((r) => [r.path, r.name]));
 const pageFromPath = (pathname) => NAME_BY_PATH.get(pathname) ?? null;
 
-const seenKey = (kind, email) => `chichard.tour.${kind}.${email || 'invite'}`;
-const readSeen = (kind, email) => {
+/*
+ * « Déjà vu » : lié au compte quand on est connecté (champ `tour_seen`, partagé
+ * entre appareils), sinon mémorisé dans le navigateur pour un simple visiteur.
+ */
+const INVITE = 'chichard.tour.invite';
+const lireInvite = () => {
   try {
-    return localStorage.getItem(seenKey(kind, email)) === '1';
+    return new Set(JSON.parse(localStorage.getItem(INVITE) || '[]'));
   } catch {
-    return false;
+    return new Set();
   }
 };
-const markSeen = (kind, email) => {
+const écrireInvite = (clé) => {
   try {
-    localStorage.setItem(seenKey(kind, email), '1');
+    const vues = lireInvite();
+    vues.add(clé);
+    localStorage.setItem(INVITE, JSON.stringify([...vues]));
   } catch {
     /* stockage indisponible : le guide se reproposera, sans conséquence */
   }
@@ -54,42 +62,71 @@ const MARGIN = 12; // respiration autour de la cible mise en lumière
 export default function TourHost() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, applyUser } = useAuth();
   const { lang } = useLanguage();
   const tr = useCallback((paire) => paire?.[lang] ?? paire?.fr ?? '', [lang]);
 
   const page = pageFromPath(location.pathname);
   const steps = useMemo(() => PAGE_TOURS[page] ?? [], [page]);
   const role = roleOf(user);
-  const email = user?.email;
 
   const [welcome, setWelcome] = useState(false);
   const [running, setRunning] = useState(false);
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState(null);
   // Page dont le guide doit démarrer dès qu'on y arrive (lancement explicite
-  // depuis la bienvenue). Tant qu'elle est posée, aucune autre page ne se lance
-  // automatiquement — on ne veut pas croiser deux guides.
+  // depuis la bienvenue ou la page d'aide). Tant qu'elle est posée, aucune
+  // autre page ne se lance automatiquement — on ne croise pas deux guides.
   const [pending, setPending] = useState(null);
+  // Pages dont le guide s'est déjà lancé pendant cette session : évite qu'il
+  // reparte à chaque retour sur la page avant que le serveur ait répondu.
+  const démarrées = useRef(new Set());
+
+  // « Déjà vu » : le compte s'il est connecté, sinon le navigateur.
+  const aVu = useCallback(
+    (clé) => (user ? (user.tour_seen ?? []).includes(clé) : lireInvite().has(clé)),
+    [user],
+  );
+  const retenir = useCallback(
+    (clé) => {
+      if (user) {
+        api.auth.markTourSeen(clé).then(applyUser).catch(() => {});
+      } else {
+        écrireInvite(clé);
+      }
+    },
+    [user, applyUser],
+  );
 
   // --- Bienvenue à la première connexion -----------------------------------
   useEffect(() => {
     if (!user) return;
-    if (!readSeen('welcome', email)) setWelcome(true);
-  }, [user, email]);
+    if (!aVu('welcome')) setWelcome(true);
+  }, [user, aVu]);
 
   const fermerBienvenue = () => {
-    markSeen('welcome', email);
+    retenir('welcome');
     setWelcome(false);
   };
 
   const lancerDepuisBienvenue = () => {
-    markSeen('welcome', email);
+    retenir('welcome');
     setWelcome(false);
     const cible = WELCOME[role]?.landing ?? page;
     setPending(cible); // le guide de cette page démarrera à l'arrivée
     if (cible !== page) navigate(createPageUrl(cible));
   };
+
+  // La page « Guide » peut demander de rejouer une visite précise.
+  useEffect(
+    () =>
+      surDemandeGuide((cible) => {
+        setPending(cible);
+        démarrées.current.delete(cible);
+        if (cible !== pageFromPath(window.location.pathname)) navigate(createPageUrl(cible));
+      }),
+    [navigate],
+  );
 
   // --- Démarrage automatique du guide d'une page ---------------------------
   const étapesDisponibles = useCallback(
@@ -107,11 +144,14 @@ export default function TourHost() {
     // Pas par-dessus la bienvenue, ni sur une page sans guide, ni deux fois.
     if (welcome || running || !steps.length) return undefined;
 
-    // Un lancement explicite (bienvenue) vise une page précise : on ne démarre
-    // que là, et on laisse les autres pages tranquilles tant qu'il est en cours.
+    // Un lancement explicite (bienvenue, page d'aide) vise une page précise :
+    // on ne démarre que là, et on laisse les autres tranquilles en attendant.
     const cibleExplicite = pending === page;
     if (pending && !cibleExplicite) return undefined;
-    if (!cibleExplicite && readSeen(`page.${page}`, email)) return undefined;
+    if (!cibleExplicite) {
+      if (démarrées.current.has(page)) return undefined; // déjà lancé cette session
+      if (aVu(`page.${page}`)) return undefined; // déjà vu sur le compte / navigateur
+    }
 
     let annulé = false;
     let essais = 0;
@@ -119,6 +159,7 @@ export default function TourHost() {
       if (annulé) return;
       if (étapesDisponibles().length) {
         if (cibleExplicite) setPending(null);
+        démarrées.current.add(page);
         démarrer();
       } else if (essais < 10) {
         essais += 1;
@@ -132,7 +173,7 @@ export default function TourHost() {
       annulé = true;
       clearTimeout(t);
     };
-  }, [welcome, running, steps, page, email, pending, démarrer, étapesDisponibles]);
+  }, [welcome, running, steps, page, aVu, pending, démarrer, étapesDisponibles]);
 
   // --- Position de la cible courante ---------------------------------------
   const visibles = useMemo(
@@ -169,8 +210,8 @@ export default function TourHost() {
   const terminer = useCallback(() => {
     setRunning(false);
     setRect(null);
-    markSeen(`page.${page}`, email);
-  }, [page, email]);
+    retenir(`page.${page}`);
+  }, [page, retenir]);
 
   const suivant = () => {
     if (index + 1 < visibles.length) setIndex((i) => i + 1);
