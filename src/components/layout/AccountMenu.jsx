@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import {
   Award,
+  BookOpen,
   BarChart3,
   Heart,
   LogOut,
@@ -29,6 +30,7 @@ const CLIENT_LINKS = [
   { name: 'Orders', label: 'Mes commandes', icon: Package },
   { name: 'ProductPreferences', label: 'Mes favoris', icon: Heart },
   { name: 'LoyaltyProgram', label: 'Mes points fidélité', icon: Award },
+  { name: 'Guide', label: 'Guide d’utilisation', icon: BookOpen },
   { name: 'Settings', label: 'Paramètres', icon: Settings },
 ];
 

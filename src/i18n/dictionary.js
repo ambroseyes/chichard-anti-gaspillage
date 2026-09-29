@@ -15,6 +15,7 @@ export const DICTIONARY = {
   'Vendre sur Chichard': 'Sell on Chichard',
   'Suivre ma commande': 'Track my order',
   'Aide': 'Help',
+  'Guide d’utilisation': 'User guide',
   'Liens de service': 'Service links',
   'Favoris': 'Favourites',
   'Commandes': 'Orders',

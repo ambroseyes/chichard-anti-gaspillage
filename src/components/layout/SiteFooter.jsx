@@ -40,6 +40,7 @@ const COLUMNS = [
   {
     title: 'Chichard',
     links: [
+      { label: 'Guide d’utilisation', to: createPageUrl('Guide') },
       { label: 'À propos', to: createPageUrl('About') },
       { label: 'Nous contacter', to: createPageUrl('Contact') },
       { label: 'La communauté', to: createPageUrl('Community') },
