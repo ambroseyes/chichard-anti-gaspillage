@@ -331,7 +331,7 @@ export default function LiveDeliveryMap({ orders, onRouteOptimize }) {
           {optimizedRoute && (
             <Polyline 
               positions={optimizedRoute} 
-              color="#10b981"
+              color="#7048C9"
               weight={4}
               opacity={0.8}
             />

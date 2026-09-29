@@ -18,7 +18,7 @@ import {
 import { format, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+const COLORS = ['#7048C9', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 export default function PartnerAnalytics() {
   const [store, setStore] = useState(null);
@@ -256,7 +256,7 @@ export default function PartnerAnalytics() {
                   <YAxis yAxisId="right" orientation="right" />
                   <Tooltip />
                   <Legend />
-                  <Bar yAxisId="left" dataKey="revenue" fill="#10b981" name="Revenus (k FCFA)" />
+                  <Bar yAxisId="left" dataKey="revenue" fill="#7048C9" name="Revenus (k FCFA)" />
                   <Bar yAxisId="left" dataKey="cost" fill="#ef4444" name="Coûts (k FCFA)" />
                   <Bar yAxisId="right" dataKey="roi" fill="#3b82f6" name="ROI %" />
                 </BarChart>
@@ -274,7 +274,7 @@ export default function PartnerAnalytics() {
                   <Legend />
                   <Line type="monotone" dataKey="impressions" stroke="#8b5cf6" name="Impressions" />
                   <Line type="monotone" dataKey="clicks" stroke="#3b82f6" name="Clics" />
-                  <Line type="monotone" dataKey="conversions" stroke="#10b981" name="Conversions" />
+                  <Line type="monotone" dataKey="conversions" stroke="#7048C9" name="Conversions" />
                 </LineChart>
               </ResponsiveContainer>
             </Card>
@@ -291,7 +291,7 @@ export default function PartnerAnalytics() {
                   <YAxis dataKey="name" type="category" width={150} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="sold" fill="#10b981" name="Quantité vendue" />
+                  <Bar dataKey="sold" fill="#7048C9" name="Quantité vendue" />
                   <Bar dataKey="revenue" fill="#3b82f6" name="Revenus (k FCFA)" />
                 </BarChart>
               </ResponsiveContainer>
@@ -418,7 +418,7 @@ export default function PartnerAnalytics() {
                   <Tooltip />
                   <Legend />
                   <Area type="monotone" dataKey="orders" stackId="1" stroke="#3b82f6" fill="#3b82f6" name="Commandes" />
-                  <Area type="monotone" dataKey="revenue" stackId="2" stroke="#10b981" fill="#10b981" name="Revenus (k FCFA)" />
+                  <Area type="monotone" dataKey="revenue" stackId="2" stroke="#7048C9" fill="#7048C9" name="Revenus (k FCFA)" />
                 </AreaChart>
               </ResponsiveContainer>
             </Card>

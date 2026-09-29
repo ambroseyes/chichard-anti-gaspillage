@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Facebook, Instagram, Leaf, Mail, MapPin, Phone } from 'lucide-react';
+import { Facebook, Instagram, Mail, MapPin, Phone } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { PRODUCT_CATEGORIES } from '@/lib/constants';
 import { useT } from '@/i18n/LanguageContext';
+import BrandMark from '@/components/layout/BrandMark';
 
 const catalogLink = (params) => createPageUrl(`Catalog?${new URLSearchParams(params).toString()}`);
 
@@ -63,9 +64,7 @@ export default function SiteFooter() {
         <div className="grid grid-cols-2 lg:grid-cols-6 gap-8">
           <div className="col-span-2">
             <div className="flex items-center gap-2 mb-4">
-              <span className="w-9 h-9 rounded-lg bg-emerald-500 grid place-items-center">
-                <Leaf className="w-5 h-5 text-white" />
-              </span>
+<BrandMark className="w-9 h-9 rounded-lg" />
               <span className="text-lg font-bold text-white">CHICHARD</span>
             </div>
             <p className="text-sm text-gray-400 mb-4 max-w-xs">

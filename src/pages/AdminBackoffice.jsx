@@ -16,7 +16,7 @@ import {
 import { formatShortDate, formatXAF } from '@/lib/format';
 import { motion } from 'framer-motion';
 
-const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#3b82f6'];
+const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#7048C9', '#f59e0b', '#3b82f6'];
 
 const KPICard = ({ title, value, unit, change, icon: KPIIcon, color, delay = 0 }) => {
   // Une variation n'est affichée que si le serveur a pu la calculer : sans
@@ -82,7 +82,7 @@ export default function AdminBackoffice() {
 
   // Répartition par statut, telle que comptée par le serveur.
   const STATUS_COLORS = {
-    confirmed: '#10b981',
+    confirmed: '#7048C9',
     pending: '#f59e0b',
     ready: '#3b82f6',
     delivered: '#6366f1',

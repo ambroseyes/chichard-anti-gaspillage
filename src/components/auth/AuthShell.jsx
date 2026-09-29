@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
-import { Leaf, Percent, ShieldCheck, Store } from 'lucide-react';
+import { Percent, ShieldCheck, Store } from 'lucide-react';
 import { useT } from '@/i18n/LanguageContext';
+import BrandMark from '@/components/layout/BrandMark';
 
 /**
  * Gabarit des écrans de connexion, d'inscription et de mot de passe.
@@ -23,9 +24,7 @@ export default function AuthShell({ title, subtitle, children, footer }) {
       <header className="border-b border-gray-200 bg-white">
         <div className="max-w-6xl mx-auto px-4 lg:px-6 h-16 flex items-center">
           <Link to="/" className="flex items-center gap-2">
-            <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 grid place-items-center">
-              <Leaf className="w-5 h-5 text-white" />
-            </span>
+<BrandMark className="w-9 h-9 rounded-xl" />
             <span className="text-lg font-bold text-emerald-700 tracking-tight">CHICHARD</span>
           </Link>
           <Link

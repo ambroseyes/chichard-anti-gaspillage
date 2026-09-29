@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Heart, Leaf, MapPin, Package, ShoppingCart, Store } from 'lucide-react';
+import { Heart, MapPin, Package, ShoppingCart, Store } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { formatXAF } from '@/lib/format';
 import { useCart } from '@/hooks/useCart';
@@ -11,6 +11,7 @@ import CategoryBar from './CategoryBar';
 import AccountMenu from './AccountMenu';
 import MiniCart from './MiniCart';
 import LanguageSwitcher from './LanguageSwitcher';
+import BrandMark from './BrandMark';
 
 /**
  * En-tête du site marchand.
@@ -60,9 +61,7 @@ export default function SiteHeader() {
       <div className="max-w-7xl mx-auto px-4 lg:px-6">
         <div className="flex items-center gap-4 lg:gap-8 h-16">
           <Link to={createPageUrl('Home')} className="flex items-center gap-2 shrink-0">
-            <span className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 grid place-items-center">
-              <Leaf className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
-            </span>
+<BrandMark className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl" />
             <span className="text-lg lg:text-xl font-bold text-emerald-700 tracking-tight">
               CHICHARD
             </span>
@@ -140,9 +139,7 @@ export function WorkspaceHeader({ title, navItems = [], currentPageName }) {
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 lg:px-6 h-16 flex items-center gap-6">
         <Link to={createPageUrl('Home')} className="flex items-center gap-2 shrink-0">
-          <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 grid place-items-center">
-            <Leaf className="w-5 h-5 text-white" />
-          </span>
+<BrandMark className="w-9 h-9 rounded-xl" />
           <span className="hidden sm:block">
             <span className="block text-sm font-bold text-emerald-700 leading-none">CHICHARD</span>
             <span className="block text-[11px] text-gray-500">{title}</span>

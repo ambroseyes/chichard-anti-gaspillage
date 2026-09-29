@@ -4,11 +4,12 @@ import { api } from '@/api';
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import {
-  LayoutDashboard, Users, ShieldCheck, FileText, Bell, LogOut, Menu, X, TrendingUp, Package, Search, Moon, Sun, Leaf
+  LayoutDashboard, Users, ShieldCheck, FileText, Bell, LogOut, Menu, X, TrendingUp, Package, Search, Moon, Sun
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
+import BrandMark from '@/components/layout/BrandMark';
 
 /**
  * Navigation du backoffice. N'y figurent que des pages qui existent : les
@@ -81,9 +82,7 @@ export default function BackofficeLayout({ children, currentPage }) {
             {/* Logo */}
             <div className="flex items-center justify-between p-5 border-b border-gray-700/50">
               <Link to="/AdminBackoffice" className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-xl flex items-center justify-center shadow-lg">
-                  <Leaf className="w-5 h-5 text-white" />
-                </div>
+<BrandMark className="w-9 h-9 rounded-xl shadow-lg" />
                 <div>
                   <p className="text-white font-bold text-sm">CHICHARD</p>
                   <p className="text-gray-400 text-[10px] uppercase tracking-wider">Backoffice</p>
