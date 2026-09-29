@@ -5,6 +5,7 @@ import {
   formatKg,
   formatPercent,
   formatXAF,
+  isMobileMoneyNumber,
 } from '@/lib/format';
 
 describe('montants en francs CFA', () => {
@@ -43,5 +44,27 @@ describe('autres formats', () => {
   it('utilise la virgule décimale française', () => {
     expect(formatPercent(12.34)).toBe('12,3 %');
     expect(formatKg(3.456)).toBe('3,5 kg');
+  });
+});
+
+describe('numéro joignable par paiement mobile', () => {
+  it('accepte les formes qu’un client saisit réellement', () => {
+    for (const saisie of ['699112233', '6 99 11 22 33', '+237699112233', '00237699112233']) {
+      expect(isMobileMoneyNumber(saisie)).toBe(true);
+    }
+  });
+
+  it('refuse ce qu’un opérateur ne saurait pas joindre', () => {
+    // Huit chiffres (ancienne numérotation), fixe en 2, saisie vide.
+    for (const saisie of ['99112233', '233421234', '', null, '12345']) {
+      expect(isMobileMoneyNumber(saisie)).toBe(false);
+    }
+  });
+
+  it('applique la même règle que le serveur', () => {
+    // Le serveur refuse la commande sur ce critère : un écart entre les deux
+    // laisserait le client bloqué sans comprendre pourquoi.
+    expect(isMobileMoneyNumber('6991122334')).toBe(false);
+    expect(isMobileMoneyNumber('623711223')).toBe(true);
   });
 });

@@ -148,7 +148,7 @@ export default function GoogleDirectionsMap({ orders, courierPos }) {
               <div style="font-size:13px;min-width:160px">
                 <b>${order.customer_name}</b>
                 <p style="margin:4px 0;color:#666">${order.delivery_address || ''}</p>
-                <p style="color:#059669;font-weight:600">${order.total_amount?.toLocaleString()} FCFA</p>
+                <p style="color:#5D39A8;font-weight:600">${order.total_amount?.toLocaleString()} FCFA</p>
               </div>
             `,
           });
@@ -164,9 +164,9 @@ export default function GoogleDirectionsMap({ orders, courierPos }) {
             icon: {
               path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
               scale: 6,
-              fillColor: '#10B981',
+              fillColor: '#7048C9',
               fillOpacity: 1,
-              strokeColor: '#065F46',
+              strokeColor: '#3F276E',
               strokeWeight: 2,
               rotation: 0,
             },

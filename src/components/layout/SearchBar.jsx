@@ -5,7 +5,8 @@ import { Loader2, Search, Store, Tag, X } from 'lucide-react';
 import { api } from '@/api';
 import { createPageUrl } from '@/utils';
 import { formatXAF } from '@/lib/format';
-import { CATEGORY_EMOJI } from '@/lib/constants';
+import ProductThumbnail from '@/components/ui/ProductThumbnail';
+import { useT } from '@/i18n/LanguageContext';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 const MIN_LENGTH = 2;
@@ -19,6 +20,7 @@ const MIN_LENGTH = 2;
  */
 export default function SearchBar({ initialTerm = '', autoFocus = false, onNavigate }) {
   const navigate = useNavigate();
+  const t = useT();
   const [term, setTerm] = useState(initialTerm);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -132,7 +134,7 @@ export default function SearchBar({ initialTerm = '', autoFocus = false, onNavig
             }}
             onFocus={() => setOpen(true)}
             onKeyDown={onKeyDown}
-            placeholder="Rechercher un produit, une marque, une boutique…"
+            placeholder={t('Rechercher un produit, une marque, une boutique…')}
             className="flex-1 h-11 px-4 text-sm outline-none placeholder:text-gray-400 [&::-webkit-search-cancel-button]:appearance-none"
             role="combobox"
             aria-expanded={showPanel}
@@ -144,7 +146,7 @@ export default function SearchBar({ initialTerm = '', autoFocus = false, onNavig
             <button
               type="button"
               onClick={() => setTerm('')}
-              aria-label="Effacer la recherche"
+              aria-label={t('Effacer la recherche')}
               className="px-2 text-gray-400 hover:text-gray-600"
             >
               <X className="w-4 h-4" />
@@ -159,7 +161,7 @@ export default function SearchBar({ initialTerm = '', autoFocus = false, onNavig
             ) : (
               <Search className="w-4 h-4" />
             )}
-            <span className="hidden sm:inline">Rechercher</span>
+            <span className="hidden sm:inline">{t('Rechercher')}</span>
           </button>
         </div>
       </form>
@@ -168,12 +170,12 @@ export default function SearchBar({ initialTerm = '', autoFocus = false, onNavig
         <div
           id={listId}
           role="listbox"
-          aria-label="Suggestions"
+          aria-label={t('Suggestions')}
           className="absolute left-0 right-0 top-full mt-1 bg-white rounded-lg border border-gray-200 shadow-xl z-50 overflow-hidden"
         >
           {options.length === 0 ? (
             <p className="px-4 py-6 text-sm text-gray-500 text-center">
-              {isFetching ? 'Recherche…' : `Aucune suggestion pour « ${debounced} »`}
+              {isFetching ? t('Recherche…') : t('Aucune suggestion pour « {terme} »', { terme: debounced })}
             </p>
           ) : (
             <ul className="max-h-96 overflow-y-auto py-1">
@@ -195,8 +197,8 @@ export default function SearchBar({ initialTerm = '', autoFocus = false, onNavig
                       <span className="block text-sm text-gray-900 truncate">{option.label}</span>
                       <span className="block text-xs text-gray-500 truncate">
                         {option.kind === 'product' && option.product.store_name}
-                        {option.kind === 'category' && 'Rayon'}
-                        {option.kind === 'store' && `${option.count} article${option.count > 1 ? 's' : ''}`}
+                        {option.kind === 'category' && t('Rayon')}
+                        {option.kind === 'store' && t(option.count > 1 ? '{n} articles' : '{n} article', { n: option.count })}
                       </span>
                     </span>
                     {option.kind === 'product' && (
@@ -214,7 +216,7 @@ export default function SearchBar({ initialTerm = '', autoFocus = false, onNavig
             onClick={submit}
             className="w-full px-4 py-2.5 text-sm font-medium text-emerald-700 bg-emerald-50/60 hover:bg-emerald-100 border-t border-gray-100 text-left"
           >
-            Voir tous les résultats pour « {debounced} »
+            {t('Voir tous les résultats pour « {terme} »', { terme: debounced })}
           </button>
         </div>
       )}
@@ -224,15 +226,9 @@ export default function SearchBar({ initialTerm = '', autoFocus = false, onNavig
 
 function SuggestionIcon({ option }) {
   if (option.kind === 'product') {
-    return option.product.image_url ? (
-      <img
-        src={option.product.image_url}
-        alt=""
-        className="w-9 h-9 rounded object-cover bg-gray-100 shrink-0"
-      />
-    ) : (
-      <span className="w-9 h-9 rounded bg-gray-100 grid place-items-center text-base shrink-0">
-        {CATEGORY_EMOJI[option.product.category] ?? '🛒'}
+    return (
+      <span className="w-9 h-9 rounded overflow-hidden bg-gray-100 shrink-0">
+        <ProductThumbnail product={option.product} emojiClassName="text-base" />
       </span>
     );
   }

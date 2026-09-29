@@ -1,6 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import { formatXAF } from '@/lib/format';
+import { useT } from '@/i18n/LanguageContext';
 
 /**
  * Rappel des filtres appliqués, chacun retirable d'un clic.
@@ -9,6 +10,7 @@ import { formatXAF } from '@/lib/format';
  * catalogue et conclut que la boutique est vide.
  */
 export default function ActiveFilters({ criteria, facets, update, toggle, reset, count }) {
+  const t = useT();
   if (!count) return null;
 
   const labelFor = (group, value) =>
@@ -17,7 +19,7 @@ export default function ActiveFilters({ criteria, facets, update, toggle, reset,
   const chips = [
     ...criteria.category.map((value) => ({
       key: `category-${value}`,
-      label: labelFor('categories', value),
+      label: t(labelFor('categories', value)),
       remove: () => toggle('category', value),
     })),
     ...criteria.brand.map((value) => ({
@@ -32,29 +34,29 @@ export default function ActiveFilters({ criteria, facets, update, toggle, reset,
     })),
     criteria.expires && {
       key: 'expires',
-      label: labelFor('expiration', criteria.expires),
+      label: t(labelFor('expiration', criteria.expires)),
       remove: () => update({ expires: '' }),
     },
     (criteria.price_min || criteria.price_max) && {
       key: 'price',
-      label: priceLabel(criteria),
+      label: priceLabel(criteria, t),
       remove: () => update({ price_min: '', price_max: '' }),
     },
     criteria.min_rating && {
       key: 'rating',
-      label: `${criteria.min_rating} étoiles et plus`,
+      label: t('{n} étoiles et plus', { n: criteria.min_rating }),
       remove: () => update({ min_rating: '' }),
     },
     criteria.verified && {
       key: 'verified',
-      label: 'Produits vérifiés',
+      label: t('Produits vérifiés'),
       remove: () => update({ verified: false }),
     },
   ].filter(Boolean);
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-xs text-gray-500">Filtres :</span>
+      <span className="text-xs text-gray-500">{t('Filtres')} :</span>
       {chips.map((chip) => (
         <button
           key={chip.key}
@@ -64,18 +66,18 @@ export default function ActiveFilters({ criteria, facets, update, toggle, reset,
         >
           {chip.label}
           <X className="w-3 h-3" aria-hidden="true" />
-          <span className="sr-only">Retirer le filtre {chip.label}</span>
+          <span className="sr-only">{t('Retirer le filtre {label}', { label: chip.label })}</span>
         </button>
       ))}
       <button type="button" onClick={reset} className="text-xs text-gray-500 hover:text-gray-900 underline">
-        Tout effacer
+        {t('Tout effacer')}
       </button>
     </div>
   );
 }
 
-function priceLabel({ price_min: min, price_max: max }) {
+function priceLabel({ price_min: min, price_max: max }, t) {
   if (min && max) return `${formatXAF(min)} – ${formatXAF(max)}`;
-  if (min) return `À partir de ${formatXAF(min)}`;
-  return `Jusqu'à ${formatXAF(max)}`;
+  if (min) return t('À partir de {montant}', { montant: formatXAF(min) });
+  return t('Jusqu\'à {montant}', { montant: formatXAF(max) });
 }

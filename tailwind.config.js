@@ -10,6 +10,33 @@ module.exports = {
   			sm: 'calc(var(--radius) - 4px)'
   		},
   		colors: {
+  			/*
+  			 * Charte Chichard : violet + jaune (voir la charte graphique).
+  			 * Le violet est décliné sur les échelles `emerald` et `teal` — les
+  			 * deux couleurs de marque utilisées dans tout le code — pour que
+  			 * l'ensemble de l'interface passe au violet sans toucher à la
+  			 * structure des écrans. `gold` (jaune) et `grape` (violet profond)
+  			 * sont les accents de la marque.
+  			 */
+  			emerald: {
+  				50: '#F4F0FC', 100: '#E9E1F9', 200: '#D5C6F2', 300: '#B9A1E8',
+  				400: '#9C7BDE', 500: '#835FD6', 600: '#7048C9', 700: '#5D39A8',
+  				800: '#4C2E88', 900: '#3F276E', 950: '#2A1A4D',
+  			},
+  			teal: {
+  				50: '#F3F0FD', 100: '#E7E0FB', 200: '#CEC0F5', 300: '#AE9BEC',
+  				400: '#8E6BE3', 500: '#7C56DB', 600: '#6C44CC', 700: '#5836AA',
+  				800: '#472C88', 900: '#3A256D', 950: '#26184A',
+  			},
+  			gold: {
+  				50: '#FFFDE6', 100: '#FFFAB8', 200: '#FFF680', 300: '#FFF24D',
+  				400: '#FFED00', 500: '#EAD400', 600: '#C7B200', 700: '#9E8C00',
+  				800: '#7A6C00', 900: '#5C5100',
+  			},
+  			grape: {
+  				DEFAULT: '#440E6E', 600: '#652B93', 700: '#551F7F',
+  				800: '#481672', 900: '#440E6E',
+  			},
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {

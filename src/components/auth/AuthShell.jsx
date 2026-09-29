@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
-import { Leaf, Percent, ShieldCheck, Store } from 'lucide-react';
+import { Percent, ShieldCheck, Store } from 'lucide-react';
+import { useT } from '@/i18n/LanguageContext';
+import BrandMark from '@/components/layout/BrandMark';
 
 /**
  * Gabarit des écrans de connexion, d'inscription et de mot de passe.
@@ -16,21 +18,20 @@ const PROMESSES = [
 ];
 
 export default function AuthShell({ title, subtitle, children, footer }) {
+  const t = useT();
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="border-b border-gray-200 bg-white">
         <div className="max-w-6xl mx-auto px-4 lg:px-6 h-16 flex items-center">
           <Link to="/" className="flex items-center gap-2">
-            <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 grid place-items-center">
-              <Leaf className="w-5 h-5 text-white" />
-            </span>
+<BrandMark className="w-9 h-9 rounded-xl" />
             <span className="text-lg font-bold text-emerald-700 tracking-tight">CHICHARD</span>
           </Link>
           <Link
             to="/"
             className="ml-auto text-sm text-gray-500 hover:text-emerald-700 transition-colors"
           >
-            Retour à la boutique
+            {t('Retour à la boutique')}
           </Link>
         </div>
       </header>
@@ -49,12 +50,10 @@ export default function AuthShell({ title, subtitle, children, footer }) {
 
           <aside className="hidden lg:block">
             <h2 className="text-2xl font-bold text-gray-900 leading-tight mb-2">
-              Sauvez des produits,
-              <br />
-              économisez vraiment.
+              {t('Sauvez des produits, économisez vraiment.')}
             </h2>
             <p className="text-gray-600 mb-6 max-w-sm">
-              Les invendus des boutiques camerounaises à petit prix, plutôt qu'à la poubelle.
+              {t('Les invendus des boutiques camerounaises à petit prix, plutôt qu\'à la poubelle.')}
             </p>
 
             <ul className="space-y-3">
@@ -63,7 +62,7 @@ export default function AuthShell({ title, subtitle, children, footer }) {
                   <span className="w-9 h-9 rounded-full bg-emerald-100 grid place-items-center shrink-0">
                     <promesse.icon className="w-4 h-4 text-emerald-700" aria-hidden="true" />
                   </span>
-                  <span className="text-sm text-gray-700 pt-2">{promesse.texte}</span>
+                  <span className="text-sm text-gray-700 pt-2">{t(promesse.texte)}</span>
                 </li>
               ))}
             </ul>
@@ -76,10 +75,10 @@ export default function AuthShell({ title, subtitle, children, footer }) {
           <p>© {new Date().getFullYear()} Chichard</p>
           <nav className="flex gap-4">
             <Link to="/About" className="hover:text-emerald-700">
-              À propos
+              {t('À propos')}
             </Link>
             <Link to="/Contact" className="hover:text-emerald-700">
-              Aide
+              {t('Aide')}
             </Link>
           </nav>
         </div>

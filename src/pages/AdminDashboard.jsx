@@ -194,7 +194,7 @@ export default function AdminDashboard() {
                   <YAxis />
                   <Tooltip />
                   <Bar dataKey="commandes" fill="#6366f1" name="Commandes" />
-                  <Bar dataKey="revenus" fill="#10b981" name="Revenus (milliers FCFA)" />
+                  <Bar dataKey="revenus" fill="#7048C9" name="Revenus (milliers FCFA)" />
                 </BarChart>
               </ResponsiveContainer>
             )}

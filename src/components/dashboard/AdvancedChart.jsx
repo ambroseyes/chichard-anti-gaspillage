@@ -7,7 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { BarChart3, LineChart as LineIcon, TrendingUp } from 'lucide-react';
 
-const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
+const COLORS = ['#7048C9', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 export default function AdvancedChart({ data, title, type = 'line', dataKeys = [], period = '7d', onPeriodChange }) {
   const [chartType, setChartType] = useState(type);

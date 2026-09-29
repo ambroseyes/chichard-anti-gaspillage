@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Home } from 'lucide-react';
 import { createPageUrl } from '@/utils';
+import { useT } from '@/i18n/LanguageContext';
 
 /**
  * Fil d'Ariane.
@@ -10,13 +11,14 @@ import { createPageUrl } from '@/utils';
  * la page courante, et un lien vers soi-même désoriente autant qu'il n'aide.
  */
 export default function Breadcrumbs({ trail = [], className = '' }) {
+  const t = useT();
   return (
-    <nav aria-label="Fil d'Ariane" className={`text-sm ${className}`}>
+    <nav aria-label={t('Fil d’Ariane')} className={`text-sm ${className}`}>
       <ol className="flex items-center gap-1 flex-wrap text-gray-500">
         <li className="flex items-center gap-1">
           <Link to={createPageUrl('Home')} className="hover:text-emerald-700 flex items-center gap-1">
             <Home className="w-3.5 h-3.5" />
-            <span className="sr-only sm:not-sr-only">Accueil</span>
+            <span className="sr-only sm:not-sr-only">{t('Accueil')}</span>
           </Link>
         </li>
         {trail.map((step, index) => {
@@ -26,11 +28,11 @@ export default function Breadcrumbs({ trail = [], className = '' }) {
               <ChevronRight className="w-3.5 h-3.5 text-gray-300 shrink-0" aria-hidden="true" />
               {last || !step.to ? (
                 <span className="text-gray-900 font-medium truncate" aria-current={last ? 'page' : undefined}>
-                  {step.label}
+                  {t(step.label)}
                 </span>
               ) : (
                 <Link to={step.to} className="hover:text-emerald-700 truncate">
-                  {step.label}
+                  {t(step.label)}
                 </Link>
               )}
             </li>

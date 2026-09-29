@@ -17,6 +17,7 @@ export const routes = [
   { path: '/ClickCollect', name: 'ClickCollect', element: page(() => import('./pages/ClickCollect')) },
   { path: '/About', name: 'About', element: page(() => import('./pages/About')) },
   { path: '/Contact', name: 'Contact', element: page(() => import('./pages/Contact')) },
+  { path: '/Guide', name: 'Guide', element: page(() => import('./pages/Guide')) },
   { path: '/BecomePartner', name: 'BecomePartner', element: page(() => import('./pages/BecomePartner')) },
   { path: '/VerifyPartner', name: 'VerifyPartner', element: page(() => import('./pages/VerifyPartner')) },
   { path: '/Community', name: 'Community', element: page(() => import('./pages/Community')) },

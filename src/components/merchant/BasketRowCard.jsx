@@ -144,7 +144,7 @@ export default function BasketRowCard({ basket, reservations, onEdit, onDelete, 
                   </button>
                   <motion.div
                     key={basket.quantity_available}
-                    animate={flashQty ? { scale: [1, 1.3, 1], color: ['#111827', '#10b981', '#111827'] } : {}}
+                    animate={flashQty ? { scale: [1, 1.3, 1], color: ['#111827', '#7048C9', '#111827'] } : {}}
                     transition={{ duration: 0.5 }}
                     className="min-w-[52px] text-center"
                   >

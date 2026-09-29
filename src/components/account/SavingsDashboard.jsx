@@ -103,8 +103,8 @@ export default function SavingsDashboard({ orders, user }) {
           <AreaChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
             <defs>
               <linearGradient id="savingsGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
-                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                <stop offset="5%" stopColor="#7048C9" stopOpacity={0.2} />
+                <stop offset="95%" stopColor="#7048C9" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -114,10 +114,10 @@ export default function SavingsDashboard({ orders, user }) {
             <Area
               type="monotone"
               dataKey="Économies"
-              stroke="#10b981"
+              stroke="#7048C9"
               strokeWidth={2.5}
               fill="url(#savingsGrad)"
-              dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }}
+              dot={{ r: 4, fill: '#7048C9', strokeWidth: 2, stroke: '#fff' }}
               activeDot={{ r: 6 }}
             />
           </AreaChart>
@@ -136,7 +136,7 @@ export default function SavingsDashboard({ orders, user }) {
             <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
             <Tooltip content={<CustomTooltipSavings />} />
             <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
-            <Bar dataKey="CO₂ évité" fill="#14b8a6" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="CO₂ évité" fill="#6C44CC" radius={[4, 4, 0, 0]} />
             <Bar dataKey="Commandes" fill="#3b82f6" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>

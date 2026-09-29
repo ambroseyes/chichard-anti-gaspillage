@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthShell from '@/components/auth/AuthShell';
 import { useAuth } from '@/lib/AuthContext';
+import { useT } from '@/i18n/LanguageContext';
 
 const MIN_PASSWORD = 10;
 
@@ -14,22 +15,23 @@ export default function Register() {
   const [submitting, setSubmitting] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
+  const t = useT();
 
   const set = (field) => (event) => setForm((f) => ({ ...f, [field]: event.target.value }));
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (form.password.length < MIN_PASSWORD) {
-      toast.error(`Le mot de passe doit faire au moins ${MIN_PASSWORD} caractères`);
+      toast.error(t('Le mot de passe doit faire au moins {n} caractères', { n: MIN_PASSWORD }));
       return;
     }
     setSubmitting(true);
     try {
       await register({ ...form, email: form.email.trim().toLowerCase() });
-      toast.success('Bienvenue sur Chichard');
+      toast.success(t('Bienvenue sur Chichard'));
       navigate('/', { replace: true });
     } catch (error) {
-      toast.error(error.message ?? "L'inscription n'a pas abouti");
+      toast.error(error.message ?? t('L\'inscription n\'a pas abouti'));
     } finally {
       setSubmitting(false);
     }
@@ -37,41 +39,41 @@ export default function Register() {
 
   return (
     <AuthShell
-      title="Créer un compte"
-      subtitle="Quelques secondes suffisent."
+      title={t('Créer un compte')}
+      subtitle={t('Quelques secondes suffisent.')}
       footer={
         <>
-          Déjà inscrit ?{' '}
+          {t('Déjà inscrit ?')}{' '}
           <Link to="/connexion" className="text-emerald-600 font-medium hover:underline">
-            Se connecter
+            {t('Se connecter')}
           </Link>
         </>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1.5">
-          <Label htmlFor="full_name">Nom complet</Label>
+          <Label htmlFor="full_name">{t('Nom complet')}</Label>
           <Input id="full_name" required value={form.full_name} onChange={set('full_name')} />
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="email">Adresse e-mail</Label>
+          <Label htmlFor="email">{t('Adresse e-mail')}</Label>
           <Input id="email" type="email" autoComplete="email" required value={form.email} onChange={set('email')} />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label htmlFor="phone">Téléphone</Label>
+            <Label htmlFor="phone">{t('Téléphone')}</Label>
             <Input id="phone" inputMode="tel" placeholder="6XX XX XX XX" value={form.phone} onChange={set('phone')} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="city">Ville</Label>
+            <Label htmlFor="city">{t('Ville')}</Label>
             <Input id="city" placeholder="Douala" value={form.city} onChange={set('city')} />
           </div>
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="password">Mot de passe</Label>
+          <Label htmlFor="password">{t('Mot de passe')}</Label>
           <Input
             id="password"
             type="password"
@@ -81,11 +83,11 @@ export default function Register() {
             value={form.password}
             onChange={set('password')}
           />
-          <p className="text-xs text-gray-400">{MIN_PASSWORD} caractères minimum.</p>
+          <p className="text-xs text-gray-400">{t('{n} caractères minimum.', { n: MIN_PASSWORD })}</p>
         </div>
 
         <Button type="submit" disabled={submitting} className="w-full h-11 bg-emerald-500 hover:bg-emerald-600">
-          {submitting ? 'Création…' : 'Créer mon compte'}
+          {submitting ? t('Création…') : t('Créer mon compte')}
         </Button>
       </form>
     </AuthShell>

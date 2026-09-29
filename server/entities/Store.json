@@ -119,6 +119,43 @@
     },
     "verification_token": {
       "type": "string"
+    },
+    "pipeline_stage": {
+      "type": "string",
+      "enum": [
+        "new",
+        "contacted",
+        "qualified",
+        "proposal",
+        "negotiation",
+        "won",
+        "lost"
+      ],
+      "default": "new",
+      "description": "Étape du cycle de vente. Indépendante du statut de partenariat : une boutique peut être gagnée avant d’être vérifiée."
+    },
+    "pipeline_expected_value": {
+      "type": "number",
+      "description": "Chiffre d’affaires mensuel attendu de cette boutique, en FCFA"
+    },
+    "pipeline_owner_email": {
+      "type": "string",
+      "description": "Commercial qui suit ce prospect"
+    },
+    "pipeline_next_action_at": {
+      "type": "string",
+      "format": "date",
+      "description": "Date de la prochaine relance prévue"
+    },
+    "pipeline_notes": {
+      "type": "string",
+      "maxLength": 2000,
+      "description": "Compte rendu des échanges"
+    },
+    "pipeline_stage_changed_at": {
+      "type": "string",
+      "format": "date",
+      "description": "Dernier changement d’étape, posé par le serveur"
     }
   },
   "required": [

@@ -17,7 +17,8 @@ import { toast } from 'sonner';
 import { api } from '@/api';
 import { createPageUrl } from '@/utils';
 import { useAuth } from '@/lib/AuthContext';
-import { formatXAF } from '@/lib/format';
+import ProductThumbnail from '@/components/ui/ProductThumbnail';
+import { formatXAF, isMobileMoneyNumber } from '@/lib/format';
 import { useAppConfig } from '@/hooks/useAppConfig';
 import { useCart } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import { useT } from '@/i18n/LanguageContext';
 
 const STEPS = [
   { id: 1, label: 'Livraison' },
@@ -41,6 +43,7 @@ const STEPS = [
  * différent de celui qui sera prélevé.
  */
 export default function Checkout() {
+  const t = useT();
   const navigate = useNavigate();
   const { user } = useAuth();
   const appConfig = useAppConfig();
@@ -86,8 +89,8 @@ export default function Checkout() {
 
       toast.success(
         payment?.status === 'succeeded'
-          ? 'Commande payée et confirmée'
-          : 'Commande enregistrée — validez le paiement sur votre téléphone',
+          ? t('Commande payée et confirmée')
+          : t('Commande enregistrée — validez le paiement sur votre téléphone'),
       );
       navigate(
         `/OrderConfirmation?commande=${order.id}&code=${encodeURIComponent(code)}&jeton=${encodeURIComponent(token)}`,
@@ -98,12 +101,12 @@ export default function Checkout() {
       const indisponibles = error?.details?.unavailable;
       if (indisponibles?.length) {
         toast.error(
-          `Plus disponible : ${indisponibles.map((i) => i.product_name ?? i.product_id).join(', ')}`,
+          t('Plus disponible : {liste}', { liste: indisponibles.map((i) => i.product_name ?? i.product_id).join(', ') }),
         );
         queryClient.invalidateQueries({ queryKey: ['cart'] });
         return;
       }
-      toast.error(error.message ?? "La commande n'a pas abouti");
+      toast.error(error.message ?? t("La commande n'a pas abouti"));
     },
   });
 
@@ -112,28 +115,36 @@ export default function Checkout() {
   if (!user || cartItems.length === 0) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-        <h1 className="text-xl font-semibold text-gray-900 mb-2">Votre panier est vide</h1>
-        <p className="text-sm text-gray-500 mb-6">Ajoutez des articles avant de passer commande.</p>
+        <h1 className="text-xl font-semibold text-gray-900 mb-2">{t('Votre panier est vide')}</h1>
+        <p className="text-sm text-gray-500 mb-6">{t('Ajoutez des articles avant de passer commande.')}</p>
         <Button asChild className="bg-emerald-600 hover:bg-emerald-700">
-          <Link to={createPageUrl('Catalog')}>Parcourir le catalogue</Link>
+          <Link to={createPageUrl('Catalog')}>{t('Parcourir le catalogue')}</Link>
         </Button>
       </div>
     );
   }
 
   const deliveryLabel =
-    deliveryType === 'pickup' ? 'Retrait en boutique' : `Livraison — ${address || 'adresse à compléter'}`;
+    deliveryType === 'pickup' ? t('Retrait en boutique') : t('Livraison — {adresse}', { adresse: address || t('adresse à compléter') });
   const paymentLabel = PAYMENT_METHODS.find((m) => m.id === paymentMethod)?.label ?? paymentMethod;
 
   /** Chaque étape vérifie ce qu'elle a collecté avant de laisser passer. */
+  const paiementMobile = paymentMethod === 'orange_money' || paymentMethod === 'mtn_money';
+
   const validateStep = () => {
     if (step === 1) {
       if (!phone.trim()) {
-        toast.error('Renseignez votre numéro de téléphone');
+        toast.error(t('Renseignez votre numéro de téléphone'));
+        return false;
+      }
+      /* Un paiement mobile exige un numéro que l'opérateur sait joindre.
+         Le signaler ici évite d'aller jusqu'au paiement pour l'apprendre. */
+      if (paiementMobile && !isMobileMoneyNumber(phone)) {
+        toast.error(t('Numéro de mobile invalide — exemple : 6 99 11 22 33'));
         return false;
       }
       if (deliveryType === 'delivery' && !address.trim()) {
-        toast.error('Renseignez votre adresse de livraison');
+        toast.error(t('Renseignez votre adresse de livraison'));
         return false;
       }
     }
@@ -153,20 +164,21 @@ export default function Checkout() {
           className="mb-4"
         />
 
-        <h1 className="text-xl lg:text-2xl font-bold text-gray-900 mb-1">Finaliser la commande</h1>
+        <h1 className="text-xl lg:text-2xl font-bold text-gray-900 mb-1">{t('Finaliser la commande')}</h1>
         <p className="flex items-center gap-1.5 text-sm text-gray-500 mb-6">
-          <Lock className="w-3.5 h-3.5" /> Paiement sécurisé — vos coordonnées ne sont pas partagées
-          avec la boutique.
+          <Lock className="w-3.5 h-3.5" /> {t('Paiement sécurisé — vos coordonnées ne sont pas partagées avec la boutique.')}
         </p>
 
-        <Stepper current={step} onGoTo={setStep} />
+        <div data-tour="steps">
+          <Stepper current={step} onGoTo={setStep} />
+        </div>
 
         <div className="grid lg:grid-cols-[minmax(0,1fr)_22rem] gap-6 mt-6">
           <div className="space-y-4">
             {/* Étape 1 — livraison et contact */}
             <StepCard
               number={1}
-              title="Livraison et contact"
+              title={t('Livraison et contact')}
               active={step === 1}
               done={step > 1}
               summary={`${deliveryLabel} · ${phone}`}
@@ -178,9 +190,9 @@ export default function Checkout() {
                   checked={deliveryType === 'pickup'}
                   onSelect={() => setDeliveryType('pickup')}
                   icon={Store}
-                  title="Retrait en boutique"
-                  detail="Gratuit — prêt sous 1 h, code de retrait envoyé par SMS"
-                  price="Gratuit"
+                  title={t('Retrait en boutique')}
+                  detail={t('Gratuit — prêt sous 1 h, code de retrait envoyé par SMS')}
+                  price={t('Gratuit')}
                 />
 
                 <ChoiceCard
@@ -188,12 +200,12 @@ export default function Checkout() {
                   checked={deliveryType === 'delivery'}
                   onSelect={() => setDeliveryType('delivery')}
                   icon={Truck}
-                  title="Livraison à domicile"
-                  detail="Sous 24 h à Yaoundé et Douala"
+                  title={t('Livraison à domicile')}
+                  detail={t('Sous 24 h à Yaoundé et Douala')}
                   price={
                     appConfig?.free_delivery_threshold &&
                     quote?.subtotal >= appConfig.free_delivery_threshold
-                      ? 'Offerte'
+                      ? t('Offerte')
                       : formatXAF(appConfig?.delivery_fee ?? 0)
                   }
                 />
@@ -201,10 +213,10 @@ export default function Checkout() {
 
               {deliveryType === 'delivery' && (
                 <div className="mt-4">
-                  <Label htmlFor="adresse">Adresse de livraison</Label>
+                  <Label htmlFor="adresse">{t('Adresse de livraison')}</Label>
                   <Textarea
                     id="adresse"
-                    placeholder="Quartier, rue, point de repère…"
+                    placeholder={t('Quartier, rue, point de repère…')}
                     value={address}
                     onChange={(event) => setAddress(event.target.value)}
                     className="mt-1.5"
@@ -213,7 +225,7 @@ export default function Checkout() {
               )}
 
               <div className="mt-4">
-                <Label htmlFor="telephone">Numéro de téléphone</Label>
+                <Label htmlFor="telephone">{t('Numéro de téléphone')}</Label>
                 <div className="relative mt-1.5">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <Input
@@ -226,15 +238,20 @@ export default function Checkout() {
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1.5">
-                  Sert à confirmer le paiement mobile et à vous prévenir quand la commande est prête.
+                  {t('Sert à confirmer le paiement mobile et à vous prévenir quand la commande est prête.')}
                 </p>
+                {phone.trim() && !isMobileMoneyNumber(phone) && (
+                  <p className="text-xs text-amber-700 mt-1">
+                    {t('Ce numéro ne pourra pas recevoir de demande de paiement mobile. Un mobile camerounais commence par 6 et compte neuf chiffres.')}
+                  </p>
+                )}
               </div>
             </StepCard>
 
             {/* Étape 2 — paiement */}
             <StepCard
               number={2}
-              title="Moyen de paiement"
+              title={t('Moyen de paiement')}
               active={step === 2}
               done={step > 2}
               summary={paymentLabel}
@@ -251,8 +268,8 @@ export default function Checkout() {
                     onSelect={() => setPaymentMethod(method.id)}
                     icon={method.icon}
                     iconClassName={method.iconClassName}
-                    title={method.label}
-                    detail={method.detail}
+                    title={t(method.label)}
+                    detail={t(method.detail)}
                   />
                 ))}
               </fieldset>
@@ -261,7 +278,7 @@ export default function Checkout() {
             {/* Étape 3 — relecture */}
             <StepCard
               number={3}
-              title="Vérifier et confirmer"
+              title={t('Vérifier et confirmer')}
               active={step === 3}
               done={false}
               summary=""
@@ -270,15 +287,12 @@ export default function Checkout() {
               <ul className="divide-y divide-gray-100">
                 {cartItems.map((item) => (
                   <li key={item.id} className="flex items-center gap-3 py-3">
-                    {item.product_image ? (
-                      <img
-                        src={item.product_image}
-                        alt=""
-                        className="w-12 h-12 rounded-lg object-cover bg-gray-100"
+                    <span className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                      <ProductThumbnail
+                        product={{ image_url: item.product_image, name: item.product_name }}
+                        emojiClassName="text-xl"
                       />
-                    ) : (
-                      <span className="w-12 h-12 rounded-lg bg-gray-100 grid place-items-center">🛒</span>
-                    )}
+                    </span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{item.product_name}</p>
                       <p className="text-xs text-gray-500">
@@ -293,36 +307,36 @@ export default function Checkout() {
               </ul>
 
               <dl className="mt-4 pt-4 border-t border-gray-100 space-y-2 text-sm">
-                <Line label="Récupération">{deliveryLabel}</Line>
-                <Line label="Paiement">{paymentLabel}</Line>
-                <Line label="Téléphone">{phone}</Line>
+                <Line label={t('Récupération')}>{deliveryLabel}</Line>
+                <Line label={t('Paiement')}>{paymentLabel}</Line>
+                <Line label={t('Téléphone')}>{phone}</Line>
               </dl>
             </StepCard>
           </div>
 
           {/* Récapitulatif permanent */}
-          <aside className="lg:sticky lg:top-40 lg:self-start space-y-4">
+          <aside className="lg:sticky lg:top-40 lg:self-start space-y-4" data-tour="summary">
             <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h2 className="font-semibold text-gray-900 mb-4">Récapitulatif</h2>
+              <h2 className="font-semibold text-gray-900 mb-4">{t('Récapitulatif')}</h2>
 
               <dl className="space-y-2 text-sm">
-                <Money label="Sous-total" value={quote?.subtotal ?? 0} />
+                <Money label={t('Sous-total')} value={quote?.subtotal ?? 0} />
                 {quote?.discount > 0 && (
                   <Money
-                    label={`Code ${quote.coupon_applied}`}
+                    label={t('Code {code}', { code: quote.coupon_applied })}
                     value={-quote.discount}
                     tone="emerald"
                   />
                 )}
                 <Money
-                  label="Livraison"
+                  label={t('Livraison')}
                   value={quote?.deliveryFee ?? 0}
-                  zeroLabel={deliveryType === 'pickup' ? 'Retrait gratuit' : 'Offerte'}
+                  zeroLabel={deliveryType === 'pickup' ? t('Retrait gratuit') : t('Offerte')}
                 />
               </dl>
 
               <div className="flex items-baseline justify-between mt-4 pt-4 border-t border-gray-100">
-                <span className="font-semibold text-gray-900">Total</span>
+                <span className="font-semibold text-gray-900">{t('Total')}</span>
                 <span className="text-xl font-bold text-gray-900">
                   {quoting ? '…' : formatXAF(quote?.total ?? 0)}
                 </span>
@@ -332,14 +346,13 @@ export default function Checkout() {
                   mêlée aux autres, elle laissait croire à un total plus bas. */}
               {quote?.savings > 0 && (
                 <p className="mt-3 text-sm text-emerald-700 bg-emerald-50 rounded-md px-3 py-2">
-                  Vous économisez <strong>{formatXAF(quote.savings)}</strong> par rapport au prix
-                  d'origine de ces articles.
+                  {t('Vous économisez {montant} par rapport au prix d’origine de ces articles.', { montant: formatXAF(quote.savings) })}
                 </p>
               )}
 
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <Label htmlFor="coupon" className="text-xs text-gray-500">
-                  Code promo
+                  {t('Code promo')}
                 </Label>
                 <Input
                   id="coupon"
@@ -353,14 +366,14 @@ export default function Checkout() {
                 )}
                 {quote?.coupon_applied && !quote.couponError && (
                   <p className="text-xs text-emerald-600 mt-1.5">
-                    Code {quote.coupon_applied} appliqué.
+                    {t('Code {code} appliqué.', { code: quote.coupon_applied })}
                   </p>
                 )}
               </div>
 
               {step < STEPS.length ? (
                 <Button onClick={next} className="w-full h-12 mt-4 bg-emerald-600 hover:bg-emerald-700">
-                  Continuer
+                  {t('Continuer')}
                 </Button>
               ) : (
                 <Button
@@ -371,12 +384,12 @@ export default function Checkout() {
                   {checkout.isPending ? (
                     <>
                       <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Traitement…
+                      {t('Traitement…')}
                     </>
                   ) : (
                     <>
                       <Check className="w-5 h-5 mr-2" />
-                      Confirmer — {formatXAF(quote?.total ?? 0)}
+                      {t('Confirmer — {montant}', { montant: formatXAF(quote?.total ?? 0) })}
                     </>
                   )}
                 </Button>
@@ -384,8 +397,7 @@ export default function Checkout() {
 
               <p className="flex items-start gap-1.5 text-xs text-gray-500 mt-3">
                 <ShieldCheck className="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600" />
-                Le stock est réservé au moment de la confirmation. Si un article vient d'être vendu,
-                la commande est refusée et rien n'est débité.
+                {t("Le stock est réservé au moment de la confirmation. Si un article vient d'être vendu, la commande est refusée et rien n'est débité.")}
               </p>
             </div>
           </aside>
@@ -427,6 +439,7 @@ const PAYMENT_METHODS = [
 ];
 
 function Stepper({ current, onGoTo }) {
+  const t = useT();
   return (
     <ol className="flex items-center gap-2 bg-white rounded-xl border border-gray-200 p-3">
       {STEPS.map((item, index) => {
@@ -455,7 +468,7 @@ function Stepper({ current, onGoTo }) {
               <span
                 className={`text-sm truncate ${active ? 'font-semibold text-gray-900' : 'text-gray-500'}`}
               >
-                {item.label}
+                {t(item.label)}
               </span>
             </button>
             {index < STEPS.length - 1 && (
@@ -470,6 +483,7 @@ function Stepper({ current, onGoTo }) {
 
 /** Étape repliée une fois franchie : ce qui a été choisi reste lisible d'un coup d'œil. */
 function StepCard({ number, title, active, done, summary, onEdit, children }) {
+  const t = useT();
   return (
     <section
       className={`bg-white rounded-xl border ${active ? 'border-emerald-300' : 'border-gray-200'}`}
@@ -495,7 +509,7 @@ function StepCard({ number, title, active, done, summary, onEdit, children }) {
             className="ml-auto flex items-center gap-1 text-sm text-emerald-700 hover:underline"
           >
             <Pencil className="w-3.5 h-3.5" />
-            Modifier
+            {t('Modifier')}
           </button>
         )}
       </header>

@@ -4,11 +4,12 @@ import { api } from '@/api';
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import {
-  LayoutDashboard, Users, ShieldCheck, FileText, Bell, LogOut, Menu, X, TrendingUp, Package, Search, Moon, Sun, Zap
+  LayoutDashboard, Users, ShieldCheck, FileText, Bell, LogOut, Menu, X, TrendingUp, Package, Search, Moon, Sun
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
+import BrandMark from '@/components/layout/BrandMark';
 
 /**
  * Navigation du backoffice. N'y figurent que des pages qui existent : les
@@ -26,7 +27,7 @@ const NAV_ITEMS = [
     items: [
       { path: '/BackofficeUsers', icon: Users, label: 'Utilisateurs', roles: ['super_admin', 'admin'] },
       { path: '/BackofficeTransactions', icon: Package, label: 'Transactions', roles: ['super_admin', 'admin', 'operator'] },
-      { path: '/BackofficeSales', icon: TrendingUp, label: 'Prospects partenaires', roles: ['super_admin', 'admin', 'operator'] },
+      { path: '/BackofficeSales', icon: TrendingUp, label: 'Suivi commercial', roles: ['super_admin', 'admin', 'operator'] },
       { path: '/AdminPartners', icon: ShieldCheck, label: 'Validation partenaires', roles: ['super_admin', 'admin'] },
     ],
   },
@@ -81,9 +82,7 @@ export default function BackofficeLayout({ children, currentPage }) {
             {/* Logo */}
             <div className="flex items-center justify-between p-5 border-b border-gray-700/50">
               <Link to="/AdminBackoffice" className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
-                  <Zap className="w-5 h-5 text-white" />
-                </div>
+<BrandMark className="w-9 h-9 rounded-xl shadow-lg" />
                 <div>
                   <p className="text-white font-bold text-sm">CHICHARD</p>
                   <p className="text-gray-400 text-[10px] uppercase tracking-wider">Backoffice</p>
@@ -97,7 +96,7 @@ export default function BackofficeLayout({ children, currentPage }) {
             {/* User badge */}
             <div className="px-4 py-3 border-b border-gray-700/50">
               <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-800">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-sm font-bold">
                   {user?.full_name?.charAt(0) || 'U'}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -111,7 +110,7 @@ export default function BackofficeLayout({ children, currentPage }) {
             </div>
 
             {/* Nav */}
-            <nav className="flex-1 overflow-y-auto py-4 space-y-6 px-3">
+            <nav data-tour="bo-nav" className="flex-1 overflow-y-auto py-4 space-y-6 px-3">
               {filteredNav.map((section) => (
                 <div key={section.section}>
                   <p className="text-gray-500 text-[10px] font-semibold uppercase tracking-widest px-2 mb-2">
@@ -128,11 +127,11 @@ export default function BackofficeLayout({ children, currentPage }) {
                             className={cn(
                               "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all group",
                               isActive
-                                ? "bg-indigo-600 text-white shadow-md shadow-indigo-900/40"
+                                ? "bg-emerald-600 text-white shadow-md shadow-emerald-900/40"
                                 : "text-gray-400 hover:text-white hover:bg-gray-800"
                             )}
                           >
-                            <Icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-white" : "group-hover:text-indigo-400")} />
+                            <Icon className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-white" : "group-hover:text-emerald-400")} />
                             <span className="font-medium">{item.label}</span>
                           </Link>
                         </li>
@@ -222,7 +221,7 @@ export default function BackofficeLayout({ children, currentPage }) {
 
             {/* User avatar */}
             <div className="flex items-center gap-2 pl-2 border-l border-gray-200">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold cursor-pointer">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-sm font-bold cursor-pointer">
                 {user?.full_name?.charAt(0) || 'U'}
               </div>
             </div>

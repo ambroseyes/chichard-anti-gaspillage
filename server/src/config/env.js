@@ -36,6 +36,10 @@ const schema = z.object({
   MTN_MOMO_SUBSCRIPTION_KEY: z.string().default(''),
   MTN_MOMO_API_USER: z.string().default(''),
   MTN_MOMO_API_KEY: z.string().default(''),
+  /* Environnement visé chez MTN. Déclaré explicitement : le déduire de
+     NODE_ENV faisait viser l'environnement réel depuis toute préproduction
+     tournant en « production ». */
+  MTN_MOMO_TARGET_ENVIRONMENT: z.string().default('sandbox'),
   PAYMENT_WEBHOOK_SECRET: z.string().default(''),
 
   SMTP_HOST: z.string().default(''),

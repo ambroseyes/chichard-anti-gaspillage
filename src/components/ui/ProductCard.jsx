@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { Clock, MapPin, ShieldCheck, ShoppingCart, Star } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { formatXAF, daysUntil, expiryLabel, unitPrice } from '@/lib/format';
-import { CATEGORY_EMOJI } from '@/lib/constants';
+import ProductThumbnail from '@/components/ui/ProductThumbnail';
+import { useT } from '@/i18n/LanguageContext';
 
 /**
  * Carte produit.
@@ -13,6 +14,7 @@ import { CATEGORY_EMOJI } from '@/lib/constants';
  * et l'avis des clients.
  */
 export default function ProductCard({ product, onAddToCart, variant = 'grid' }) {
+  const t = useT();
   const days = daysUntil(product.expiration_date);
   const urgency = urgencyStyle(days);
   const perUnit = unitPrice(product);
@@ -31,18 +33,12 @@ export default function ProductCard({ product, onAddToCart, variant = 'grid' }) 
         to={href}
         className={`relative bg-gray-50 shrink-0 ${horizontal ? 'w-40 sm:w-48' : 'aspect-square'}`}
       >
-        {product.image_url ? (
-          <img
-            src={product.image_url}
-            alt={product.name}
-            loading="lazy"
-            className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
-          />
-        ) : (
-          <span className="w-full h-full grid place-items-center text-5xl bg-gradient-to-br from-gray-50 to-gray-100" aria-hidden="true">
-            {CATEGORY_EMOJI[product.category] ?? '🛒'}
-          </span>
-        )}
+        <ProductThumbnail
+          product={product}
+          emojiClassName="text-5xl"
+          className="group-hover:scale-[1.03] transition-transform duration-300"
+          sizes={horizontal ? '12rem' : '(max-width: 640px) 50vw, 20rem'}
+        />
 
         {discount > 0 && (
           <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-orange-500 text-white text-xs font-bold shadow-sm">
@@ -54,16 +50,16 @@ export default function ProductCard({ product, onAddToCart, variant = 'grid' }) 
           className={`absolute bottom-2 left-2 inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${urgency.className}`}
         >
           <Clock className="w-3 h-3" aria-hidden="true" />
-          {expiryLabel(product.expiration_date)}
+          {expiryLabel(product.expiration_date, undefined, t)}
         </span>
 
         {product.is_verified && (
           <span
             className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white/95 grid place-items-center shadow-sm"
-            title="Date limite vérifiée par la boutique"
+            title={t('Date limite vérifiée par la boutique')}
           >
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" />
-            <span className="sr-only">Produit vérifié</span>
+            <span className="sr-only">{t('Produit vérifié')}</span>
           </span>
         )}
       </Link>
@@ -104,7 +100,7 @@ export default function ProductCard({ product, onAddToCart, variant = 'grid' }) 
           </div>
 
           <p className="text-[11px] text-gray-500 h-4">
-            {perUnit ? perUnit.label : savings > 0 ? `Vous économisez ${formatXAF(savings)}` : ''}
+            {perUnit ? perUnit.label : savings > 0 ? t('Vous économisez {montant}', { montant: formatXAF(savings) }) : ''}
           </p>
 
           <button
@@ -113,8 +109,8 @@ export default function ProductCard({ product, onAddToCart, variant = 'grid' }) 
             className="mt-2 w-full h-9 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium flex items-center justify-center gap-2 transition-colors"
           >
             <ShoppingCart className="w-4 h-4" aria-hidden="true" />
-            Ajouter
-            <span className="sr-only">{product.name} au panier</span>
+            {t('Ajouter')}
+            <span className="sr-only">{t('{nom} au panier', { nom: product.name })}</span>
           </button>
         </div>
       </div>
@@ -123,9 +119,10 @@ export default function ProductCard({ product, onAddToCart, variant = 'grid' }) 
 }
 
 function Rating({ value = 0 }) {
+  const t = useT();
   const rounded = Math.round(Number(value) || 0);
   return (
-    <span className="flex items-center" aria-label={`Noté ${rounded} sur 5`}>
+    <span className="flex items-center" aria-label={t('Noté {n} sur 5', { n: rounded })}>
       {[1, 2, 3, 4, 5].map((index) => (
         <Star
           key={index}

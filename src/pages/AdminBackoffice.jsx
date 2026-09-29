@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import BackofficeLayout from '@/components/backoffice/BackofficeLayout';
 import {
-  TrendingUp, Users, Package, DollarSign, AlertTriangle,
-  Activity, ShoppingCart, ArrowUpRight, ArrowDownRight, Zap
+  TrendingUp, Users, Package, DollarSign, PiggyBank,
+  Activity, ShoppingCart, ArrowUpRight, ArrowDownRight, CheckCircle2
 } from 'lucide-react';
 import {
   AreaChart, Area, Line, PieChart, Pie, Cell,
@@ -16,7 +16,7 @@ import {
 import { formatShortDate, formatXAF } from '@/lib/format';
 import { motion } from 'framer-motion';
 
-const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#3b82f6'];
+const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#7048C9', '#f59e0b', '#3b82f6'];
 
 const KPICard = ({ title, value, unit, change, icon: KPIIcon, color, delay = 0 }) => {
   // Une variation n'est affichée que si le serveur a pu la calculer : sans
@@ -82,7 +82,7 @@ export default function AdminBackoffice() {
 
   // Répartition par statut, telle que comptée par le serveur.
   const STATUS_COLORS = {
-    confirmed: '#10b981',
+    confirmed: '#7048C9',
     pending: '#f59e0b',
     ready: '#3b82f6',
     delivered: '#6366f1',
@@ -134,7 +134,7 @@ export default function AdminBackoffice() {
               Données en temps réel
             </div>
             <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger className="w-36 h-8 text-sm">
+              <SelectTrigger className="w-36 h-8 text-sm" data-tour="bo-period">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -147,19 +147,19 @@ export default function AdminBackoffice() {
         </div>
 
         {/* KPIs Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <KPICard title="Revenus" value={formatXAF(totalRevenue)} change={revenueChange} icon={DollarSign} color="bg-indigo-500" delay={0} />
-          <KPICard title="Commandes" value={ordersCount} unit="sur la période" change={ordersChange} icon={ShoppingCart} color="bg-purple-500" delay={0.05} />
-          <KPICard title="Panier moyen" value={formatXAF(overview?.average_order_value ?? 0)} icon={TrendingUp} color="bg-pink-500" delay={0.1} />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4" data-tour="bo-kpis">
+          <KPICard title="Revenus" value={formatXAF(totalRevenue)} change={revenueChange} icon={DollarSign} color="bg-emerald-500" delay={0} />
+          <KPICard title="Commandes" value={ordersCount} unit="sur la période" change={ordersChange} icon={ShoppingCart} color="bg-teal-500" delay={0.05} />
+          <KPICard title="Panier moyen" value={formatXAF(overview?.average_order_value ?? 0)} icon={TrendingUp} color="bg-teal-500" delay={0.1} />
           <KPICard title="Magasins vérifiés" value={verifiedStores} unit={`sur ${storesTotal}`} icon={Activity} color="bg-emerald-500" delay={0.15} />
         </div>
 
         {/* Secondary KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <KPICard title="Produits actifs" value={activeProducts} unit="produits" icon={Package} color="bg-blue-500" delay={0.2} />
-          <KPICard title="Utilisateurs" value={usersCount} unit="inscrits" icon={Users} color="bg-orange-500" delay={0.25} />
-          <KPICard title="Commandes livrées" value={overview?.orders_by_status?.find((s) => s.status === 'delivered')?.count ?? 0} icon={Zap} color="bg-teal-500" delay={0.3} />
-          <KPICard title="Économies générées" value={formatXAF(overview?.savings_generated ?? 0)} icon={AlertTriangle} color="bg-red-500" delay={0.35} />
+          <KPICard title="Produits actifs" value={activeProducts} unit="produits" icon={Package} color="bg-teal-500" delay={0.2} />
+          <KPICard title="Utilisateurs" value={usersCount} unit="inscrits" icon={Users} color="bg-slate-500" delay={0.25} />
+          <KPICard title="Commandes livrées" value={overview?.orders_by_status?.find((s) => s.status === 'delivered')?.count ?? 0} icon={CheckCircle2} color="bg-emerald-500" delay={0.3} />
+          <KPICard title="Économies générées" value={formatXAF(overview?.savings_generated ?? 0)} icon={PiggyBank} color="bg-emerald-500" delay={0.35} />
         </div>
 
         {/* Charts Row 1 */}
@@ -224,9 +224,9 @@ export default function AdminBackoffice() {
                   {(overview?.co2_saved_kg ?? 0).toFixed(1)} kg
                 </p>
               </div>
-              <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-100">
-                <p className="text-xs text-indigo-700">Économies clients</p>
-                <p className="text-2xl font-bold text-indigo-800 mt-1">
+              <div className="p-4 rounded-xl bg-teal-50 border border-teal-100">
+                <p className="text-xs text-teal-700">Économies clients</p>
+                <p className="text-2xl font-bold text-teal-800 mt-1">
                   {formatXAF(overview?.savings_generated ?? 0)}
                 </p>
               </div>

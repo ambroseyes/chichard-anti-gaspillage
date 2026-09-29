@@ -10,6 +10,7 @@ import { ORDER_STATUS, PAYMENT_STATUS } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import { useT } from '@/i18n/LanguageContext';
 import Paginator from '@/components/catalog/Paginator';
 import DeliveryChat from '@/components/delivery/DeliveryChat';
 
@@ -35,6 +36,7 @@ const ONGLETS = [
  */
 export default function Orders() {
   const { user } = useAuth();
+  const t = useT();
   const [statut, setStatut] = useState('all');
   const [page, setPage] = useState(1);
 
@@ -70,17 +72,17 @@ export default function Orders() {
 
         <div className="flex items-end justify-between gap-4 mb-5">
           <div>
-            <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Mes commandes</h1>
+            <h1 className="text-xl lg:text-2xl font-bold text-gray-900">{t('Mes commandes')}</h1>
             <p className="text-sm text-gray-500 mt-0.5">
-              {isLoading ? 'Chargement…' : `${total} commande${total > 1 ? 's' : ''}`}
+              {isLoading ? t('Chargement…') : t(total > 1 ? '{n} commandes' : '{n} commande', { n: total })}
             </p>
           </div>
           <Button variant="outline" asChild className="shrink-0">
-            <Link to={createPageUrl('Catalog')}>Nouvelle commande</Link>
+            <Link to={createPageUrl('Catalog')}>{t('Nouvelle commande')}</Link>
           </Button>
         </div>
 
-        <nav aria-label="Filtrer par statut" className="mb-5">
+        <nav aria-label={t('Filtrer par statut')} className="mb-5">
           <ul className="flex gap-1 overflow-x-auto scrollbar-hide bg-white border border-gray-200 rounded-lg p-1">
             {ONGLETS.map((onglet) => (
               <li key={onglet.id}>
@@ -94,7 +96,7 @@ export default function Orders() {
                       : 'text-gray-600 hover:bg-gray-50'
                   }`}
                 >
-                  {onglet.label}
+                  {t(onglet.label)}
                 </button>
               </li>
             ))}
@@ -127,6 +129,7 @@ export default function Orders() {
 }
 
 function CarteCommande({ commande, utilisateur }) {
+  const t = useT();
   const statut = ORDER_STATUS[commande.status] ?? {
     label: commande.status,
     color: 'bg-gray-100 text-gray-700',
@@ -141,18 +144,18 @@ function CarteCommande({ commande, utilisateur }) {
       <header className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-gray-50 border-b border-gray-100">
         <div className="min-w-0">
           <p className="text-sm font-medium text-gray-900">
-            N° {commande.order_number ?? commande.id?.slice(-8)}
+            {t('N° {num}', { num: commande.order_number ?? commande.id?.slice(-8) })}
           </p>
           <p className="text-xs text-gray-500">{formatDateTime(commande.created_date)}</p>
         </div>
         <div className="flex items-center gap-2">
           {paiement && commande.payment_status !== 'paid' && (
             <span className={`px-2 py-0.5 rounded text-xs font-medium ${paiement.color}`}>
-              {paiement.label}
+              {t(paiement.label)}
             </span>
           )}
           <span className={`px-2.5 py-1 rounded text-xs font-medium ${statut.color}`}>
-            {statut.label}
+            {t(statut.label)}
           </span>
         </div>
       </header>
@@ -176,7 +179,7 @@ function CarteCommande({ commande, utilisateur }) {
         ))}
         {restants > 0 && (
           <li className="py-2 text-sm text-gray-500">
-            et {restants} autre{restants > 1 ? 's' : ''} article{restants > 1 ? 's' : ''}
+            {t(restants > 1 ? 'et {n} autres articles' : 'et {n} autre article', { n: restants })}
           </li>
         )}
       </ul>
@@ -184,7 +187,7 @@ function CarteCommande({ commande, utilisateur }) {
       <footer className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-gray-100">
         <p className="flex items-center gap-1.5 text-sm text-gray-600">
           {retrait ? <Store className="w-4 h-4" /> : <Truck className="w-4 h-4" />}
-          {retrait ? `Retrait — ${commande.store_name ?? 'boutique'}` : 'Livraison à domicile'}
+          {retrait ? t('Retrait — {boutique}', { boutique: commande.store_name ?? t('boutique') }) : t('Livraison à domicile')}
         </p>
 
         <div className="flex items-center gap-3 ml-auto">
@@ -195,14 +198,14 @@ function CarteCommande({ commande, utilisateur }) {
             <p className="font-bold text-gray-900">{formatXAF(commande.total_amount ?? 0)}</p>
             {commande.total_savings > 0 && (
               <p className="text-xs text-emerald-600">
-                {formatXAF(commande.total_savings)} économisés
+                {t('{montant} économisés', { montant: formatXAF(commande.total_savings) })}
               </p>
             )}
           </div>
           {!retrait && CHAT_ACTIF.has(commande.status) && (
             <Button variant="outline" size="sm" asChild>
               <Link to={createPageUrl('DeliveryTracking')}>
-                Suivre
+                {t('Suivre')}
                 <ChevronRight className="w-4 h-4 ml-0.5" />
               </Link>
             </Button>
@@ -214,6 +217,7 @@ function CarteCommande({ commande, utilisateur }) {
 }
 
 function VideState({ statut }) {
+  const t = useT();
   const filtré = statut !== 'all';
   return (
     <div className="bg-white border border-gray-200 rounded-xl py-16 px-6 text-center">
@@ -221,17 +225,17 @@ function VideState({ statut }) {
         <Package className="w-7 h-7 text-gray-400" />
       </span>
       <h2 className="font-semibold text-gray-900 mb-1">
-        {filtré ? 'Aucune commande dans cet état' : 'Aucune commande pour le moment'}
+        {filtré ? t('Aucune commande dans cet état') : t('Aucune commande pour le moment')}
       </h2>
       <p className="text-sm text-gray-500 mb-5">
         {filtré
-          ? 'Essayez un autre onglet.'
-          : 'Vos achats anti-gaspillage apparaîtront ici.'}
+          ? t('Essayez un autre onglet.')
+          : t('Vos achats anti-gaspillage apparaîtront ici.')}
       </p>
       <Button asChild className="bg-emerald-600 hover:bg-emerald-700">
         <Link to={createPageUrl('Catalog')}>
           <ShoppingBag className="w-4 h-4 mr-2" />
-          Découvrir les offres
+          {t('Découvrir les offres')}
         </Link>
       </Button>
     </div>

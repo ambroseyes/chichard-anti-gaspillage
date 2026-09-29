@@ -64,7 +64,7 @@ export default function SalesForecast({ dailySales = [] }) {
             <Line 
               type="monotone" 
               dataKey="sales" 
-              stroke="#10b981" 
+              stroke="#7048C9" 
               strokeWidth={2}
               dot={{ r: 4 }}
               name="Réel"

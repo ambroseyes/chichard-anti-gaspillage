@@ -1121,35 +1121,42 @@ model StockMovement {
 }
 
 model Store {
-  id                      String      @id @default(cuid())
-  name                    String
-  address                 String
-  city                    String
-  phone                   String?
-  email                   String?
-  logo_url                String?
-  is_partner              Boolean     @default(true)
-  status                  StoreStatus @default(pending)
-  rating                  Float?
-  total_products_saved    Float       @default(0)
-  total_revenue_recovered Float       @default(0)
-  total_savings_generated Float       @default(0)
-  owner_email             String?
-  opening_hours           String?
-  description             String?
-  latitude                Float?
-  longitude               Float?
-  employee_emails         String[]
-  employee_roles          Json?
-  stock_alert_settings    Json?
-  email_verified          Boolean     @default(false)
-  verification_token      String?
-  created_by              String?
-  created_date            DateTime    @default(now())
-  updated_date            DateTime    @updatedAt
+  id                        String             @id @default(cuid())
+  name                      String
+  address                   String
+  city                      String
+  phone                     String?
+  email                     String?
+  logo_url                  String?
+  is_partner                Boolean            @default(true)
+  status                    StoreStatus        @default(pending)
+  rating                    Float?
+  total_products_saved      Float              @default(0)
+  total_revenue_recovered   Float              @default(0)
+  total_savings_generated   Float              @default(0)
+  owner_email               String?
+  opening_hours             String?
+  description               String?
+  latitude                  Float?
+  longitude                 Float?
+  employee_emails           String[]
+  employee_roles            Json?
+  stock_alert_settings      Json?
+  email_verified            Boolean            @default(false)
+  verification_token        String?
+  pipeline_stage            StorePipelineStage @default(new)
+  pipeline_expected_value   Float?
+  pipeline_owner_email      String?
+  pipeline_next_action_at   DateTime?
+  pipeline_notes            String?
+  pipeline_stage_changed_at DateTime?
+  created_by                String?
+  created_date              DateTime           @default(now())
+  updated_date              DateTime           @updatedAt
 
   @@index([status])
   @@index([owner_email])
+  @@index([pipeline_owner_email])
   @@index([created_by])
 }
 
@@ -1696,6 +1703,16 @@ enum StockMovementMovementType {
   adjustment
   return
   waste
+}
+
+enum StorePipelineStage {
+  new
+  contacted
+  qualified
+  proposal
+  negotiation
+  won
+  lost
 }
 
 enum StoreStatus {

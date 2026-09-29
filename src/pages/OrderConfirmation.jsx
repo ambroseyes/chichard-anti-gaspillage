@@ -20,6 +20,7 @@ import { ORDER_STATUS, PAYMENT_STATUS } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import { useT } from '@/i18n/LanguageContext';
 import QRCodeGenerator from '@/components/delivery/QRCodeGenerator';
 
 /**
@@ -31,6 +32,7 @@ import QRCodeGenerator from '@/components/delivery/QRCodeGenerator';
  * le conserver.
  */
 export default function OrderConfirmation() {
+  const t = useT();
   const [params] = useSearchParams();
   const orderId = params.get('commande') ?? params.get('id');
   const confirmationCode = params.get('code');
@@ -61,10 +63,9 @@ export default function OrderConfirmation() {
           <span className="w-14 h-14 rounded-full bg-emerald-100 grid place-items-center mx-auto mb-3">
             <Check className="w-8 h-8 text-emerald-600" />
           </span>
-          <h1 className="text-2xl font-bold text-gray-900">Commande enregistrée</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('Commande enregistrée')}</h1>
           <p className="text-gray-500 mt-1">
-            Commande n° <strong className="text-gray-900">{order.order_number ?? order.id}</strong> ·
-            passée le {formatDateTime(order.created_date)}
+            {t('Commande n° {num} · passée le {date}', { num: order.order_number ?? order.id, date: formatDateTime(order.created_date) })}
           </p>
         </header>
 
@@ -74,7 +75,7 @@ export default function OrderConfirmation() {
             <div className="bg-emerald-50 px-5 py-3 flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-emerald-700" aria-hidden="true" />
               <h2 className="font-semibold text-emerald-900">
-                {retrait ? 'Votre code de retrait' : 'Votre code de remise'}
+                {retrait ? t('Votre code de retrait') : t('Votre code de remise')}
               </h2>
             </div>
 
@@ -82,8 +83,7 @@ export default function OrderConfirmation() {
               <p className="flex items-start gap-2 text-sm text-amber-800 bg-amber-50 rounded-lg px-3 py-2 mb-4">
                 <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
                 <span>
-                  Ce code n'est affiché qu'ici et ne pourra pas être retrouvé. Notez-le ou
-                  imprimez cette page avant de la quitter.
+                  {t("Ce code n'est affiché qu'ici et ne pourra pas être retrouvé. Notez-le ou imprimez cette page avant de la quitter.")}
                 </span>
               </p>
 
@@ -93,7 +93,7 @@ export default function OrderConfirmation() {
                     {confirmationCode}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    À dicter à {retrait ? 'la boutique' : 'votre livreur'}
+                    {t('À dicter à {qui}', { qui: retrait ? t('la boutique') : t('votre livreur') })}
                   </p>
                 </div>
 
@@ -110,8 +110,7 @@ export default function OrderConfirmation() {
               </div>
 
               <p className="text-xs text-gray-500 mt-4">
-                Le code est signé par nos serveurs et vérifié à la remise. Ne le communiquez
-                qu'à la personne qui vous remet la commande.
+                {t("Le code est signé par nos serveurs et vérifié à la remise. Ne le communiquez qu'à la personne qui vous remet la commande.")}
               </p>
 
               <Button
@@ -120,7 +119,7 @@ export default function OrderConfirmation() {
                 className="mt-4 print:hidden"
               >
                 <Printer className="w-4 h-4 mr-2" />
-                Imprimer cette page
+                {t('Imprimer cette page')}
               </Button>
             </div>
           </section>
@@ -129,9 +128,9 @@ export default function OrderConfirmation() {
         {/* Récapitulatif */}
         <section className="bg-white rounded-xl border border-gray-200 p-5 mb-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-gray-900">Votre commande</h2>
+            <h2 className="font-semibold text-gray-900">{t('Votre commande')}</h2>
             <span className={`px-2.5 py-1 rounded text-xs font-medium ${statut.color}`}>
-              {statut.label}
+              {t(statut.label)}
             </span>
           </div>
 
@@ -155,63 +154,60 @@ export default function OrderConfirmation() {
           </ul>
 
           <dl className="space-y-1.5 text-sm border-t border-gray-100 pt-3">
-            <Ligne label="Sous-total">{formatXAF(order.subtotal_amount ?? 0)}</Ligne>
+            <Ligne label={t('Sous-total')}>{formatXAF(order.subtotal_amount ?? 0)}</Ligne>
             {order.discount_amount > 0 && (
-              <Ligne label={`Code ${order.coupon_code ?? 'promo'}`}>
+              <Ligne label={t('Code {code}', { code: order.coupon_code ?? 'promo' })}>
                 −{formatXAF(order.discount_amount)}
               </Ligne>
             )}
-            <Ligne label="Livraison">
-              {order.delivery_fee > 0 ? formatXAF(order.delivery_fee) : 'Gratuite'}
+            <Ligne label={t('Livraison')}>
+              {order.delivery_fee > 0 ? formatXAF(order.delivery_fee) : t('Gratuite')}
             </Ligne>
             <div className="flex justify-between pt-2 border-t border-gray-100 text-base font-bold">
-              <dt>Total</dt>
+              <dt>{t('Total')}</dt>
               <dd>{formatXAF(order.total_amount ?? 0)}</dd>
             </div>
           </dl>
 
           {order.total_savings > 0 && (
             <p className="mt-3 text-sm text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2">
-              Vous avez économisé <strong>{formatXAF(order.total_savings)}</strong> et évité à ces
-              produits de finir à la poubelle.
+              {t('Vous avez économisé {montant} et évité à ces produits de finir à la poubelle.', { montant: formatXAF(order.total_savings) })}
             </p>
           )}
         </section>
 
         {/* Ce qui se passe ensuite */}
         <section className="bg-white rounded-xl border border-gray-200 p-5 mb-5">
-          <h2 className="font-semibold text-gray-900 mb-4">Et maintenant ?</h2>
+          <h2 className="font-semibold text-gray-900 mb-4">{t('Et maintenant ?')}</h2>
 
           <ul className="space-y-4">
             <Étape
               icon={retrait ? Store : Truck}
-              titre={retrait ? 'Retrait en boutique' : 'Livraison à domicile'}
+              titre={retrait ? t('Retrait en boutique') : t('Livraison à domicile')}
             >
               {retrait ? (
                 <>
-                  Présentez-vous chez <strong>{order.store_name}</strong> avec votre code.
-                  La commande est préparée sous une heure.
+                  {t('Présentez-vous chez {boutique} avec votre code. La commande est préparée sous une heure.', { boutique: order.store_name })}
                 </>
               ) : (
                 <>
-                  Livraison à <strong>{order.delivery_address}</strong>, sous 24 h. Le livreur
-                  vous demandera votre code à la remise.
+                  {t('Livraison à {adresse}, sous 24 h. Le livreur vous demandera votre code à la remise.', { adresse: order.delivery_address })}
                 </>
               )}
             </Étape>
 
             {paiement && (
-              <Étape icon={Package} titre={`Paiement — ${paiement.label}`}>
+              <Étape icon={Package} titre={t('Paiement — {statut}', { statut: t(paiement.label) })}>
                 {order.payment_status === 'paid'
-                  ? 'Le règlement a bien été encaissé.'
-                  : 'Validez le paiement sur votre téléphone pour que la commande soit préparée.'}
+                  ? t('Le règlement a bien été encaissé.')
+                  : t('Validez le paiement sur votre téléphone pour que la commande soit préparée.')}
               </Étape>
             )}
 
-            <Étape icon={Clock} titre="Suivi">
-              L'avancement est visible à tout moment depuis{' '}
+            <Étape icon={Clock} titre={t('Suivi')}>
+              {t('L’avancement est visible à tout moment depuis')}{' '}
               <Link to={createPageUrl('Orders')} className="text-emerald-700 hover:underline">
-                vos commandes
+                {t('vos commandes')}
               </Link>
               .
             </Étape>
@@ -221,12 +217,12 @@ export default function OrderConfirmation() {
         <div className="flex flex-col sm:flex-row gap-3 print:hidden">
           <Button variant="outline" asChild className="flex-1">
             <Link to={createPageUrl('Orders')}>
-              Suivre ma commande
+              {t('Suivre ma commande')}
               <ChevronRight className="w-4 h-4 ml-1" />
             </Link>
           </Button>
           <Button asChild className="flex-1 bg-emerald-600 hover:bg-emerald-700">
-            <Link to={createPageUrl('Catalog')}>Continuer mes achats</Link>
+            <Link to={createPageUrl('Catalog')}>{t('Continuer mes achats')}</Link>
           </Button>
         </div>
       </div>
@@ -268,17 +264,18 @@ function ConfirmationSkeleton() {
 }
 
 function Introuvable() {
+  const t = useT();
   return (
     <div className="max-w-2xl mx-auto px-4 py-20 text-center">
       <div className="w-14 h-14 rounded-full bg-gray-100 grid place-items-center mx-auto mb-4">
         <MapPin className="w-7 h-7 text-gray-400" />
       </div>
-      <h1 className="text-xl font-semibold text-gray-900 mb-2">Commande introuvable</h1>
+      <h1 className="text-xl font-semibold text-gray-900 mb-2">{t('Commande introuvable')}</h1>
       <p className="text-sm text-gray-500 mb-6">
-        Le lien est peut-être incomplet. Vos commandes restent accessibles depuis votre compte.
+        {t('Le lien est peut-être incomplet. Vos commandes restent accessibles depuis votre compte.')}
       </p>
       <Button asChild className="bg-emerald-600 hover:bg-emerald-700">
-        <Link to={createPageUrl('Orders')}>Voir mes commandes</Link>
+        <Link to={createPageUrl('Orders')}>{t('Voir mes commandes')}</Link>
       </Button>
     </div>
   );

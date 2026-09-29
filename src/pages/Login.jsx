@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthShell from '@/components/auth/AuthShell';
 import { useAuth } from '@/lib/AuthContext';
+import { useT } from '@/i18n/LanguageContext';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -13,6 +14,7 @@ export default function Login() {
   const [submitting, setSubmitting] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const t = useT();
   const [params] = useSearchParams();
 
   const handleSubmit = async (event) => {
@@ -24,7 +26,7 @@ export default function Login() {
       const next = params.get('suite');
       navigate(next?.startsWith('/') ? next : '/', { replace: true });
     } catch (error) {
-      toast.error(error.message ?? 'Connexion impossible');
+      toast.error(error.message ?? t('Connexion impossible'));
     } finally {
       setSubmitting(false);
     }
@@ -32,20 +34,20 @@ export default function Login() {
 
   return (
     <AuthShell
-      title="Connexion"
-      subtitle="Retrouvez vos commandes et vos points de fidélité."
+      title={t('Connexion')}
+      subtitle={t('Retrouvez vos commandes et vos points de fidélité.')}
       footer={
         <>
-          Pas encore de compte ?{' '}
+          {t('Pas encore de compte ?')}{' '}
           <Link to="/inscription" className="text-emerald-600 font-medium hover:underline">
-            Créer un compte
+            {t('Créer un compte')}
           </Link>
         </>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1.5">
-          <Label htmlFor="email">Adresse e-mail</Label>
+          <Label htmlFor="email">{t('Adresse e-mail')}</Label>
           <Input
             id="email"
             type="email"
@@ -53,15 +55,15 @@ export default function Login() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="vous@exemple.cm"
+            placeholder={t('vous@exemple.cm')}
           />
         </div>
 
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password">Mot de passe</Label>
+            <Label htmlFor="password">{t('Mot de passe')}</Label>
             <Link to="/mot-de-passe-oublie" className="text-xs text-emerald-600 hover:underline">
-              Oublié ?
+              {t('Oublié ?')}
             </Link>
           </div>
           <Input
@@ -75,7 +77,7 @@ export default function Login() {
         </div>
 
         <Button type="submit" disabled={submitting} className="w-full h-11 bg-emerald-500 hover:bg-emerald-600">
-          {submitting ? 'Connexion…' : 'Se connecter'}
+          {submitting ? t('Connexion…') : t('Se connecter')}
         </Button>
       </form>
     </AuthShell>

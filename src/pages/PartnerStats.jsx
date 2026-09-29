@@ -26,7 +26,7 @@ const PÉRIODES = [
   { jours: 90, label: '90 jours' },
 ];
 
-const COULEURS = ['#10b981', '#6366f1', '#f97316', '#eab308', '#06b6d4', '#ec4899', '#8b5cf6'];
+const COULEURS = ['#7048C9', '#6366f1', '#f97316', '#eab308', '#06b6d4', '#ec4899', '#8b5cf6'];
 
 /**
  * Statistiques du partenaire.
@@ -138,7 +138,7 @@ export default function PartnerStats() {
                   <Tooltip formatter={(valeur, nom) => (nom === 'revenus' ? formatXAF(valeur) : valeur)} />
                   <Legend />
                   <Line type="monotone" dataKey="commandes" stroke="#6366f1" name="Commandes" />
-                  <Line type="monotone" dataKey="revenus" stroke="#10b981" name="Revenus" />
+                  <Line type="monotone" dataKey="revenus" stroke="#7048C9" name="Revenus" />
                 </LineChart>
               </ResponsiveContainer>
             )}

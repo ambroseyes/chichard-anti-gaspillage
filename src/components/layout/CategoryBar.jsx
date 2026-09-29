@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronDown, Flame, LayoutGrid, Sparkles, Store, Truck } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { PRODUCT_CATEGORIES } from '@/lib/constants';
+import { useT } from '@/i18n/LanguageContext';
 
 const catalogLink = (params) => createPageUrl(`Catalog?${new URLSearchParams(params).toString()}`);
 
@@ -24,6 +25,7 @@ const SHORTCUTS = [
  * l'accueil.
  */
 export default function CategoryBar() {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const container = useRef(null);
 
@@ -52,10 +54,11 @@ export default function CategoryBar() {
             onClick={() => setOpen((value) => !value)}
             aria-expanded={open}
             aria-controls="panneau-rayons"
+            data-tour="departments"
             className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-emerald-600 text-white text-sm font-semibold whitespace-nowrap hover:bg-emerald-700 transition-colors"
           >
             <LayoutGrid className="w-4 h-4" />
-            Tous les rayons
+            {t('Tous les rayons')}
             <ChevronDown className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} />
           </button>
 
@@ -67,7 +70,7 @@ export default function CategoryBar() {
               to={catalogLink({ category: category.id })}
               className="px-3 py-1.5 text-sm text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md whitespace-nowrap transition-colors"
             >
-              {category.label}
+              {t(category.label)}
             </Link>
           ))}
 
@@ -77,7 +80,7 @@ export default function CategoryBar() {
             const Icon = shortcut.icon;
             return (
               <Link
-                key={shortcut.label}
+                key={t(shortcut.label)}
                 to={shortcut.to}
                 className={`hidden xl:flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md whitespace-nowrap transition-colors ${
                   shortcut.accent
@@ -86,7 +89,7 @@ export default function CategoryBar() {
                 }`}
               >
                 <Icon className="w-4 h-4" />
-                {shortcut.label}
+                {t(shortcut.label)}
               </Link>
             );
           })}
@@ -99,7 +102,7 @@ export default function CategoryBar() {
           className="absolute inset-x-0 top-full bg-white border-t border-gray-100 shadow-xl z-40"
         >
           <nav
-            aria-label="Tous les rayons"
+            aria-label={t('Tous les rayons')}
             className="max-w-7xl mx-auto px-4 lg:px-6 py-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2"
           >
             {PRODUCT_CATEGORIES.map((category) => (
@@ -113,7 +116,7 @@ export default function CategoryBar() {
                   {category.emoji}
                 </span>
                 <span className="text-sm text-gray-700 group-hover:text-emerald-700 font-medium">
-                  {category.label}
+                  {t(category.label)}
                 </span>
               </Link>
             ))}
@@ -123,12 +126,12 @@ export default function CategoryBar() {
             <div className="max-w-7xl mx-auto px-4 lg:px-6 py-3 flex flex-wrap gap-2">
               {SHORTCUTS.map((shortcut) => (
                 <Link
-                  key={shortcut.label}
+                  key={t(shortcut.label)}
                   to={shortcut.to}
                   onClick={() => setOpen(false)}
                   className="px-3 py-1.5 text-sm bg-white border border-gray-200 rounded-full text-gray-700 hover:border-emerald-300 hover:text-emerald-700"
                 >
-                  {shortcut.label}
+                  {t(shortcut.label)}
                 </Link>
               ))}
             </div>

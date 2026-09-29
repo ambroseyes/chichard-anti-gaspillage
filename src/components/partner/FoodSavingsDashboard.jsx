@@ -23,7 +23,7 @@ const CATEGORY_LABELS = {
 };
 
 const CATEGORY_COLORS = [
-  '#10B981', '#3B82F6', '#F59E0B', '#EF4444',
+  '#7048C9', '#3B82F6', '#F59E0B', '#EF4444',
   '#8B5CF6', '#06B6D4', '#F97316', '#84CC16', '#EC4899', '#6B7280',
 ];
 
@@ -152,7 +152,7 @@ export default function FoodSavingsDashboard({ products }) {
                     return [value, name];
                   }}
                 />
-                <Bar yAxisId="left" dataKey="kgSaved" fill="#10B981" radius={[4, 4, 0, 0]} name="kgSaved" />
+                <Bar yAxisId="left" dataKey="kgSaved" fill="#7048C9" radius={[4, 4, 0, 0]} name="kgSaved" />
                 <Bar yAxisId="right" dataKey="economiesFCFA" fill="#3B82F6" radius={[4, 4, 0, 0]} name="economiesFCFA" />
               </BarChart>
             </ResponsiveContainer>

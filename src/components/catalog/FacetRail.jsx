@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { formatXAF } from '@/lib/format';
 import { CATEGORY_EMOJI } from '@/lib/constants';
+import { useT } from '@/i18n/LanguageContext';
 
 const SHOWN_BY_DEFAULT = 6;
 
@@ -17,20 +18,21 @@ const SHOWN_BY_DEFAULT = 6;
  * sélectionner deux.
  */
 export default function FacetRail({ facets, criteria, update, toggle, reset, activeFilterCount }) {
+  const t = useT();
   if (!facets) return <RailSkeleton />;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-gray-900">Filtrer</h2>
+        <h2 className="font-semibold text-gray-900">{t('Filtrer')}</h2>
         {activeFilterCount > 0 && (
           <Button variant="ghost" size="sm" onClick={reset} className="h-auto py-1 text-xs text-gray-500">
-            Tout effacer
+            {t('Tout effacer')}
           </Button>
         )}
       </div>
 
-      <FacetGroup title="Rayons">
+      <FacetGroup title={t('Rayons')}>
         <CheckList
           options={facets.categories}
           selected={criteria.category}
@@ -39,11 +41,11 @@ export default function FacetRail({ facets, criteria, update, toggle, reset, act
         />
       </FacetGroup>
 
-      <FacetGroup title="Date limite">
+      <FacetGroup title={t('Date limite')}>
         <ul className="space-y-1">
           <li>
             <RadioRow
-              label="Toutes les dates"
+              label={t('Toutes les dates')}
               checked={!criteria.expires}
               onSelect={() => update({ expires: '' })}
             />
@@ -51,7 +53,7 @@ export default function FacetRail({ facets, criteria, update, toggle, reset, act
           {facets.expiration.map((bucket) => (
             <li key={bucket.value}>
               <RadioRow
-                label={bucket.label}
+                label={t(bucket.label)}
                 count={bucket.count}
                 urgent={bucket.value === 'today'}
                 checked={criteria.expires === bucket.value}
@@ -62,9 +64,9 @@ export default function FacetRail({ facets, criteria, update, toggle, reset, act
         </ul>
       </FacetGroup>
 
-      <FacetGroup title="Prix">
+      <FacetGroup title={t('Prix')}>
         <p className="text-xs text-gray-500 mb-2">
-          De {formatXAF(facets.price.min)} à {formatXAF(facets.price.max)}
+          {t('De {min} à {max}', { min: formatXAF(facets.price.min), max: formatXAF(facets.price.max) })}
         </p>
         <div className="flex items-center gap-2">
           <Input
@@ -72,7 +74,7 @@ export default function FacetRail({ facets, criteria, update, toggle, reset, act
             inputMode="numeric"
             min={0}
             placeholder="Min"
-            aria-label="Prix minimum en francs CFA"
+            aria-label={t('Prix minimum en francs CFA')}
             value={criteria.price_min}
             onChange={(event) => update({ price_min: event.target.value })}
             className="h-9"
@@ -83,7 +85,7 @@ export default function FacetRail({ facets, criteria, update, toggle, reset, act
             inputMode="numeric"
             min={0}
             placeholder="Max"
-            aria-label="Prix maximum en francs CFA"
+            aria-label={t('Prix maximum en francs CFA')}
             value={criteria.price_max}
             onChange={(event) => update({ price_max: event.target.value })}
             className="h-9"
@@ -92,7 +94,7 @@ export default function FacetRail({ facets, criteria, update, toggle, reset, act
       </FacetGroup>
 
       {facets.brands.length > 0 && (
-        <FacetGroup title="Marques">
+        <FacetGroup title={t('Marques')}>
           <CheckList
             options={facets.brands}
             selected={criteria.brand}
@@ -102,7 +104,7 @@ export default function FacetRail({ facets, criteria, update, toggle, reset, act
       )}
 
       {facets.stores.length > 1 && (
-        <FacetGroup title="Boutiques">
+        <FacetGroup title={t('Boutiques')}>
           <CheckList
             options={facets.stores}
             selected={criteria.store}
@@ -111,7 +113,7 @@ export default function FacetRail({ facets, criteria, update, toggle, reset, act
         </FacetGroup>
       )}
 
-      <FacetGroup title="Avis clients">
+      <FacetGroup title={t('Avis clients')}>
         <ul className="space-y-1">
           {[4, 3].map((note) => (
             <li key={note}>
@@ -123,7 +125,7 @@ export default function FacetRail({ facets, criteria, update, toggle, reset, act
                 label={
                   <span className="flex items-center gap-1">
                     <Stars value={note} />
-                    <span className="text-gray-500">et plus</span>
+                    <span className="text-gray-500">{t('et plus')}</span>
                   </span>
                 }
               />
@@ -132,13 +134,13 @@ export default function FacetRail({ facets, criteria, update, toggle, reset, act
         </ul>
       </FacetGroup>
 
-      <FacetGroup title="Garanties">
+      <FacetGroup title={t('Garanties')}>
         <label className="flex items-center gap-2 py-1 text-sm text-gray-700 cursor-pointer">
           <Checkbox
             checked={criteria.verified}
             onCheckedChange={(checked) => update({ verified: Boolean(checked) })}
           />
-          Produits vérifiés par la boutique
+          {t('Produits vérifiés par la boutique')}
         </label>
       </FacetGroup>
     </div>
@@ -156,6 +158,7 @@ function FacetGroup({ title, children }) {
 
 /** Liste à cocher, repliée au-delà de six entrées pour rester lisible. */
 function CheckList({ options, selected, onToggle, renderPrefix }) {
+  const t = useT();
   const [expanded, setExpanded] = useState(false);
   const visible = expanded ? options : options.slice(0, SHOWN_BY_DEFAULT);
 
@@ -171,7 +174,7 @@ function CheckList({ options, selected, onToggle, renderPrefix }) {
               />
               {renderPrefix?.(option)}
               <span className="flex-1 text-gray-700 group-hover:text-gray-900 truncate">
-                {option.label}
+                {t(option.label)}
               </span>
               <span className="text-xs text-gray-400 tabular-nums">{option.count}</span>
             </label>
@@ -184,7 +187,7 @@ function CheckList({ options, selected, onToggle, renderPrefix }) {
           onClick={() => setExpanded((value) => !value)}
           className="mt-1 text-xs font-medium text-emerald-700 hover:underline"
         >
-          {expanded ? 'Voir moins' : `Voir les ${options.length} entrées`}
+          {expanded ? t('Voir moins') : t('Voir les {n} entrées', { n: options.length })}
         </button>
       )}
     </>
@@ -216,8 +219,9 @@ function RadioRow({ label, count, checked, onSelect, urgent = false }) {
 }
 
 function Stars({ value }) {
+  const t = useT();
   return (
-    <span className="flex items-center" aria-label={`${value} étoiles et plus`}>
+    <span className="flex items-center" aria-label={t('{n} étoiles et plus', { n: value })}>
       {[1, 2, 3, 4, 5].map((index) => (
         <Star
           key={index}

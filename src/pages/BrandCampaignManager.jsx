@@ -14,7 +14,7 @@ import { Sparkles, Plus, Edit2, Eye, DollarSign, TrendingUp, Users } from 'lucid
 import { toast } from 'sonner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-const COLORS = ['#8b5cf6', '#ec4899', '#3b82f6', '#10b981'];
+const COLORS = ['#8b5cf6', '#ec4899', '#3b82f6', '#7048C9'];
 
 export default function BrandCampaignManager() {
   const [brand, setBrand] = useState(null);
@@ -312,7 +312,7 @@ export default function BrandCampaignManager() {
                     <Tooltip />
                     <Bar dataKey="impressions" fill="#8b5cf6" name="Impressions" />
                     <Bar dataKey="clicks" fill="#3b82f6" name="Clics" />
-                    <Bar dataKey="conversions" fill="#10b981" name="Conversions" />
+                    <Bar dataKey="conversions" fill="#7048C9" name="Conversions" />
                   </BarChart>
                 </ResponsiveContainer>
               </Card>
