@@ -401,7 +401,7 @@ export default function DriverDashboard() {
                 <Map className="w-4 h-4 mr-2" />
                 {showMap ? 'Masquer' : 'Carte'}
               </Button>
-              <Button variant="secondary" size="sm" onClick={() => setShowBulkScanner(true)}>
+              <Button variant="secondary" size="sm" onClick={() => setShowBulkScanner(true)} data-tour="driver-scan">
                 <QrCode className="w-4 h-4 mr-2" />
                 Scan multiple
               </Button>
@@ -412,7 +412,7 @@ export default function DriverDashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 mt-6">
+          <div className="grid grid-cols-3 gap-3 mt-6" data-tour="driver-stats">
             <Card className="bg-white/10 backdrop-blur-sm border-white/20 p-3 text-center">
               <p className="text-2xl font-bold">{pendingPickup.length}</p>
               <p className="text-xs text-emerald-100">À récupérer</p>

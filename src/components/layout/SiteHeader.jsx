@@ -52,7 +52,7 @@ export default function SiteHeader() {
                 {t('Aide')}
               </Link>
             </nav>
-            <LanguageSwitcher tone="dark" />
+            <LanguageSwitcher tone="dark" data-tour="lang" />
           </div>
         </div>
       </div>
@@ -67,7 +67,7 @@ export default function SiteHeader() {
             </span>
           </Link>
 
-          <div className="hidden md:block flex-1 max-w-2xl">
+          <div className="hidden md:block flex-1 max-w-2xl" data-tour="search">
             <SearchBar initialTerm={term} />
           </div>
 
@@ -91,11 +91,14 @@ export default function SiteHeader() {
               </Link>
             )}
 
-            <AccountMenu />
+            <span data-tour="account">
+              <AccountMenu />
+            </span>
 
             <button
               type="button"
               onClick={() => setCartOpen(true)}
+              data-tour="cart"
               className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-emerald-50 text-gray-800"
             >
               <span className="relative">
@@ -146,7 +149,7 @@ export function WorkspaceHeader({ title, navItems = [], currentPageName }) {
           </span>
         </Link>
 
-        <nav aria-label={title} className="flex-1 flex items-center gap-1 overflow-x-auto scrollbar-hide">
+        <nav aria-label={title} data-tour="partner-nav" className="flex-1 flex items-center gap-1 overflow-x-auto scrollbar-hide">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = currentPageName === item.name;

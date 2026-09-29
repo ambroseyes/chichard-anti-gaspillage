@@ -110,7 +110,7 @@ export default function BackofficeLayout({ children, currentPage }) {
             </div>
 
             {/* Nav */}
-            <nav className="flex-1 overflow-y-auto py-4 space-y-6 px-3">
+            <nav data-tour="bo-nav" className="flex-1 overflow-y-auto py-4 space-y-6 px-3">
               {filteredNav.map((section) => (
                 <div key={section.section}>
                   <p className="text-gray-500 text-[10px] font-semibold uppercase tracking-widest px-2 mb-2">

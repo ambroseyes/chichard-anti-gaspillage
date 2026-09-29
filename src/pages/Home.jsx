@@ -50,7 +50,7 @@ export default function Home() {
               {t('Les invendus des boutiques de Yaoundé et Douala, à petit prix et vérifiés — plutôt qu\'à la poubelle.')}
             </p>
             <div className="flex flex-wrap gap-3">
-              <Button asChild size="lg" className="bg-white text-emerald-700 hover:bg-emerald-50">
+              <Button asChild size="lg" className="bg-white text-emerald-700 hover:bg-emerald-50" data-tour="see-catalog">
                 <Link to={createPageUrl('Catalog')}>{t('Voir le catalogue')}</Link>
               </Button>
               <Button

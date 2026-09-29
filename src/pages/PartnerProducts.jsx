@@ -250,7 +250,7 @@ export default function PartnerProducts() {
               {total} produit{total > 1 ? 's' : ''} en stock
             </p>
           </div>
-          <Button onClick={openCreateDialog} className="bg-emerald-500 hover:bg-emerald-600">
+          <Button onClick={openCreateDialog} data-tour="partner-add" className="bg-emerald-500 hover:bg-emerald-600">
             <Plus className="w-4 h-4 mr-2" />
             Ajouter un produit
           </Button>

@@ -58,7 +58,7 @@ export default function AccountMenu() {
   const professional = [
     user.is_partner && { name: 'PartnerDashboard', label: 'Espace partenaire', icon: BarChart3 },
     user.is_delivery_driver && { name: 'DriverDashboard', label: 'Espace livreur', icon: Truck },
-    user.backoffice_role && { name: 'AdminBackoffice', label: 'Backoffice', icon: ShieldCheck },
+    user.backoffice_role && user.backoffice_role !== 'none' && { name: 'AdminBackoffice', label: 'Backoffice', icon: ShieldCheck },
   ].filter(Boolean);
 
   return (

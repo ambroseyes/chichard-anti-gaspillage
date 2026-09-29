@@ -12,6 +12,7 @@ import RequireRole from '@/components/auth/RequireRole';
 import PageSpinner from '@/components/ui/PageSpinner';
 import PageNotFound from '@/lib/PageNotFound';
 import Layout from '@/Layout';
+import TourHost from '@/components/tour/TourHost';
 import { backofficeRoutes, publicAuthRoutes, routes } from '@/routes';
 
 /** Enveloppe les pages publiques et connectées dans le gabarit du site. */
@@ -67,6 +68,8 @@ export default function App() {
               <Suspense fallback={<PageSpinner />}>
                 <AppRoutes />
               </Suspense>
+              {/* Guides interactifs : montés une fois, actifs sur toutes les pages. */}
+              <TourHost />
             </AuthProvider>
           </BrowserRouter>
         </LanguageProvider>

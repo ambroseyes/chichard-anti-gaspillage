@@ -88,7 +88,7 @@ export default function Catalog() {
               </button>
             </div>
 
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex items-center gap-2 text-sm" data-tour="sort">
               <span className="hidden sm:inline text-gray-500">{t('Trier par')}</span>
               <select
                 value={criteria.sort}
@@ -143,7 +143,7 @@ export default function Catalog() {
         )}
 
         <div className="flex gap-6">
-          <aside className="hidden lg:block w-64 shrink-0">
+          <aside className="hidden lg:block w-64 shrink-0" data-tour="facets">
             <div className="sticky top-40 bg-white rounded-xl border border-gray-200 p-4">{rail}</div>
           </aside>
 
@@ -157,6 +157,7 @@ export default function Catalog() {
             ) : (
               <>
                 <div
+                  data-tour="add"
                   className={
                     layout === 'grid'
                       ? 'grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-4'

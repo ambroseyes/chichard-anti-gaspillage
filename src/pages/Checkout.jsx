@@ -169,7 +169,9 @@ export default function Checkout() {
           <Lock className="w-3.5 h-3.5" /> {t('Paiement sécurisé — vos coordonnées ne sont pas partagées avec la boutique.')}
         </p>
 
-        <Stepper current={step} onGoTo={setStep} />
+        <div data-tour="steps">
+          <Stepper current={step} onGoTo={setStep} />
+        </div>
 
         <div className="grid lg:grid-cols-[minmax(0,1fr)_22rem] gap-6 mt-6">
           <div className="space-y-4">
@@ -313,7 +315,7 @@ export default function Checkout() {
           </div>
 
           {/* Récapitulatif permanent */}
-          <aside className="lg:sticky lg:top-40 lg:self-start space-y-4">
+          <aside className="lg:sticky lg:top-40 lg:self-start space-y-4" data-tour="summary">
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <h2 className="font-semibold text-gray-900 mb-4">{t('Récapitulatif')}</h2>
 

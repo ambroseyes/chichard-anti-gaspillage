@@ -134,7 +134,7 @@ export default function AdminBackoffice() {
               Données en temps réel
             </div>
             <Select value={period} onValueChange={setPeriod}>
-              <SelectTrigger className="w-36 h-8 text-sm">
+              <SelectTrigger className="w-36 h-8 text-sm" data-tour="bo-period">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -147,7 +147,7 @@ export default function AdminBackoffice() {
         </div>
 
         {/* KPIs Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4" data-tour="bo-kpis">
           <KPICard title="Revenus" value={formatXAF(totalRevenue)} change={revenueChange} icon={DollarSign} color="bg-emerald-500" delay={0} />
           <KPICard title="Commandes" value={ordersCount} unit="sur la période" change={ordersChange} icon={ShoppingCart} color="bg-teal-500" delay={0.05} />
           <KPICard title="Panier moyen" value={formatXAF(overview?.average_order_value ?? 0)} icon={TrendingUp} color="bg-teal-500" delay={0.1} />

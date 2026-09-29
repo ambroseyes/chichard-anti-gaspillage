@@ -54,6 +54,7 @@ export default function CategoryBar() {
             onClick={() => setOpen((value) => !value)}
             aria-expanded={open}
             aria-controls="panneau-rayons"
+            data-tour="departments"
             className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-emerald-600 text-white text-sm font-semibold whitespace-nowrap hover:bg-emerald-700 transition-colors"
           >
             <LayoutGrid className="w-4 h-4" />

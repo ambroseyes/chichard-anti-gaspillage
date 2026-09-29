@@ -239,7 +239,7 @@ export default function PartnerDashboard() {
                   StockGuardian IA
                 </Button>
               </Link>
-              <Link to={createPageUrl('PartnerProducts')}>
+              <Link to={createPageUrl('PartnerProducts')} data-tour="partner-add">
                 <Button className="bg-emerald-500 hover:bg-emerald-600">
                   <Plus className="w-4 h-4 mr-2" />
                   Ajouter un produit

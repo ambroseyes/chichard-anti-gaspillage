@@ -13,7 +13,7 @@ const PLEINS = { fr: 'Français', en: 'Anglais' };
  * choix visible d'un coup vaut mieux qu'un choix caché derrière un clic. La
  * langue active est annoncée aux lecteurs d'écran via `aria-pressed`.
  */
-export default function LanguageSwitcher({ className = '', tone = 'light' }) {
+export default function LanguageSwitcher({ className = '', tone = 'light', ...rest }) {
   const { lang, setLang, t } = useLanguage();
 
   const actif =
@@ -26,6 +26,7 @@ export default function LanguageSwitcher({ className = '', tone = 'light' }) {
       className={`inline-flex items-center gap-0.5 ${className}`}
       role="group"
       aria-label={t('Changer de langue')}
+      {...rest}
     >
       <Globe className="w-3.5 h-3.5 mr-1 opacity-70" aria-hidden="true" />
       {LANGS.map((code) => (

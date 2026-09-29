@@ -149,7 +149,7 @@ export default function Cart() {
         </motion.div>
 
         {/* Coupon code */}
-        <div className="mb-4">
+        <div className="mb-4" data-tour="coupon">
           {!appliedCoupon ? (
             <div className="flex gap-2">
               <div className="relative flex-1">
@@ -342,7 +342,7 @@ export default function Cart() {
               {t('Vous économisez {montant} par rapport au prix d\'origine.', { montant: formatXAF(totalSavings) })}
             </p>
           )}
-          <Link to={createPageUrl('Checkout')}>
+          <Link to={createPageUrl('Checkout')} data-tour="checkout">
             <Button className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-base">
               {t('Passer commande')}
               <ArrowRight className="w-5 h-5 ml-2" />
