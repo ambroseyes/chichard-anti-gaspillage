@@ -189,6 +189,55 @@ authRouter.patch(
   }),
 );
 
+/*
+ * Guides d'accueil « déjà vus ».
+ *
+ * Lié au compte, et non au navigateur : le guide ne réapparaît pas quand
+ * l'utilisateur revient d'un autre appareil. Les clés sont contrôlées
+ * (`welcome`, `page.<Nom>`) pour que ce champ ne devienne pas un stockage
+ * libre.
+ */
+const CLÉ_GUIDE = /^(welcome|page\.[A-Za-z]+)$/;
+
+authRouter.post(
+  '/me/tour',
+  requireAuth,
+  handler(async (req, res) => {
+    const parsed = z.object({ key: z.string().max(40).regex(CLÉ_GUIDE) }).safeParse(req.body);
+    if (!parsed.success) throw badRequest('Clé de guide invalide', parsed.error.issues);
+
+    const vues = new Set(req.user.tour_seen ?? []);
+    vues.add(parsed.data.key);
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { tour_seen: [...vues] },
+    });
+    res.json({ data: stripHidden('User', user) });
+  }),
+);
+
+authRouter.post(
+  '/me/tour/reset',
+  requireAuth,
+  handler(async (req, res) => {
+    const parsed = z
+      .object({ keys: z.array(z.string().max(40).regex(CLÉ_GUIDE)).max(40).optional() })
+      .safeParse(req.body);
+    if (!parsed.success) throw badRequest('Clés de guide invalides', parsed.error.issues);
+
+    // Sans liste, on remet tout à zéro ; sinon, on n'efface que les clés visées.
+    const àEffacer = parsed.data.keys;
+    const restantes = àEffacer
+      ? (req.user.tour_seen ?? []).filter((clé) => !àEffacer.includes(clé))
+      : [];
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { tour_seen: restantes },
+    });
+    res.json({ data: stripHidden('User', user) });
+  }),
+);
+
 authRouter.post(
   '/change-password',
   requireAuth,

@@ -1201,6 +1201,7 @@ model User {
   allergens_to_avoid      String[]
   favorite_stores         String[]
   community_badges        String[]
+  tour_seen               String[]              @default([])
   created_by              String?
   created_date            DateTime               @default(now())
   updated_date            DateTime               @updatedAt

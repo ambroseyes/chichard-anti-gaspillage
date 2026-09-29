@@ -34,6 +34,21 @@ export const auth = {
     return data;
   },
 
+  /** Marque un guide « déjà vu », côté compte. Renvoie l'utilisateur à jour. */
+  async markTourSeen(key) {
+    const { data } = await request('/api/auth/me/tour', { method: 'POST', body: { key } });
+    return data;
+  },
+
+  /** Réinitialise des guides (ou tous, si `keys` est omis). Renvoie l'utilisateur à jour. */
+  async resetTour(keys) {
+    const { data } = await request('/api/auth/me/tour/reset', {
+      method: 'POST',
+      body: keys ? { keys } : {},
+    });
+    return data;
+  },
+
   async changePassword(currentPassword, newPassword) {
     await request('/api/auth/change-password', {
       method: 'POST',
