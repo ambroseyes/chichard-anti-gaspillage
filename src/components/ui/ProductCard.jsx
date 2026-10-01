@@ -41,7 +41,7 @@ export default function ProductCard({ product, onAddToCart, variant = 'grid' }) 
         />
 
         {discount > 0 && (
-          <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-orange-500 text-white text-xs font-bold shadow-sm">
+          <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-orange-700 text-white text-xs font-bold shadow-sm">
             −{discount}%
           </span>
         )}
@@ -66,7 +66,7 @@ export default function ProductCard({ product, onAddToCart, variant = 'grid' }) 
 
       <div className={`p-3 flex flex-col flex-1 min-w-0 ${horizontal ? 'gap-1' : ''}`}>
         {product.brand && (
-          <p className="text-[11px] uppercase tracking-wide text-gray-400 truncate">{product.brand}</p>
+          <p className="text-[11px] uppercase tracking-wide text-gray-500 truncate">{product.brand}</p>
         )}
 
         <h3 className="font-medium text-gray-900 text-sm leading-snug line-clamp-2">
@@ -93,7 +93,7 @@ export default function ProductCard({ product, onAddToCart, variant = 'grid' }) 
               {formatXAF(product.discounted_price)}
             </span>
             {savings > 0 && (
-              <span className="text-xs text-gray-400 line-through">
+              <span className="text-xs text-gray-500 line-through">
                 {formatXAF(product.original_price)}
               </span>
             )}
@@ -122,7 +122,7 @@ function Rating({ value = 0 }) {
   const t = useT();
   const rounded = Math.round(Number(value) || 0);
   return (
-    <span className="flex items-center" aria-label={t('Noté {n} sur 5', { n: rounded })}>
+    <span className="flex items-center" role="img" aria-label={t('Noté {n} sur 5', { n: rounded })}>
       {[1, 2, 3, 4, 5].map((index) => (
         <Star
           key={index}
@@ -138,7 +138,7 @@ function Rating({ value = 0 }) {
 function urgencyStyle(days) {
   if (days === null) return { className: 'bg-gray-100 text-gray-600' };
   if (days <= 0) return { className: 'bg-red-600 text-white' };
-  if (days <= 2) return { className: 'bg-orange-500 text-white' };
+  if (days <= 2) return { className: 'bg-orange-700 text-white' };
   if (days <= 5) return { className: 'bg-amber-100 text-amber-800' };
   return { className: 'bg-white/90 text-gray-700' };
 }

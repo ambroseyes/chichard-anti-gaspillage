@@ -52,7 +52,7 @@ export default function ReportModal({ entityType, entityId, trigger, entityName 
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50">
+          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
             <Flag className="w-4 h-4 mr-2" />
             {t('Signaler')}
           </Button>

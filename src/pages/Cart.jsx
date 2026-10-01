@@ -244,8 +244,8 @@ export default function Cart() {
                         
                         <div className="flex items-center gap-2 mb-3">
                           <span className={`text-xs px-2 py-0.5 rounded-full ${
-                            daysLeft <= 1 ? 'bg-red-100 text-red-600' :
-                            daysLeft <= 3 ? 'bg-orange-100 text-orange-600' :
+                            daysLeft <= 1 ? 'bg-red-100 text-red-700' :
+                            daysLeft <= 3 ? 'bg-orange-100 text-orange-700' :
                             'bg-emerald-100 text-emerald-600'
                           }`}>
                             <Clock className="w-3 h-3 inline mr-1" />
@@ -259,7 +259,7 @@ export default function Cart() {
                               {item.unit_price?.toLocaleString()} FCFA
                             </span>
                             {item.original_price > item.unit_price && (
-                              <span className="ml-2 text-xs text-gray-400 line-through">
+                              <span className="ml-2 text-xs text-gray-500 line-through">
                                 {item.original_price?.toLocaleString()}
                               </span>
                             )}

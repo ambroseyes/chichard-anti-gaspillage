@@ -460,7 +460,7 @@ function Stepper({ current, onGoTo }) {
                     ? 'bg-emerald-600 text-white'
                     : active
                       ? 'bg-emerald-100 text-emerald-700 ring-2 ring-emerald-600'
-                      : 'bg-gray-100 text-gray-400'
+                      : 'bg-gray-100 text-gray-600'
                 }`}
               >
                 {done ? <Check className="w-4 h-4" /> : item.id}
@@ -491,14 +491,14 @@ function StepCard({ number, title, active, done, summary, onEdit, children }) {
       <header className="flex items-center gap-3 px-5 py-4">
         <span
           className={`w-7 h-7 rounded-full grid place-items-center text-sm font-semibold shrink-0 ${
-            done ? 'bg-emerald-600 text-white' : active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400'
+            done ? 'bg-emerald-600 text-white' : active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
           }`}
         >
           {done ? <Check className="w-4 h-4" /> : number}
         </span>
         <h2
           id={`titre-etape-${number}`}
-          className={`font-semibold ${active || done ? 'text-gray-900' : 'text-gray-400'}`}
+          className={`font-semibold ${active || done ? 'text-gray-900' : 'text-gray-500'}`}
         >
           {title}
         </h2>

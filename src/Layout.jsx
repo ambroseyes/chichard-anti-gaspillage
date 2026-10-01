@@ -19,6 +19,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useCart } from '@/hooks/useCart';
 import SiteHeader, { WorkspaceHeader } from '@/components/layout/SiteHeader';
 import SiteFooter from '@/components/layout/SiteFooter';
+import SkipLink from '@/components/layout/SkipLink';
 
 /**
  * Gabarit de l'application.
@@ -68,8 +69,9 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+      <SkipLink />
       <SiteHeader />
-      <main className="flex-1 pb-16 md:pb-0">{children}</main>
+      <main id="contenu-principal" className="flex-1 pb-16 md:pb-0">{children}</main>
       <SiteFooter />
       <MobileTabBar currentPageName={currentPageName} isAuthenticated={Boolean(user)} />
     </div>
@@ -79,8 +81,9 @@ export default function Layout({ children, currentPageName }) {
 function Workspace({ title, nav, currentPageName, children }) {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+      <SkipLink />
       <WorkspaceHeader title={title} navItems={nav} currentPageName={currentPageName} />
-      <main className="flex-1">{children}</main>
+      <main id="contenu-principal" className="flex-1">{children}</main>
       <footer className="border-t border-gray-200 bg-white">
         <div className="max-w-7xl mx-auto px-4 lg:px-6 py-4 text-xs text-gray-500">
           {title} — Chichard

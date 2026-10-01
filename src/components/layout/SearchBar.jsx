@@ -122,7 +122,7 @@ export default function SearchBar({ initialTerm = '', autoFocus = false, onNavig
         <label htmlFor={`${listId}-input`} className="sr-only">
           Rechercher un produit, un rayon ou une boutique
         </label>
-        <div className="flex items-center rounded-lg border-2 border-emerald-500 bg-white overflow-hidden focus-within:ring-2 focus-within:ring-emerald-200">
+        <div className="flex items-center rounded-lg border-2 border-emerald-500 bg-white overflow-hidden focus-within:ring-2 focus-within:ring-emerald-600 focus-within:ring-offset-1">
           <input
             id={`${listId}-input`}
             type="search"
@@ -135,7 +135,7 @@ export default function SearchBar({ initialTerm = '', autoFocus = false, onNavig
             onFocus={() => setOpen(true)}
             onKeyDown={onKeyDown}
             placeholder={t('Rechercher un produit, une marque, une boutique…')}
-            className="flex-1 h-11 px-4 text-sm outline-none placeholder:text-gray-400 [&::-webkit-search-cancel-button]:appearance-none"
+            className="flex-1 h-11 px-4 text-sm outline-none placeholder:text-gray-500 [&::-webkit-search-cancel-button]:appearance-none"
             role="combobox"
             aria-expanded={showPanel}
             aria-controls={listId}
@@ -147,7 +147,7 @@ export default function SearchBar({ initialTerm = '', autoFocus = false, onNavig
               type="button"
               onClick={() => setTerm('')}
               aria-label={t('Effacer la recherche')}
-              className="px-2 text-gray-400 hover:text-gray-600"
+              className="px-2 text-gray-500 hover:text-gray-700"
             >
               <X className="w-4 h-4" />
             </button>
