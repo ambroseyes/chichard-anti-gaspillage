@@ -79,7 +79,7 @@ export default function FacetRail({ facets, criteria, update, toggle, reset, act
             onChange={(event) => update({ price_min: event.target.value })}
             className="h-9"
           />
-          <span className="text-gray-400">–</span>
+          <span className="text-gray-500" aria-hidden="true">–</span>
           <Input
             type="number"
             inputMode="numeric"
@@ -176,7 +176,7 @@ function CheckList({ options, selected, onToggle, renderPrefix }) {
               <span className="flex-1 text-gray-700 group-hover:text-gray-900 truncate">
                 {t(option.label)}
               </span>
-              <span className="text-xs text-gray-400 tabular-nums">{option.count}</span>
+              <span className="text-xs text-gray-500 tabular-nums">{option.count}</span>
             </label>
           </li>
         ))}
@@ -212,8 +212,8 @@ function RadioRow({ label, count, checked, onSelect, urgent = false }) {
       >
         {checked && <span className="w-2 h-2 rounded-full bg-emerald-600" />}
       </span>
-      <span className={`flex-1 ${urgent ? 'text-orange-600' : ''}`}>{label}</span>
-      {count !== undefined && <span className="text-xs text-gray-400 tabular-nums">{count}</span>}
+      <span className={`flex-1 ${urgent ? 'text-orange-700' : ''}`}>{label}</span>
+      {count !== undefined && <span className="text-xs text-gray-500 tabular-nums">{count}</span>}
     </button>
   );
 }
@@ -221,7 +221,7 @@ function RadioRow({ label, count, checked, onSelect, urgent = false }) {
 function Stars({ value }) {
   const t = useT();
   return (
-    <span className="flex items-center" aria-label={t('{n} étoiles et plus', { n: value })}>
+    <span className="flex items-center" role="img" aria-label={t('{n} étoiles et plus', { n: value })}>
       {[1, 2, 3, 4, 5].map((index) => (
         <Star
           key={index}

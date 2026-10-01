@@ -9,7 +9,6 @@ import {
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProductCard from '@/components/ui/ProductCard';
 import { EMPTY_ARRAY } from '@/lib/stable';
 
@@ -322,23 +321,38 @@ export default function EnhancedPersonalizedFeed({ user, onAddToCart }) {
         </div>
       </div>
 
-      <Tabs value={activeFilter} onValueChange={setActiveFilter}>
-        <TabsList className="mb-4">
-          <TabsTrigger value="all">Tout</TabsTrigger>
-          <TabsTrigger value="product">
-            <ShoppingBag className="w-4 h-4 mr-1" />
-            Produits
-          </TabsTrigger>
-          <TabsTrigger value="recipe">
-            <ChefHat className="w-4 h-4 mr-1" />
-            Recettes
-          </TabsTrigger>
-          <TabsTrigger value="challenge">
-            <Flame className="w-4 h-4 mr-1" />
-            Défis
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+      {/* Filtre du flux : des boutons, pas des onglets — il n'y a pas de
+          panneaux à contrôler, donc `role="tab"` induirait en erreur les
+          lecteurs d'écran (et pointait vers des panneaux inexistants). */}
+      <div
+        role="group"
+        aria-label="Filtrer le flux"
+        className="inline-flex flex-wrap gap-1 mb-4 p-1 bg-gray-100 rounded-lg"
+      >
+        {[
+          { id: 'all', label: 'Tout', icon: null },
+          { id: 'product', label: 'Produits', icon: ShoppingBag },
+          { id: 'recipe', label: 'Recettes', icon: ChefHat },
+          { id: 'challenge', label: 'Défis', icon: Flame },
+        ].map((f) => {
+          const Icon = f.icon;
+          const actif = activeFilter === f.id;
+          return (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => setActiveFilter(f.id)}
+              aria-pressed={actif}
+              className={`inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                actif ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {Icon && <Icon className="w-4 h-4 mr-1" />}
+              {f.label}
+            </button>
+          );
+        })}
+      </div>
 
       <div className="space-y-4">
         <AnimatePresence>
@@ -355,7 +369,7 @@ export default function EnhancedPersonalizedFeed({ user, onAddToCart }) {
                   {item.reasons?.length > 0 && (
                     <div className="absolute top-2 left-2 z-10 flex gap-1 flex-wrap max-w-[80%]">
                       {item.reasons.slice(0, 2).map((reason, i) => (
-                        <Badge key={i} className="bg-purple-500 text-white text-[10px]">
+                        <Badge key={i} className="bg-purple-700 text-white text-[10px]">
                           {reason}
                         </Badge>
                       ))}

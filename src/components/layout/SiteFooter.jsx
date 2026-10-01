@@ -146,7 +146,7 @@ export default function SiteFooter() {
 
       <div className="border-t border-gray-800">
         <div className="max-w-7xl mx-auto px-4 lg:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-gray-500 text-center sm:text-left">
+          <p className="text-xs text-gray-400 text-center sm:text-left">
             © {new Date().getFullYear()} Chichard — {t('Tous droits réservés')}.
           </p>
           <ul className="flex flex-wrap justify-center gap-2">

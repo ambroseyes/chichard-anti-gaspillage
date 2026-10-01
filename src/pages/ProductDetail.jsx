@@ -123,7 +123,7 @@ export default function ProductDetail() {
                     />
 
                     {discount > 0 && (
-                      <span className="absolute top-3 left-3 px-2.5 py-1 rounded bg-orange-500 text-white text-sm font-bold">
+                      <span className="absolute top-3 left-3 px-2.5 py-1 rounded bg-orange-700 text-white text-sm font-bold">
                         −{discount}%
                       </span>
                     )}
@@ -152,7 +152,7 @@ export default function ProductDetail() {
 
                 <div>
                   {product.brand && (
-                    <p className="text-xs uppercase tracking-wide text-gray-400">{product.brand}</p>
+                    <p className="text-xs uppercase tracking-wide text-gray-500">{product.brand}</p>
                   )}
                   <h1 className="text-xl lg:text-2xl font-bold text-gray-900 mt-1">{product.name}</h1>
 
@@ -316,7 +316,7 @@ export default function ProductDetail() {
                     {formatXAF(product.discounted_price)}
                   </span>
                   {savings > 0 && (
-                    <span className="text-base text-gray-400 line-through">
+                    <span className="text-base text-gray-500 line-through">
                       {formatXAF(product.original_price)}
                     </span>
                   )}
@@ -413,7 +413,7 @@ function StockLine({ stock }) {
   }
   if (stock <= 5) {
     return (
-      <p className="text-sm font-medium text-orange-600">
+      <p className="text-sm font-medium text-orange-700">
         {t('Plus que {n} en stock — commandez vite', { n: stock })}
       </p>
     );
@@ -453,7 +453,7 @@ function Rating({ value = 0 }) {
   const t = useT();
   const rounded = Math.round(Number(value) || 0);
   return (
-    <span className="flex items-center" aria-label={t('Noté {n} sur 5', { n: rounded })}>
+    <span className="flex items-center" role="img" aria-label={t('Noté {n} sur 5', { n: rounded })}>
       {[1, 2, 3, 4, 5].map((index) => (
         <Star
           key={index}

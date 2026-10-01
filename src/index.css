@@ -171,3 +171,21 @@ button:focus-visible {
     @apply bg-background text-foreground;
   }
 }
+
+/*
+ * Respect du réglage système « réduire les animations ».
+ * Certaines personnes ressentent des vertiges ou la nausée devant des
+ * mouvements amples (parallaxe, défilements automatiques, zooms). Quand le
+ * système signale cette préférence, on neutralise les animations et
+ * transitions au lieu de les supprimer dans chaque composant.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
